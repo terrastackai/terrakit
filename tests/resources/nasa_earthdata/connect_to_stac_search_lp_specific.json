@@ -1,0 +1,690 @@
+{
+    "type": "Catalog",
+    "id": "LPCLOUD",
+    "title": "LPCLOUD STAC Catalog",
+    "stac_version": "1.0.0",
+    "description": "Root STAC catalog for LPCLOUD",
+    "conformsTo": [
+        "https://api.stacspec.org/v1.0.0-rc.2/core",
+        "https://api.stacspec.org/v1.0.0-rc.2/item-search",
+        "https://api.stacspec.org/v1.0.0-rc.2/ogcapi-features",
+        "https://api.stacspec.org/v1.0.0-rc.2/item-search#fields",
+        "https://api.stacspec.org/v1.0.0-rc.2/item-search#features",
+        "https://api.stacspec.org/v1.0.0-rc.2/item-search#query",
+        "https://api.stacspec.org/v1.0.0-rc.2/item-search#sort",
+        "https://api.stacspec.org/v1.0.0-rc.2/item-search#context",
+        "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core",
+        "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/oas30",
+        "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson",
+        "https://api.stacspec.org/v1.0.0-rc.2/collection-search",
+        "https://api.stacspec.org/v1.0.0-rc.2/collection-search#free-text",
+        "https://api.stacspec.org/v1.0.0-rc.2/collection-search#sort",
+        "http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/simple-query"
+    ],
+    "links": [
+        {
+            "rel": "self",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD",
+            "type": "application/geo+json",
+            "title": "Provider Catalog"
+        },
+        {
+            "rel": "root",
+            "href": "https://cmr.earthdata.nasa.gov/stac",
+            "type": "application/geo+json",
+            "title": "Root Catalog"
+        },
+        {
+            "rel": "data",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections",
+            "type": "application/json",
+            "title": "Provider Collections",
+            "method": "GET"
+        },
+        {
+            "rel": "data",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections",
+            "type": "application/json",
+            "title": "Provider Collections",
+            "method": "POST"
+        },
+        {
+            "rel": "conformance",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/conformance",
+            "type": "application/json",
+            "title": "Conformance Classes"
+        },
+        {
+            "rel": "service-desc",
+            "href": "https://api.stacspec.org/v1.0.0-beta.1/openapi.yaml",
+            "type": "application/yaml",
+            "title": "OpenAPI Doc"
+        },
+        {
+            "rel": "service-doc",
+            "href": "https://api.stacspec.org/v1.0.0-beta.1/index.html",
+            "type": "text/html",
+            "title": "HTML documentation"
+        },
+        {
+            "rel": "search",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/search",
+            "type": "application/geo+json",
+            "title": "Provider Item Search",
+            "method": "GET"
+        },
+        {
+            "rel": "search",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/search",
+            "type": "application/geo+json",
+            "title": "Provider Item Search",
+            "method": "POST"
+        },
+        {
+            "rel": "next",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD?cursor=eyJqc29uIjoiW1wiZ2Vvc3RhdGlvbmFyeSBlYXJ0aCBvcmJpdCBsYW5kIHN1cmZhY2UgdGVtcGVyYXR1cmUgaG91cmx5IG5vcnRoIGFuZCBzb3V0aCBhbWVyaWNhIDQga20gdjAwMVwiLFwiTFBDTE9VRFwiLFwiR0VPTFNUNEtIUlwiLFwiMVwiLDM1NDQ2OTUyMTUsOF0ifQ%3D%3D",
+            "type": "application/json",
+            "title": "Next page of results"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/AEHYPICNE1M_001",
+            "title": "Airborne Hyperspectral Reflectance Indian Cave Nebraska Multi-Day 1 m",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/AEHYP1TPPOK_001",
+            "title": "Airborne Hyperspectral Reflectance L1 Tallgrass Prairie Preserve Oklahoma Multi-Day 1 m",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/AEHYPCCMN300MM_001",
+            "title": "Airborne Hyperspectral Reflectance LTER Cedar Creek Minnesota Daily 300 mm",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/AEHYPWRNE1M_001",
+            "title": "Airborne Hyperspectral Reflectance Wood River Nebraska Multi-Day 1 m",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/AST14DEM_004",
+            "title": "ASTER Digital Elevation Model V004",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/ASTGTM_NUMNC_003",
+            "title": "ASTER Global Digital Elevation Model Attributes NetCDF V003",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/ASTGTM_NC_003",
+            "title": "ASTER Global Digital Elevation Model NetCDF V003",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/ASTGTM_002",
+            "title": "ASTER Global Digital Elevation Model V002",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/ASTGTM_003",
+            "title": "ASTER Global Digital Elevation Model V003",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/AG1kmB_003",
+            "title": "ASTER Global Emissivity Dataset 1 kilometer Binary",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/AG100B_003",
+            "title": "ASTER Global Emissivity Dataset 100 meter Binary",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/AG1km_003",
+            "title": "ASTER Global Emissivity Dataset, 1 kilometer, HDF5 V003",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/AG100_003",
+            "title": "ASTER Global Emissivity Dataset, 100 meter, HDF5 V003",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/AG5KMMOH_004",
+            "title": "ASTER Global Emissivity Dataset, Monthly, 0.05 deg, HDF5",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/AG5KMMOH_041",
+            "title": "ASTER Global Emissivity Dataset, Monthly, 0.05 deg, HDF5 V041",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/AG5KMMON_004",
+            "title": "ASTER Global Emissivity Dataset, Monthly, 0.05 deg, netCDF4",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/AST_L1A_004",
+            "title": "ASTER L1A Reconstructed Unprocessed Instrument Data V004",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/AST_L1B_004",
+            "title": "ASTER L1B Registered Radiance at the Sensor V004",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/AST_05_004",
+            "title": "ASTER L2 Surface Emissivity V004",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/AST_08_004",
+            "title": "ASTER L2 Surface Kinetic Temperature V004",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/AST_09T_004",
+            "title": "ASTER L2 Surface Radiance TIR V004",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/AST_09XT_004",
+            "title": "ASTER L2 Surface Radiance VNIR and Crosstalk Corrected SWIR V004",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/AST_09_004",
+            "title": "ASTER L2 Surface Radiance VNIR and SWIR V004",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/AST_07XT_004",
+            "title": "ASTER L2 Surface Reflectance VNIR and Crosstalk Corrected SWIR V004",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/AST_07_004",
+            "title": "ASTER L2 Surface Reflectance VNIR and SWIR V004",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/AST_L1T_004",
+            "title": "ASTER Level 1T Precision Terrain Corrected Registered At-Sensor Radiance V004",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/CAM5K30CFCLIM_003",
+            "title": "Combined ASTER and MODIS Emissivity database over Land (CAMEL) Coefficient Climatology Monthly Global 0.05Deg V003",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/CAM5K30CF_001",
+            "title": "Combined ASTER and MODIS Emissivity database over Land (CAMEL) Coefficient Monthly Global 0.05Deg V001",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/CAM5K30CF_002",
+            "title": "Combined ASTER and MODIS Emissivity database over Land (CAMEL) Coefficient Monthly Global 0.05Deg V002",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/CAM5K30CF_003",
+            "title": "Combined ASTER and MODIS Emissivity database over Land (CAMEL) Coefficient Monthly Global 0.05Deg V003",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/CAM5K30COVCLIM_003",
+            "title": "Combined ASTER and MODIS Emissivity database over Land (CAMEL) Covariances Climatology Monthly Global 0.25Deg V003",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/CAM5K30EMCLIM_003",
+            "title": "Combined ASTER and MODIS Emissivity database over Land (CAMEL) Emissivity Climatology Monthly Global 0.05Deg V003",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/CAM5K30EM_001",
+            "title": "Combined ASTER and MODIS Emissivity database over Land (CAMEL) Emissivity Monthly Global 0.05Deg V001",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/CAM5K30EM_002",
+            "title": "Combined ASTER and MODIS Emissivity database over Land (CAMEL) Emissivity Monthly Global 0.05Deg V002",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/CAM5K30EM_003",
+            "title": "Combined ASTER and MODIS Emissivity database over Land (CAMEL) Emissivity Monthly Global 0.05Deg V003",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/CAM5K30UCCLIM_003",
+            "title": "Combined ASTER and MODIS Emissivity database over Land (CAMEL) Uncertainty Climatology Monthly Global 0.05Deg V003",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/CAM5K30UC_001",
+            "title": "Combined ASTER and MODIS Emissivity database over Land (CAMEL) Uncertainty Monthly Global 0.05Deg V001",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/CAM5K30UC_002",
+            "title": "Combined ASTER and MODIS Emissivity database over Land (CAMEL) Uncertainty Monthly Global 0.05Deg V002",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/CAM5K30UC_003",
+            "title": "Combined ASTER and MODIS Emissivity database over Land (CAMEL) Uncertainty Monthly Global 0.05Deg V003",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/WaterBalance_Daily_Historical_GRIDMET_1.5",
+            "title": "Daily Historical Water Balance Products for the CONUS",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/ECO1BRAD_001",
+            "title": "ECOSTRESS At-sensor Calibrated Radiance Daily L1B Global 70m V001",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/ECO1BATT_001",
+            "title": "ECOSTRESS Attitude Daily L1B Global 70m V001",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/ECO2CLD_001",
+            "title": "ECOSTRESS Cloud Mask Daily L2 Global 70m V001",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/ECO_L2G_CLOUD_002",
+            "title": "ECOSTRESS Gridded Cloud Mask Instantaneous L2 Global 70 m V002",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/ECO_L3G_MET_002",
+            "title": "ECOSTRESS Gridded Downscaled Meteorology Instantaneous L3 Global 70 m V002",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/ECO_L3G_SM_002",
+            "title": "ECOSTRESS Gridded Downscaled Soil Moisture Instantaneous L3 Global 70 m V002",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/ECO_L4G_ESI_002",
+            "title": "ECOSTRESS Gridded Evaporative Stress Index PT-JPL Instantaneous L4 Global 70 m V002",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/ECO_L3G_JET_002",
+            "title": "ECOSTRESS Gridded Evapotranspiration Instantaneous and Daytime L3 Global 70 m V002",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/ECO_L2G_LSTE_002",
+            "title": "ECOSTRESS Gridded Land Surface Temperature and Emissivity Instantaneous L2 Global 70 m V002",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/ECO_L3G_SEB_002",
+            "title": "ECOSTRESS Gridded Surface Energy Balance Instantaneous L3 Global 70 m V002",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/ECO_L1CG_RAD_002",
+            "title": "ECOSTRESS Gridded Top of Atmosphere Calibrated Radiance Instantaneous L1C Global 70 m V002",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/ECO_L4G_WUE_002",
+            "title": "ECOSTRESS Gridded Water Use Efficiency Instantaneous L4 Global 70 m V002",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/ECO2LSTE_001",
+            "title": "ECOSTRESS Land Surface Temperature and Emissivity Daily L2 Global 70m V001",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/ECO1BMAPRAD_001",
+            "title": "ECOSTRESS Resampled Radiance Daily L1B Global 70m V001",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/ECO_L1B_ATT_002",
+            "title": "ECOSTRESS Swath Attitude and Ephemeris Instantaneous L1B Global V002",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/ECO_L2_CLOUD_002",
+            "title": "ECOSTRESS Swath Cloud Mask Instantaneous L2 Global 70 m V002",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/ECO_L1B_GEO_002",
+            "title": "ECOSTRESS Swath Geolocation Instantaneous L1B Global 70 m V002",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/ECO_L2_LSTE_002",
+            "title": "ECOSTRESS Swath Land Surface Temperature and Emissivity Instantaneous L2 Global 70 m V002",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/ECO_L1B_RAD_002",
+            "title": "ECOSTRESS Swath Top of Atmosphere Calibrated Radiance Instantaneous L1B Global 70 m V002",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/ECO_L2T_STARS_002",
+            "title": "ECOSTRESS Tiled Ancillary NDVI and Albedo L2 Global 70 m V002",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/ECO_L3T_MET_002",
+            "title": "ECOSTRESS Tiled Downscaled Meteorology Instantaneous L3 Global 70 m V002",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/ECO_L3T_SM_002",
+            "title": "ECOSTRESS Tiled Downscaled Soil Moisture Instantaneous L3 Global 70 m V002",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/ECO_L4T_ESI_002",
+            "title": "ECOSTRESS Tiled Evaporative Stress Index PT-JPL Instantaneous L4 Global 70 m V002",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/ECO_L3T_JET_002",
+            "title": "ECOSTRESS Tiled Evapotranspiration Instantaneous and Daytime L3 Global 70 m V002",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/ECO_L2T_LSTE_002",
+            "title": "ECOSTRESS Tiled Land Surface Temperature and Emissivity Instantaneous L2 Global 70 m V002",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/ECO_L3T_SEB_002",
+            "title": "ECOSTRESS Tiled Surface Energy Balance Instantaneous L3 Global 70 m V002",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/ECO_L1CT_RAD_002",
+            "title": "ECOSTRESS Tiled Top of Atmosphere Calibrated Radiance Instantaneous L1C Global 70 m V002",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/ECO_L4T_WUE_002",
+            "title": "ECOSTRESS Tiled Water Use Efficiency Instantaneous L4 Global 70 m V002",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/EMITL1BRAD_001",
+            "title": "EMIT L1B At-Sensor Calibrated Radiance and Geolocation Data 60 m V001",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/EMITL1BATT_001",
+            "title": "EMIT L1B Corrected Spacecraft Attitude and Ephemeris V001",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/EMITL2ARFL_001",
+            "title": "EMIT L2A Estimated Surface Reflectance and Uncertainty and Masks 60 m V001",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/EMITL2BCO2ENH_001",
+            "title": "EMIT L2B Carbon Dioxide Enhancement Data 60 m V001",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/EMITL2BCO2ENH_002",
+            "title": "EMIT L2B Carbon Dioxide Enhancement Data 60 m V002",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/EMITL2BCO2PLM_001",
+            "title": "EMIT L2B Estimated Carbon Dioxide Plume Complexes 60 m V001",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/EMITL2BCH4PLM_001",
+            "title": "EMIT L2B Estimated Methane Plume Complexes 60 m V001",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/EMITL2BMIN_001",
+            "title": "EMIT L2B Estimated Mineral Identification and Band Depth and Uncertainty 60 m V001",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/EMITL2BCH4ENH_001",
+            "title": "EMIT L2B Methane Enhancement Data 60 m V001",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/EMITL2BCH4ENH_002",
+            "title": "EMIT L2B Methane Enhancement Data 60 m V002",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/EMITL3ASA_001",
+            "title": "EMIT L3 Aggregated Mineral Spectral Abundance and Uncertainty 0.5 Deg V001",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/EMITL4ESM_001",
+            "title": "EMIT L4 Earth System Model Products V001",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/GLORTHO_001",
+            "title": "G-LiHT Aerial Orthomosaic V001",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/GLCHMK_001",
+            "title": "G-LiHT Canopy Height Model KML V001",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/GLCHMT_001",
+            "title": "G-LiHT Canopy Height Model V001",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/GLDSMT_001",
+            "title": "G-LiHT Digital Surface Model V001",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/GLDTMK_001",
+            "title": "G-LiHT Digital Terrain Model KML V001",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/GLDTMT_001",
+            "title": "G-LiHT Digital Terrain Model V001",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/GLHYANC_001",
+            "title": "G-LiHT Hyperspectral Ancillary V001",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/GLRADS_001",
+            "title": "G-LiHT Hyperspectral Radiance V001",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/GLREFL_001",
+            "title": "G-LiHT Hyperspectral Reflectance V001",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/GLHYVI_001",
+            "title": "G-LiHT Hyperspectral Vegetative Indices V001",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/GLLIDARPC_001",
+            "title": "G-LiHT Lidar Point Cloud V001",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/GLMETRICS_001",
+            "title": "G-LiHT Metrics V001",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/GLTRAJECTORY_001",
+            "title": "G-LiHT Trajectory Data V001",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/GEDI01_B_001",
+            "title": "GEDI L1B Geolocated Waveform Data Global Footprint Level V001",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/GEDI01_B_002",
+            "title": "GEDI L1B Geolocated Waveform Data Global Footprint Level V002",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/GEDI02_A_001",
+            "title": "GEDI L2A Elevation and Height Metrics Data Global Footprint Level V001",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/GEDI02_A_002",
+            "title": "GEDI L2A Elevation and Height Metrics Data Global Footprint Level V002",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/GEDI02_B_001",
+            "title": "GEDI L2B Canopy Cover and Vertical Profile Metrics Data Global Footprint Level V001",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/GEDI02_B_002",
+            "title": "GEDI L2B Canopy Cover and Vertical Profile Metrics Data Global Footprint Level V002",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD/collections/GEOLST4KHR_001",
+            "title": "Geostationary Earth Orbit Land Surface Temperature Hourly North and South America 4 km V001",
+            "type": "application/json"
+        }
+    ]
+}

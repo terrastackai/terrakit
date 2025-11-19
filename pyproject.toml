@@ -1,0 +1,101 @@
+[project]
+name = "TerraKit"
+version = "0.0.2"
+description = "A Python package for finding and getting geospatial data."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+    {"name"="Blair Edwards", "email"="bedwards@uk.ibm.com"},
+    {"name"="Rosie Lickorish"},
+    {"name" = "Leonardo Pondian Tizzei"},
+    {"name" = "Fred Ochieng Otieno"},
+    {"name" = "Beldine Moturi"},
+    {"name" = "Catherine Wanjiru"},
+    {"name" = "Benedikt Blumenstiel"},
+    {"name" = "Brian Ogolla"},
+    ]
+dependencies = [
+        "aiohttp>=3.12.15",
+        "contextily>=1.6.2",
+        "boto3>=1.35.82,<1.40.22",
+        "dask==2025.7.0",
+        "folium>=0.20.0",
+        "huggingface-hub>=1.1.4",
+        "geojson>=3.2.0",
+        "geopandas>=1.1.1",
+        "joblib==1.5.2",
+        "jsonargparse>=4.40.2",
+        "matplotlib>=3.10.6",
+        "nest-asyncio>=1.6.0",
+        "numpy>=1.26.4",
+        "pydantic>=2.11.7",
+        "pystac-client==0.9.0",
+        "python-dotenv>=1.1.1",
+        "rasterio==1.4.3",
+        "rioxarray[interp]==0.19.0",
+        "s3fs>=0.4.2",
+        "scikit-learn>=1.7.1",
+        "sentinelhub==3.11.1",
+        "shapely>=2.1.1",
+        "stackstac==0.5.1",
+        "tacoreader>=0.5.6",
+        "tacotoolbox==0.5.2",
+        "tqdm==4.67.1",
+        "xarray>=v2023.1.0 ",
+        "urllib3==2.5.0",
+]
+
+[dependency-groups]
+dev = [
+    "jupyter>=1.1.1",
+    "jupyter-core>=5.8.1",
+    "ipywidgets>=8.1.8",
+    "mkdocs-git-revision-date-localized-plugin>=1.4.7",
+    "mkdocs-jupyter>=0.25.1",
+    "mkdocs-material>=9.6.16",
+    "mkdocstrings[python]>=0.30.0",
+    "mypy==1.17.1",
+    "notebook>=7.4.4",
+    "pre-commit>=4.2.0",
+    "pytest>=8.4.1",
+    "pytest-cov>=6.2.1",
+    "pytest-mock>=3.15.1",
+    "pytest-skip-slow>=0.0.5",
+    "pytest-xdist>=3.8.0",
+    "requests-mock>=1.12.1",
+    "ruff>=0.12.7",
+]
+
+[project.urls]
+Documentation = "https://terrastackai.github.io/terrakit/"
+Issues = "https://github.com/terrastackai/terrakit/issues"
+Source = "https://github.com/terrastackai/terrakit"
+
+[build-system]
+requires = ["uv_build>=0.8.2,<0.9.0"]
+build-backend = "uv_build"
+
+[tool.uv]
+package = true
+
+[tool.uv.build-backend]
+module-root = ""
+module-name = "terrakit"
+
+[tool.uv.sources]
+detect-secrets = { git = "https://github.com/ibm/detect-secrets.git", rev = "master" }
+
+
+[tool.pytest.ini_options]
+log_cli = true
+log_cli_level = "INFO"
+log_cli_format = "%(asctime)s [%(levelname)8s] %(message)s (%(filename)s:%(lineno)s)"
+log_cli_date_format = "%Y-%m-%d %H:%M:%S"
+filterwarnings = [
+    'ignore::RuntimeWarning:pyogrio',
+    'ignore::UserWarning:terrakit.transform.labels',
+
+]
+
+[project.scripts]
+terrakit = "terrakit.__main__:main"

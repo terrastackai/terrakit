@@ -1,0 +1,86 @@
+[
+	{
+		"id": "S2B_MSIL2A_20240131T075049_N0510_R135_T36MXE_20240131T100727",
+		"properties": {
+			"datetime": "2024-01-31T08:10:11Z",
+			"eo:cloud_cover": 9.37
+		}
+	},
+	{
+		"id": "S2B_MSIL2A_20240131T075049_N0510_R135_T36NXF_20240131T100727",
+		"properties": {
+			"datetime": "2024-01-31T08:09:57Z",
+			"eo:cloud_cover": 7.64
+		}
+	},
+	{
+		"id": "S2A_MSIL2A_20240126T075211_N0510_R135_T36MXE_20240126T111152",
+		"properties": {
+			"datetime": "2024-01-26T08:10:08Z",
+			"eo:cloud_cover": 6.18
+		}
+	},
+	{
+		"id": "S2A_MSIL2A_20240126T075211_N0510_R135_T36NXF_20240126T111152",
+		"properties": {
+			"datetime": "2024-01-26T08:09:54Z",
+			"eo:cloud_cover": 6.26
+		}
+	},
+	{
+		"id": "S2B_MSIL2A_20240121T075139_N0510_R135_T36NXF_20240121T110213",
+		"properties": {
+			"datetime": "2024-01-21T08:09:59Z",
+			"eo:cloud_cover": 78.7
+		}
+	},
+	{
+		"id": "S2A_MSIL2A_20240116T075241_N0510_R135_T36MXE_20240116T110750",
+		"properties": {
+			"datetime": "2024-01-16T08:10:06Z",
+			"eo:cloud_cover": 38.48
+		}
+	},
+	{
+		"id": "S2A_MSIL2A_20240116T075241_N0510_R135_T36NXF_20240116T110750",
+		"properties": {
+			"datetime": "2024-01-16T08:09:52Z",
+			"eo:cloud_cover": 30.78
+		}
+	},
+	{
+		"id": "S2B_MSIL2A_20240111T075209_N0510_R135_T36MXE_20240111T100427",
+		"properties": {
+			"datetime": "2024-01-11T08:10:12Z",
+			"eo:cloud_cover": 71.32
+		}
+	},
+	{
+		"id": "S2B_MSIL2A_20240111T075209_N0510_R135_T36NXF_20240111T100427",
+		"properties": {
+			"datetime": "2024-01-11T08:09:57Z",
+			"eo:cloud_cover": 23.35
+		}
+	},
+	{
+		"id": "S2A_MSIL2A_20240106T075321_N0510_R135_T36MXE_20240106T111150",
+		"properties": {
+			"datetime": "2024-01-06T08:10:10Z",
+			"eo:cloud_cover": 5.04
+		}
+	},
+	{
+		"id": "S2A_MSIL2A_20240106T075321_N0510_R135_T36NXF_20240106T111150",
+		"properties": {
+			"datetime": "2024-01-06T08:09:56Z",
+			"eo:cloud_cover": 4.27
+		}
+	},
+	{
+		"id": "S2B_MSIL2A_20240101T075239_N0510_R135_T36MXE_20240101T101532",
+		"properties": {
+			"datetime": "2024-01-01T08:10:15Z",
+			"eo:cloud_cover": 65.41
+		}
+	}
+]

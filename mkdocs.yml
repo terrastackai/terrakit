@@ -1,0 +1,119 @@
+site_name: TerraKit
+site_url: https://terrastackai.github.io/terrakit/
+nav:
+  - Get Started:
+    - TerraKit: index.md
+  - TerraKit Pipeline:
+    - Process Labels: process_labels.md
+    - Download Data: download_data.md
+    - Tile and Chip: chip.md
+    - Store: store.md
+    - Upload: upload.md
+  - Examples: 
+    - examples/labels_to_data.ipynb
+    - examples/terrakit_download.ipynb
+    - examples/terrakit_cli.ipynb
+  - Extend TerraKit:
+    - Add a New Connector: adding_connectors.md
+    - Add a New Download Transformation: adding_download_transformations.md
+  - API Documentation:
+    - TerraKit API Documentation: api/terrakit.md
+    - TerraKit Pipeline:
+      - Labels: api/labels.md
+      - Download: api/download.md
+      - Chip: api/chip.md
+      - Store: api/store.md
+    - Data Connectors: 
+      - Data Connector: api/data_connectors/data_connectors.md
+      - Sentinel AWS: api/data_connectors/sentinelaws.md
+      - Sentinel Hub: api/data_connectors/sentinel_hub.md
+      - NASA Earthdata: api/data_connectors/nasa_earthdata.md
+      - IBM Research STAC: api/data_connectors/ibmresearchstac.md
+      - The Weather Company: api/data_connectors/theweathercompany.md
+    - Download Transformations: api/download_transformations/transformations.md
+    - Download Utils: api/utils/geodata_utils.md
+    - Geospatial Utils: api/utils/geospatial_utils.md
+    - Helpers: api/utils/helpers.md
+    - Validators: api/validators.md
+theme: 
+  name: material
+  palette:
+    # Palette toggle for light mode
+    - scheme: default
+      toggle:
+        icon: material/brightness-7
+      primary: white
+      name: Switch to dark mode
+    - scheme: slate
+      toggle:
+        icon: material/brightness-4
+      primary: white
+      name: Switch to light mode
+  logo: img/terrakit.png
+  favicon: img/terrakit.png
+  font:
+    text: IBM Plex Sans
+    code: IBM Plex Mono
+  features:
+    - announce.dismiss
+    - content.code.copy
+    - content.code.select
+    - content.code.annotate
+    - content.action.edit
+    - content.action.view
+    - content.footnote.tooltips
+    - content.tabs.link
+    - content.tooltips
+    - navigation.footer
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.instant.preview
+    - navigation.instant.progress
+    - navigation.path
+    - navigation.top
+    - navigation.tracking
+    - navigation.tabs
+    - search.highlight
+    - search.share
+    - search.suggest
+    - toc.follow
+    - toc.integrate
+  icon:
+    repo: fontawesome/brands/github
+plugins:
+  - search 
+  - autorefs
+  - tags
+  - mkdocs-jupyter
+  - git-revision-date-localized:
+      type: date
+      enable_creation_date: true
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [.]  # see also: build-docs.sh
+          options:
+            members_order: source
+            filters: ["!^_"]
+            show_signature_annotations: true
+            signature_crossrefs: true
+            docstring_style: google
+            show_docstring_attributes: true
+          import:
+            - url: https://docs.python.org/3/objects.inv
+              domains: [py, std]
+            - url: https://typing-extensions.readthedocs.io/en/latest/objects.inv
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - codehilite
+  - admonition
+repo_url: https://github.com/terrastackai/terrakit
+
+watch:
+  - terrakit

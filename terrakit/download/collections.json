@@ -1,0 +1,1070 @@
+[
+  {
+    "bands": [
+      {
+        "band_name": "B01",
+        "resolution": "60m",
+        "description": "Coastal aerosol, 442.7 nm (S2A), 442.3 nm (S2B)"
+      },
+      {
+        "band_name": "B02",
+        "resolution": "10m",
+        "description": "Blue, 492.4 nm (S2A), 492.1 nm (S2B)",
+        "RGB_band": "B"
+      },
+      {
+        "band_name": "B03",
+        "resolution": "10m",
+        "description": "Green, 559.8 nm (S2A), 559.0 nm (S2B)",
+        "RGB_band": "G"
+      },
+      {
+        "band_name": "B04",
+        "resolution": "10m",
+        "description": "Red, 664.6 nm (S2A), 665.0 nm (S2B)",
+        "RGB_band": "R"
+      },
+      {
+        "band_name": "B05",
+        "resolution": "20m",
+        "description": "Vegetation red edge, 704.1 nm (S2A), 703.8 nm (S2B)"
+      },
+      {
+        "band_name": "B06",
+        "resolution": "20m",
+        "description": "Vegetation red edge, 740.5 nm (S2A), 739.1 nm (S2B)"
+      },
+      {
+        "band_name": "B07",
+        "resolution": "20m",
+        "description": "Vegetation red edge, 782.8 nm (S2A), 779.7 nm (S2B)"
+      },
+      {
+        "band_name": "B08",
+        "resolution": "10m",
+        "description": "NIR, 832.8 nm (S2A), 833.0 nm (S2B)"
+      },
+      {
+        "band_name": "B8A",
+        "resolution": "20m",
+        "description": "Narrow NIR, 864.7 nm (S2A), 864.0 nm (S2B)"
+      },
+      {
+        "band_name": "B09",
+        "resolution": "60m",
+        "description": "Water vapour, 945.1 nm (S2A), 943.2 nm (S2B"
+      },
+      {
+        "band_name": "B10",
+        "resolution": "60m",
+        "description": "SWIR – Cirrus, 1373.5 nm (S2A), 1376.9 nm (S2B)"
+      },
+      {
+        "band_name": "B11",
+        "resolution": "20m",
+        "description": "SWIR, 1613.7 nm (S2A), 1610.4 nm (S2B)"
+      },
+      {
+        "band_name": "B12",
+        "resolution": "20m",
+        "description": "SWIR, 2202.4 nm (S2A), 2185.7 nm (S2B)"
+      }
+    ],
+    "max_query_bbox_dimension": 244,
+    "search": {
+      "fields": "{\"include\": [\"id\", \"properties.datetime\", \"properties.eo:cloud_cover\"], \"exclude\": []}",
+      "filter": "eo:cloud_cover < maxcc"
+    },
+    "permanent_water_masking": {
+      "band": "SCL",
+      "encoding": "sentinel2_lulc"
+    },
+    "connector": "sentinelhub",
+    "rgb_bands": [
+      "B04",
+      "B03",
+      "B02"
+    ],
+    "resolution_m": 10,
+    "query_template": "Template(\"\"\" //VERSION=3 \\n function setup() { return { input: [{ bands: ${bands}, units: \"DN\" }], output: { bands: ${num_bands}, sampleType: \"INT16\" } }; } function evaluatePixel(sample) { return ${band_samples}; } \"\"\")",
+    "collection_name": "s2_l1c",
+    "modality_tag": "S2L1C",
+    "data_collection": "DataCollection.SENTINEL2_L1C",
+    "request_input_data": {
+      "maxcc": 40,
+      "mosaicking_order": "MosaickingOrder.LEAST_CC"
+    },
+    "id": "dd92c54d-6e18-4943-8f41-a37bee4d308b"
+  },
+  {
+    "bands": [
+      {
+        "band_name": "DEM",
+        "resolution": "30m",
+        "description": "Digital Elevation Model"
+      }
+    ],
+    "max_query_bbox_dimension": 244,
+    "search": {
+      "fields": "",
+      "filters": ""
+    },
+    "connector": "sentinelhub",
+    "resolution_m": null,
+    "query_template": "Template(\"\"\" //VERSION=3 \\n\nfunction setup() { return { input: [\"DEM\"], output:{ id: \"default\", bands: 1, sampleType: SampleType.FLOAT32 } } }\nfunction evaluatePixel(sample) { return [sample.DEM] } \"\"\")",
+    "collection_name": "dem",
+    "modality_tag": "DEM",
+    "data_collection": "DataCollection.DEM_COPERNICUS_30",
+    "request_input_data": {
+      "dummy": "here"
+    },
+    "id": "e5003cd5-c86f-4b76-bdb8-bf4844df2545"
+  },
+  {
+    "bands": [
+      {
+        "band_name": "VV",
+        "resolution": "10m",
+        "description": "Vertical transmit, vertical receive polarization"
+      },
+      {
+        "band_name": "VH",
+        "resolution": "10m",
+        "description": "Vertical transmit, horizontal receive polarization"
+      },
+      {
+        "band_name": "HV",
+        "resolution": "10m",
+        "description": "Horizontal transmit, vertical receive polarization"
+      },
+      {
+        "band_name": "HH",
+        "resolution": "10m",
+        "description": "Horizontal transmit, horizontal receive polarization"
+      }
+    ],
+    "max_query_bbox_dimension": 244,
+    "search": {
+      "fields": "{\"include\": [\"id\", \"properties.datetime\"], \"exclude\": []}",
+      "filters": ""
+    },
+    "connector": "sentinelhub",
+    "modality_tag": "S1GRD",
+    "resolution_m": 10,
+    "query_template": "Template(\"\"\" //VERSION=3 \\n function setup() { return { input: [{ bands: ${bands}, units: \"LINEAR_POWER\" }], output: { bands: ${num_bands}, sampleType: \"FLOAT32\" } }; }\nfunction evaluatePixel(sample) { return ${band_samples}; } \"\"\")",
+    "collection_name": "s1_grd",
+    "data_collection": "DataCollection.SENTINEL1_IW",
+    "request_input_data": {
+      "mosaicking_order": "MosaickingOrder.MOST_RECENT"
+    },
+    "id": "9d7348ca-e61e-4ea8-9246-a88fe834b522"
+  },
+  {
+    "bands": [
+      {
+        "band_name": "CoastalAerosol",
+        "resolution": "30m",
+        "description": "Coastal aerosol, 442.7 nm (S2A), 442.3 nm (S2B)"
+      },
+      {
+        "band_name": "Blue",
+        "resolution": "30m",
+        "description": "Blue, 492.4 nm (S2A), 492.1 nm (S2B)",
+        "RGB_band": "B"
+      },
+      {
+        "band_name": "Green",
+        "resolution": "30m",
+        "description": "Green, 559.8 nm (S2A), 559.0 nm (S2B)",
+        "RGB_band": "G"
+      },
+      {
+        "band_name": "Red",
+        "resolution": "30m",
+        "description": "Red, 664.6 nm (S2A), 665.0 nm (S2B)",
+        "RGB_band": "R"
+      },
+      {
+        "band_name": "NIR_Narrow",
+        "resolution": "30m",
+        "description": "Narrow NIR, 864.7 nm (S2A), 864.0 nm (S2B)"
+      },
+      {
+        "band_name": "SWIR1",
+        "resolution": "30m",
+        "description": "SWIR, 1613.7 nm (S2A), 1610.4 nm (S2B)"
+      },
+      {
+        "band_name": "SWIR2",
+        "resolution": "30m",
+        "description": "SWIR, 2202.4 nm (S2A), 2185.7 nm (S2B)"
+      },
+      {
+        "band_name": "Cirrus",
+        "resolution": "30m",
+        "description": "SWIR – Cirrus, 1373.5 nm (S2A), 1376.9 nm (S2B)"
+      },
+      {
+        "band_name": "ThermalInfrared1",
+        "resolution": "30m",
+        "description": "Thermal Infrared band 1, 10.9 µm (S2A), 10.8 µm (S2B)"
+      },
+      {
+        "band_name": "ThermalInfrared2",
+        "resolution": "30m",
+        "description": "Thermal Infrared band 2, 12.0 µm (S2A), 12.0 µm (S2B)"
+      },
+      {
+        "band_name": "QA",
+        "resolution": "30m",
+        "description": "Quality Assessment band, used for cloud masking"
+      }
+    ],
+    "max_query_bbox_dimension": 244,
+    "search": {
+      "fields": "{\"include\": [\"id\", \"properties.datetime\", \"properties.eo:cloud_cover\"], \"exclude\": []}",
+      "filter": "eo:cloud_cover < maxcc"
+    },
+    "connector": "sentinelhub",
+    "modality_tag": "HLS_L30",
+    "rgb_bands": [
+      "Red",
+      "Green",
+      "Blue"
+    ],
+    "resolution_m": 30,
+    "cloud_masking": {
+      "band": "QA",
+      "encoding": "hls_fmask"
+    },
+    "permanent_water_masking": {
+      "band": "SCL",
+      "encoding": "sentinel2_lulc"
+    },
+    "query_template": "Template(\"\"\" //VERSION=3 \\n function setup() { return { input: [{ bands: ${bands}, units: \"DN\" }], output: { bands: ${num_bands}, sampleType: \"INT16\" } }; } function evaluatePixel(sample) { return ${band_samples}; } \"\"\")",
+    "collection_name": "hls_l30",
+    "data_collection": "DataCollection.HARMONIZED_LANDSAT_SENTINEL",
+    "request_input_data": {
+      "maxcc": 80,
+      "mosaicking_order": "MosaickingOrder.LEAST_CC"
+    },
+    "id": "69c1eea8-f5ca-4a34-93e7-1a20179d611a"
+  },
+  {
+    "bands": [
+      {
+        "band_name": "B01",
+        "resolution": "60m",
+        "description": "Coastal aerosol, 442.7 nm (S2A), 442.3 nm (S2B)"
+      },
+      {
+        "band_name": "B02",
+        "resolution": "10m",
+        "RGB_band": "B",
+        "description": "Blue, 492.4 nm (S2A), 492.1 nm (S2B)"
+      },
+      {
+        "band_name": "B03",
+        "resolution": "10m",
+        "RGB_band": "G",
+        "description": "Green, 559.8 nm (S2A), 559.0 nm (S2B)"
+      },
+      {
+        "band_name": "B04",
+        "resolution": "10m",
+        "RGB_band": "R",
+        "description": "Red, 664.6 nm (S2A), 665.0 nm (S2B)"
+      },
+      {
+        "band_name": "B05",
+        "resolution": "20m",
+        "description": "Vegetation red edge, 704.1 nm (S2A), 703.8 nm (S2B)"
+      },
+      {
+        "band_name": "B06",
+        "resolution": "20m",
+        "description": "Vegetation red edge, 740.5 nm (S2A), 739.1 nm (S2B)"
+      },
+      {
+        "band_name": "B07",
+        "resolution": "20m",
+        "description": "Vegetation red edge, 782.8 nm (S2A), 779.7 nm (S2B)"
+      },
+      {
+        "band_name": "B08",
+        "resolution": "10m",
+        "description": "NIR, 832.8 nm (S2A), 833.0 nm (S2B)"
+      },
+      {
+        "band_name": "B8A",
+        "resolution": "20m",
+        "description": "Narrow NIR, 864.7 nm (S2A), 864.0 nm (S2B)"
+      },
+      {
+        "band_name": "B09",
+        "resolution": "60m",
+        "description": "Water vapour, 945.1 nm (S2A), 943.2 nm (S2B)"
+      },
+      {
+        "band_name": "B11",
+        "resolution": "20m",
+        "description": "SWIR, 1613.7 nm (S2A), 1610.4 nm (S2B)"
+      },
+      {
+        "band_name": "B12",
+        "resolution": "20m",
+        "description": "SWIR, 2202.4 nm (S2A), 2185.7 nm (S2B)"
+      },
+      {
+        "band_name": "SCL",
+        "resolution": "20m",
+        "description": "Scene classification data, based on Sen2Cor processor, codelist"
+      },
+      {
+        "band_name": "SNW",
+        "resolution": "20m",
+        "description": "Snow probability, based on Sen2Cor processor"
+      },
+      {
+        "band_name": "CLD",
+        "resolution": "20m",
+        "description": "Cloud probability, based on Sen2Cor processor"
+      }
+    ],
+    "max_query_bbox_dimension": 244,
+    "search": {
+      "fields": "{\"include\": [\"id\", \"properties.datetime\", \"properties.eo:cloud_cover\"], \"exclude\": []}",
+      "filter": "eo:cloud_cover < maxcc"
+    },
+    "connector": "sentinelhub",
+    "rgb_bands": [
+      "B04",
+      "B03",
+      "B02"
+    ],
+    "modality_tag": "S2L2A",
+    "resolution_m": 10,
+    "cloud_masking": {
+      "band": "SCL",
+      "encoding": "sentinel2_scl"
+    },
+    "permanent_water_masking": {
+      "band": "SCL",
+      "encoding": "sentinel2_lulc"
+    },
+    "query_template": "Template(\"\"\" //VERSION=3 \\n function setup() { return { input: [{ bands: ${bands}, units: \"DN\" }], output: { bands: ${num_bands}, sampleType: \"INT16\" } }; } function evaluatePixel(sample) { return ${band_samples}; } \"\"\")",
+    "collection_name": "s2_l2a",
+    "data_collection": "DataCollection.SENTINEL2_L2A",
+    "request_input_data": {
+      "maxcc": 80,
+      "mosaicking_order": "MosaickingOrder.LEAST_CC"
+    },
+    "id": "321a366e-5e06-41c3-9c23-9073eec706dd"
+  },
+  {
+    "bands": [
+      {
+        "band_name": "CoastalAerosol",
+        "resolution": "30m",
+        "description": "Coastal aerosol, 442.7 nm (S2A), 442.3 nm (S2B)"
+      },
+      {
+        "band_name": "Blue",
+        "resolution": "30m",
+        "description": "Blue, 492.4 nm (S2A), 492.1 nm (S2B)",
+        "RGB_band": "B"
+      },
+      {
+        "band_name": "Green",
+        "resolution": "30m",
+        "description": "Green, 559.8 nm (S2A), 559.0 nm (S2B)",
+        "RGB_band": "G"
+      },
+      {
+        "band_name": "Red",
+        "resolution": "30m",
+        "description": "Red, 664.6 nm (S2A), 665.0 nm (S2B)",
+        "RGB_band": "R"
+      },
+      {
+        "band_name": "RedEdge1",
+        "resolution": "30m",
+        "description": "Vegetation red edge, 704.1 nm (S2A), 703.8 nm (S2B)"
+      },
+      {
+        "band_name": "RedEdge2",
+        "resolution": "30m",
+        "description": "Vegetation red edge, 740.5 nm (S2A), 739.1 nm (S2B)"
+      },
+      {
+        "band_name": "RedEdge3",
+        "resolution": "30m",
+        "description": "Vegetation red edge, 782.8 nm (S2A), 779.7 nm (S2B)"
+      },
+      {
+        "band_name": "NIR_Broad",
+        "resolution": "30m",
+        "description": "NIR, 832.8 nm (S2A), 833.0 nm (S2B)"
+      },
+      {
+        "band_name": "NIR_Narrow",
+        "resolution": "30m",
+        "description": "Narrow NIR, 864.7 nm (S2A), 864.0 nm (S2B)"
+      },
+      {
+        "band_name": "WaterVapor",
+        "resolution": "30m",
+        "description": "Water vapour, 945.1 nm (S2A), 943.2 nm (S2B)"
+      },
+      {
+        "band_name": "Cirrus",
+        "resolution": "30m",
+        "description": "SWIR – Cirrus, 1373.5 nm (S2A), 1376.9 nm (S2B)"
+      },
+      {
+        "band_name": "SWIR1",
+        "resolution": "30m",
+        "description": "SWIR, 1613.7 nm (S2A), 1610.4 nm (S2B)"
+      },
+      {
+        "band_name": "SWIR2",
+        "resolution": "30m",
+        "description": "SWIR, 2202.4 nm (S2A), 2185.7 nm (S2B)"
+      },
+      {
+        "band_name": "QA",
+        "resolution": "30m",
+        "description": "Quality Assessment band, used for cloud masking"
+      }
+    ],
+    "max_query_bbox_dimension": 244,
+    "search": {
+      "fields": "{\"include\": [\"id\", \"properties.datetime\", \"properties.eo:cloud_cover\"], \"exclude\": []}",
+      "filter": "eo:cloud_cover < maxcc"
+    },
+    "connector": "sentinelhub",
+    "modality_tag": "HLS_S30",
+    "rgb_bands": [
+      "Red",
+      "Green",
+      "Blue"
+    ],
+    "resolution_m": 30,
+    "cloud_masking": {
+      "band": "QA",
+      "encoding": "hls_fmask"
+    },
+    "permanent_water_masking": {
+      "band": "SCL",
+      "encoding": "sentinel2_lulc"
+    },
+    "query_template": "Template(\"\"\" //VERSION=3 function setup() { return { input: [{ bands: ${bands}, units: \"DN\" }], output: { bands: ${num_bands}, sampleType: \"INT16\" } }; } function evaluatePixel(sample) { return ${band_samples}; } \"\"\")",
+    "collection_name": "hls_s30",
+    "data_collection": "DataCollection.HARMONIZED_LANDSAT_SENTINEL",
+    "request_input_data": {
+      "maxcc": 80,
+      "mosaicking_order": "MosaickingOrder.LEAST_CC"
+    },
+    "id": "307a2e4d-b192-4afe-8898-906712763180"
+  },
+  {
+    "bands": [
+      {
+        "band_name": "coastal",
+        "alt_names": [
+          "B01"
+        ],
+        "resolution": "60m",
+        "description": "Coastal aerosol, 442.7 nm (S2A), 442.3 nm (S2B)"
+      },
+      {
+        "band_name": "blue",
+        "alt_names": [
+          "B02"
+        ],
+        "resolution": "10m",
+        "RGB_band": "B",
+        "description": "Blue, 492.4 nm (S2A), 492.1 nm (S2B)"
+      },
+      {
+        "band_name": "green",
+        "alt_names": [
+          "B03"
+        ],
+        "resolution": "10m",
+        "RGB_band": "G",
+        "description": "Green, 559.8 nm (S2A), 559.0 nm (S2B)"
+      },
+      {
+        "band_name": "red",
+        "alt_names": [
+          "B04"
+        ],
+        "resolution": "10m",
+        "RGB_band": "R",
+        "description": "Red, 664.6 nm (S2A), 665.0 nm (S2B)"
+      },
+      {
+        "band_name": "rededge1",
+        "alt_names": [
+          "B05"
+        ],
+        "resolution": "20m",
+        "description": "Vegetation red edge, 704.1 nm (S2A), 703.8 nm (S2B)"
+      },
+      {
+        "band_name": "rededge2",
+        "alt_names": [
+          "B06"
+        ],
+        "resolution": "20m",
+        "description": "Vegetation red edge, 740.5 nm (S2A), 739.1 nm (S2B)"
+      },
+      {
+        "band_name": "rededge3",
+        "alt_names": [
+          "B07"
+        ],
+        "resolution": "20m",
+        "description": "Vegetation red edge, 782.8 nm (S2A), 779.7 nm (S2B)"
+      },
+      {
+        "band_name": "nir",
+        "alt_names": [
+          "B08"
+        ],
+        "resolution": "10m",
+        "description": "NIR, 832.8 nm (S2A), 833.0 nm (S2B)"
+      },
+      {
+        "band_name": "nir08",
+        "alt_names": [
+          "B8A"
+        ],
+        "resolution": "20m",
+        "description": "Narrow NIR, 864.7 nm (S2A), 864.0 nm (S2B)"
+      },
+      {
+        "band_name": "nir09",
+        "alt_names": [
+          "B09"
+        ],
+        "resolution": "60m",
+        "description": "Water vapour, 945.1 nm (S2A), 943.2 nm (S2B)"
+      },
+      {
+        "band_name": "swir16",
+        "alt_names": [
+          "B11"
+        ],
+        "resolution": "20m",
+        "description": "SWIR, 1613.7 nm (S2A), 1610.4 nm (S2B)"
+      },
+      {
+        "band_name": "swir22",
+        "alt_names": [
+          "B12"
+        ],
+        "resolution": "20m",
+        "description": "SWIR, 2202.4 nm (S2A), 2185.7 nm (S2B)"
+      },
+      {
+        "band_name": "scl",
+        "alt_names": [
+          "SCL"
+        ],
+        "resolution": "20m",
+        "description": "Scene classification data, based on Sen2Cor processor, codelist"
+      }
+    ],
+    "search": {
+      "fields": "{\"include\": [\"id\", \"properties.datetime\", \"properties.eo:cloud_cover\"], \"exclude\": []}",
+      "filter": "eo:cloud_cover < maxcc"
+    },
+    "modality_tag": "S2L2A",
+    "connector": "sentinel_aws",
+    "rgb_bands": [
+      "red",
+      "green",
+      "blue"
+    ],
+    "resolution_m": 10,
+    "cloud_masking": {
+      "band": "SCL",
+      "encoding": "sentinel2_scl"
+    },
+    "permanent_water_masking": {
+      "band": "SCL",
+      "encoding": "sentinel2_lulc"
+    },
+    "collection_name": "sentinel-2-l2a",
+    "id": "04f16b56-090f-4c04-91dc-a8d1e7d7f87d"
+  },
+  {
+    "bands": [
+      {
+        "band_name": "B01",
+        "alt_names": [],
+        "resolution": "30m",
+        "description": "Coastal aerosol, 0.43–0.45 um",
+        "scale_factor": 0.0001
+      },
+      {
+        "band_name": "B02",
+        "alt_names": [],
+        "resolution": "30m",
+        "RGB_band": "B",
+        "description": "Blue, 0.45–0.51 um",
+        "scale_factor": 0.0001
+      },
+      {
+        "band_name": "B03",
+        "alt_names": [],
+        "resolution": "30m",
+        "RGB_band": "G",
+        "description": "Green, 0.53–0.59 um",
+        "scale_factor": 0.0001
+      },
+      {
+        "band_name": "B04",
+        "alt_names": [],
+        "resolution": "30m",
+        "RGB_band": "R",
+        "description": "Red, 0.64–0.67 um",
+        "scale_factor": 0.0001
+      },
+      {
+        "band_name": "B05",
+        "alt_names": [],
+        "resolution": "30m",
+        "description": "Red edge, 0.69–0.71 um",
+        "scale_factor": 0.0001
+      },
+      {
+        "band_name": "B06",
+        "alt_names": [],
+        "resolution": "30m",
+        "description": "Red edge 2, 0.73–0.75 um",
+        "scale_factor": 0.0001
+      },
+      {
+        "band_name": "B07",
+        "alt_names": [],
+        "resolution": "30m",
+        "description": "Red edge 3, 0.77–0.79 um",
+        "scale_factor": 0.0001
+      },
+      {
+        "band_name": "B08",
+        "alt_names": [],
+        "resolution": "30m",
+        "description": "NIR Broad, 0.78–0.88 um",
+        "scale_factor": 0.0001
+      },
+      {
+        "band_name": "B8A",
+        "alt_names": [],
+        "resolution": "30m",
+        "description": "NIR Narrow, 0.85–0.88 um",
+        "scale_factor": 0.0001
+      },
+      {
+        "band_name": "B09",
+        "alt_names": [],
+        "resolution": "30m",
+        "description": "Water vapour, 0.93–0.95 um",
+        "scale_factor": 0.0001
+      },
+      {
+        "band_name": "B10",
+        "alt_names": [],
+        "resolution": "30m",
+        "description": "Cirrus, 1.36–1.38 um",
+        "scale_factor": 0.0001
+      },
+      {
+        "band_name": "B11",
+        "alt_names": [],
+        "resolution": "30m",
+        "description": "SWIR 1, 1.57–1.65 um",
+        "scale_factor": 0.0001
+      },
+      {
+        "band_name": "B12",
+        "alt_names": [],
+        "resolution": "30m",
+        "description": "SWIR 2, 2.11–2.29 um",
+        "scale_factor": 0.0001
+      },
+      {
+        "band_name": "Fmask",
+        "alt_names": [],
+        "resolution": "30m",
+        "description": "Fmask data layer"
+      }
+    ],
+    "connector": "nasa_earthdata",
+    "modality_tag": "HLS_S30",
+    "rgb_bands": [
+      "B04",
+      "B03",
+      "B02"
+    ],
+    "resolution_m": 30,
+    "cloud_masking": {
+      "band": "Fmask",
+      "encoding": "hls_fmask"
+    },
+    "collection_name": "HLSS30_2.0",
+    "collection_long_name": "HLS Sentinel-2 Multi-spectral Instrument Surface Reflectance Daily Global 30m v2.0",
+    "description": "The Harmonized Landsat Sentinel-2 (HLS) project provides consistent surface reflectance data from the Operational Land Imager (OLI) aboard the joint NASA/USGS Landsat 8 satellite and the Multi-Spectral Instrument (MSI) aboard Europe’s Copernicus Sentinel-2A, Sentinel-2B, and Sentinel-2C satellites. The combined measurement enables global observations of the land every 2–3 days at 30-meter (m) spatial resolution. The HLS project uses a set of algorithms to obtain seamless products from OLI and MSI that include atmospheric correction, cloud and cloud-shadow masking, spatial co-registration and common gridding, illumination and view angle normalization, and spectral bandpass adjustment.",
+    "url": "https://www.earthdata.nasa.gov/data/catalog/lpcloud-hlss30-2.0",
+    "id": "02964b17-7f4a-44a1-be98-0649391d5b73"
+  },
+  {
+    "bands": [
+      {
+        "band_name": "B01",
+        "alt_names": [],
+        "resolution": "30m",
+        "description": "Coastal aerosol, 0.43–0.45 um",
+        "scale_factor": 0.0001
+      },
+      {
+        "band_name": "B02",
+        "alt_names": [],
+        "resolution": "30m",
+        "RGB_band": "B",
+        "description": "Blue, 0.45–0.51 um",
+        "scale_factor": 0.0001
+      },
+      {
+        "band_name": "B03",
+        "alt_names": [],
+        "resolution": "30m",
+        "RGB_band": "G",
+        "description": "Green, 0.53–0.59 um",
+        "scale_factor": 0.0001
+      },
+      {
+        "band_name": "B04",
+        "alt_names": [],
+        "resolution": "30m",
+        "RGB_band": "R",
+        "description": "Red, 0.64–0.67 um",
+        "scale_factor": 0.0001
+      },
+      {
+        "band_name": "B05",
+        "alt_names": [],
+        "resolution": "30m",
+        "description": "NIR Narrow, 0.85–0.88 um",
+        "scale_factor": 0.0001
+      },
+      {
+        "band_name": "B06",
+        "alt_names": [],
+        "resolution": "30m",
+        "description": "SWIR 1, 1.57–1.65 um",
+        "scale_factor": 0.0001
+      },
+      {
+        "band_name": "B07",
+        "alt_names": [],
+        "resolution": "30m",
+        "description": "SWIR 2, 2.11–2.29 um",
+        "scale_factor": 0.0001
+      },
+      {
+        "band_name": "B09",
+        "alt_names": [],
+        "resolution": "30m",
+        "description": "Cirrus, 1.36–1.38 um",
+        "scale_factor": 0.0001
+      },
+      {
+        "band_name": "B10",
+        "alt_names": [],
+        "resolution": "30m",
+        "description": "Thermal Infrared 1, 10.60–11.19 um",
+        "scale_factor": 0.01
+      },
+      {
+        "band_name": "B11",
+        "alt_names": [],
+        "resolution": "30m",
+        "description": "Thermal Infrared 2, 11.50–12.51 um",
+        "scale_factor": 0.01
+      },
+      {
+        "band_name": "Fmask",
+        "alt_names": [],
+        "resolution": "30m",
+        "description": "Fmask data layer"
+      }
+    ],
+    "connector": "nasa_earthdata",
+    "modality_tag": "HLS_L30",
+    "rgb_bands": [
+      "B04",
+      "B03",
+      "B02"
+    ],
+    "resolution_m": 30,
+    "cloud_masking": {
+      "band": "Fmask",
+      "encoding": "hls_fmask"
+    },
+    "collection_name": "HLSL30_2.0",
+    "collection_long_name": "HLS Landsat Operational Land Imager Surface Reflectance and TOA Brightness Daily Global 30m v2.0",
+    "description": "The Harmonized Landsat Sentinel-2 (HLS) project provides consistent surface reflectance (SR) and top of atmosphere (TOA) brightness data from a virtual constellation of satellite sensors. The Operational Land Imager (OLI) is housed aboard the joint NASA/USGS Landsat 8 and Landsat 9 satellites, while the Multi-Spectral Instrument (MSI) is mounted aboard Europe’s Copernicus Sentinel-2A, Sentinel-2B, and Sentinel-2C satellites. The combined measurement enables global observations of the land every 2–3 days at 30-meter (m) spatial resolution. The HLS project uses a set of algorithms to obtain seamless products from OLI and MSI that include atmospheric correction, cloud and cloud-shadow masking, spatial co-registration and common gridding, illumination and view angle normalization, and spectral bandpass adjustment.",
+    "url": "https://www.earthdata.nasa.gov/data/catalog/lpcloud-hlsl30-2.0",
+    "id": "b2b5db61-d69c-4bb0-ad95-0025aa8d113f"
+  },
+  {
+    "bands": [
+      {
+        "band_name": "dayOfWeek",
+        "alt_names": [],
+        "resolution": "10km",
+        "description": "Day of week"
+      },
+      {
+        "band_name": "expirationTimeUtc",
+        "alt_names": [],
+        "resolution": "10km",
+        "description": "Expiration time in UNIX seconds"
+      },
+      {
+        "band_name": "moonPhase",
+        "alt_names": [],
+        "resolution": "10km",
+        "description": "Description phrase for the current lunar phase"
+      },
+      {
+        "band_name": "moonPhaseCode",
+        "alt_names": [],
+        "resolution": "10km",
+        "description": "3 character short code for lunar phases"
+      },
+      {
+        "band_name": "moonriseTimeLocal",
+        "alt_names": [],
+        "resolution": "10km",
+        "description": "First moonrise in local time. It reflects daylight savings time conventions."
+      },
+      {
+        "band_name": "moonriseTimeUtc",
+        "alt_names": [],
+        "resolution": "10km",
+        "description": "Moonrise time in UNIX epoch value"
+      },
+      {
+        "band_name": "moonsetTimeLocal",
+        "alt_names": [],
+        "resolution": "10km",
+        "description": "First Moonset in local time. It reflects daylight savings time conventions"
+      },
+      {
+        "band_name": "moonsetTimeUtc",
+        "alt_names": [],
+        "resolution": "10km",
+        "description": "Moonset time in UNIX epoch value"
+      },
+      {
+        "band_name": "narrative",
+        "alt_names": [],
+        "resolution": "10km",
+        "description": "The narrative forecast for the 24-hour period. When the max or min temperature is over 100°F or below 0°F, this field will revert to different wording. See the sample section for examples. When the specific temperature is provided rather than a range, the temperature will show along with the unit (°F) ."
+      },
+      {
+        "band_name": "qpf",
+        "alt_names": [],
+        "resolution": "10km",
+        "description": "The forecasted measurable precipitation (liquid or liquid equivalent) during the 12 or 24 hour period. Units - Expressed in inches when units=e, expressed in millimeters when units=m"
+      },
+      {
+        "band_name": "qpfSnow",
+        "alt_names": [],
+        "resolution": "10km",
+        "description": "The forecasted measurable precipitation as snow during the 12 or 24 hour forecast period.Units - Expressed in inches when units=e, expressed in centimeters when units=m"
+      },
+      {
+        "band_name": "sunriseTimeLocal",
+        "alt_names": [],
+        "resolution": "10km",
+        "description": "The local time of the sunrise. It reflects any local daylight savings conventions. For a few Arctic and Antarctic regions, the Sunrise and Sunset data values may be the same (each with a value of 12:01am) to reflect conditions where a sunrise or sunset does not occur."
+      },
+      {
+        "band_name": "sunriseTimeUtc",
+        "alt_names": [],
+        "resolution": "10km",
+        "description": "Sunrise time in UNIX epoch value"
+      },
+      {
+        "band_name": "temperatureMax",
+        "alt_names": [],
+        "resolution": "10km",
+        "description": "Daily maximum temperature. This temperature is equivalent to the day daypart temperature."
+      },
+      {
+        "band_name": "validTimeUtc",
+        "alt_names": [],
+        "resolution": "10km",
+        "description": "Time forecast is valid in UNIX seconds"
+      },
+      {
+        "band_name": "validTimeLocal",
+        "alt_names": [],
+        "resolution": "10km",
+        "description": "Time forecast is valid in local apparent time."
+      },
+      {
+        "band_name": "calendarDayTemperatureMax",
+        "alt_names": [],
+        "resolution": "10km",
+        "description": "The midnight to midnight daily maximum temperature for the given day. See appendix for more details. "
+      },
+      {
+        "band_name": "calendarDayTemperatureMin",
+        "alt_names": [],
+        "resolution": "10km",
+        "description": "The midnight to midnight daily minimum temperature for the given day. See appendix for more details"
+      },
+      {
+        "band_name": "cloudCover",
+        "alt_names": [],
+        "resolution": "10km",
+        "description": "Daytime average cloud cover expressed as a percentage"
+      },
+      {
+        "band_name": "dayOrNight",
+        "alt_names": [],
+        "resolution": "10km",
+        "description": "Day or night indicator"
+      },
+      {
+        "band_name": "iconCode",
+        "alt_names": [],
+        "resolution": "10km",
+        "description": "This number is the key to the weather icon lookup. The data field shows the icon number that is matched to represent the observed weather conditions. "
+      },
+      {
+        "band_name": "iconCodeExtend",
+        "alt_names": [],
+        "resolution": "10km",
+        "description": "Code representing full set sensible weather"
+      },
+      {
+        "band_name": "narrative",
+        "alt_names": [],
+        "resolution": "10km",
+        "description": "The narrative forecast for the daytime period."
+      },
+      {
+        "band_name": "precipType",
+        "alt_names": [],
+        "resolution": "10km",
+        "description": "Maximum probability of precipitation."
+      },
+      {
+        "band_name": "relativeHumidity",
+        "alt_names": [],
+        "resolution": "10km",
+        "description": "The relative humidity of the air, which is defined as the ratio of the amount of water vapor in the air to the amount of vapor required to bring the air to saturation at a constant temperature. Relative humidity is always expressed as a percentage."
+      },
+      {
+        "band_name": "snowRange",
+        "alt_names": [],
+        "resolution": "10km",
+        "description": "Snow accumulation amount for the 12 hour forecast period."
+      },
+      {
+        "band_name": "temperature",
+        "alt_names": [],
+        "resolution": "10km",
+        "description": "The maximum temperature between 7am and 7pm for daytime temperature and the minimum temperature between 7pm and 7am for nighttime temperature. Minimum temperature also incorporates hourly forecasts up to and including 8am the next morning, to better capture morning lows."
+      },
+      {
+        "band_name": "temperatureHeatIndex",
+        "alt_names": [],
+        "resolution": "10km",
+        "description": "An apparent temperature. It represents what the air temperature “feels like” on exposed human skin due to the combined effect of warm temperatures and high humidity. Units - Expressed in fahrenheit when units=e, expressed in celsius when units=m, s, or h."
+      },
+      {
+        "band_name": "temperatureWindChill",
+        "alt_names": [],
+        "resolution": "10km",
+        "description": "An apparent temperature. It represents what the air temperature “feels like” on exposed human skin due to the combined effect of the cold temperatures and wind speed. Units - Expressed in fahrenheit when units=e, expressed in celsius when units=m, s, or h."
+      },
+      {
+        "band_name": "thunderCategory",
+        "alt_names": [],
+        "resolution": "10km",
+        "description": "The description of probability thunderstorm activity in an area for 12 hour daypart. 0 = No thunder; 1 = Thunder possible; 2 = Thunder expected; 3 = Severe thunderstorms possible; 4 = Severe thunderstorms likely; 5 = High risk of severe thunderstorms"
+      },
+      {
+        "band_name": "thunderIndex",
+        "alt_names": [],
+        "resolution": "10km",
+        "description": "The enumeration of thunderstorm probability within an area for a 12 hour daypart."
+      },
+      {
+        "band_name": "uvDescription",
+        "alt_names": [],
+        "resolution": "10km",
+        "description": "The UV Index Description which complements the UV Index value by providing an associated level of risk of skin damage due to exposure. -2 = Not Available, -1 = No Report, 0 to 2 = Low, 3 to 5 = Moderate, 6 to 7 = High, 8 to 10 = Very High, 11 to 16 = Extreme"
+      },
+      {
+        "band_name": "uvIndex",
+        "alt_names": [],
+        "resolution": "10km",
+        "description": "Maximum UV index for the 12 hour forecast period."
+      },
+      {
+        "band_name": "windDirection",
+        "alt_names": [],
+        "resolution": "10km",
+        "description": "Average wind direction in magnetic notation"
+      },
+      {
+        "band_name": "windDirectionCardinal",
+        "alt_names": [],
+        "resolution": "10km",
+        "description": "Average wind direction in cardinal notation."
+      },
+      {
+        "band_name": "windPhrase",
+        "alt_names": [],
+        "resolution": "10km",
+        "description": "The phrase that describes the wind direction and speed for a 12 hour daypart"
+      },
+      {
+        "band_name": "windSpeed",
+        "alt_names": [],
+        "resolution": "10km",
+        "description": "The forecast of the maximum sustained wind speed over the 12 hour forecast period. The wind is treated as a vector; hence, winds must have direction and magnitude (speed). The wind information reported in the forecast corresponds to a 10-minute average called the sustained wind speed. Sudden or brief variations in the wind speed are known as “wind gusts” and are reported in a separate data field. Wind directions are always expressed as from whence the wind blows meaning that a North wind blows from North to South. If you face North in a North wind the wind is at your face. Face southward and the North wind is at your back."
+      },
+      {
+        "band_name": "wxPhraseLong",
+        "alt_names": [],
+        "resolution": "10km",
+        "description": "Sensible weather phrase"
+      },
+      {
+        "band_name": "wxPhraseShort",
+        "alt_names": [],
+        "resolution": "10km",
+        "description": "Sensible weather phrase"
+      }
+    ],
+    "connector": "TheWeatherCompany",
+    "modality_tag": "HLS_L30",
+    "resolution_m": 10,
+    "collection_name": "weathercompany-daily-forecast",
+    "collection_long_name": "Daily Forecast - v3.0.1",
+    "description": "The Daily Forecast API is sourced from The Weather Company (TWC) Forecast system and provides weather forecasts starting from the current day. The number of forecast days returned in the API response is determined by your content licensing agreement with TWC and is restricted by the API key issued to your company",
+    "url": "https://developer.weather.com/forecastsandinsights/docs/daily-forecast-v-3-0-1",
+    "id": "24738c68-96d6-4000-899e-c3cb201312fc"
+  }
+]

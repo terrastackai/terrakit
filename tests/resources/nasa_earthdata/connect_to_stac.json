@@ -1,0 +1,410 @@
+{
+    "type": "Catalog",
+    "id": "CMR-STAC",
+    "stac_version": "1.0.0",
+    "conformsTo": [
+        "https://api.stacspec.org/v1.0.0-rc.2/core",
+        "https://api.stacspec.org/v1.0.0-rc.2/item-search",
+        "https://api.stacspec.org/v1.0.0-rc.2/ogcapi-features",
+        "https://api.stacspec.org/v1.0.0-rc.2/item-search#fields",
+        "https://api.stacspec.org/v1.0.0-rc.2/item-search#features",
+        "https://api.stacspec.org/v1.0.0-rc.2/item-search#query",
+        "https://api.stacspec.org/v1.0.0-rc.2/item-search#sort",
+        "https://api.stacspec.org/v1.0.0-rc.2/item-search#context",
+        "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core",
+        "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/oas30",
+        "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson",
+        "https://api.stacspec.org/v1.0.0-rc.2/collection-search",
+        "https://api.stacspec.org/v1.0.0-rc.2/collection-search#free-text",
+        "https://api.stacspec.org/v1.0.0-rc.2/collection-search#sort",
+        "http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/simple-query"
+    ],
+    "links": [
+        {
+            "rel": "self",
+            "href": "https://cmr.earthdata.nasa.gov/stac",
+            "type": "application/json",
+            "title": "NASA CMR-STAC Root Catalog"
+        },
+        {
+            "rel": "root",
+            "href": "https://cmr.earthdata.nasa.gov/stac",
+            "title": "NASA CMR-STAC Root Catalog",
+            "type": "application/geo+json"
+        },
+        {
+            "rel": "service-desc",
+            "href": "https://api.stacspec.org/v1.0.0-beta.1/openapi.yaml",
+            "title": "OpenAPI Documentation",
+            "type": "application/yaml"
+        },
+        {
+            "rel": "service-doc",
+            "href": "https://wiki.earthdata.nasa.gov/display/ED/CMR+SpatioTemporal+Asset+Catalog+%28CMR-STAC%29+Documentation",
+            "title": "NASA CMR-STAC Documentation",
+            "type": "text/html"
+        },
+        {
+            "rel": "child",
+            "title": "ESA",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/ESA"
+        },
+        {
+            "rel": "child",
+            "title": "GHRC",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/GHRC"
+        },
+        {
+            "rel": "child",
+            "title": "ECHO",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/ECHO"
+        },
+        {
+            "rel": "child",
+            "title": "ISRO",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/ISRO"
+        },
+        {
+            "rel": "child",
+            "title": "EDF_DEV04",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/EDF_DEV04"
+        },
+        {
+            "rel": "child",
+            "title": "ASF",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/ASF"
+        },
+        {
+            "rel": "child",
+            "title": "EUMETSAT",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/EUMETSAT"
+        },
+        {
+            "rel": "child",
+            "title": "CDDIS",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/CDDIS"
+        },
+        {
+            "rel": "child",
+            "title": "JAXA",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/JAXA"
+        },
+        {
+            "rel": "child",
+            "title": "AU_AADC",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/AU_AADC"
+        },
+        {
+            "rel": "child",
+            "title": "ECHO10_OPS",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/ECHO10_OPS"
+        },
+        {
+            "rel": "child",
+            "title": "LANCEAMSR2",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LANCEAMSR2"
+        },
+        {
+            "rel": "child",
+            "title": "GESDISCCLD",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/GESDISCCLD"
+        },
+        {
+            "rel": "child",
+            "title": "GHRSSTCWIC",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/GHRSSTCWIC"
+        },
+        {
+            "rel": "child",
+            "title": "LARC_CLOUD",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LARC_CLOUD"
+        },
+        {
+            "rel": "child",
+            "title": "LANCEMODIS",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LANCEMODIS"
+        },
+        {
+            "rel": "child",
+            "title": "NSIDCV0",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/NSIDCV0"
+        },
+        {
+            "rel": "child",
+            "title": "NSIDC_ECS",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/NSIDC_ECS"
+        },
+        {
+            "rel": "child",
+            "title": "NCCS",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/NCCS"
+        },
+        {
+            "rel": "child",
+            "title": "OBPG",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/OBPG"
+        },
+        {
+            "rel": "child",
+            "title": "OMINRT",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/OMINRT"
+        },
+        {
+            "rel": "child",
+            "title": "USGS_LTA",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/USGS_LTA"
+        },
+        {
+            "rel": "child",
+            "title": "ASIPS",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/ASIPS"
+        },
+        {
+            "rel": "child",
+            "title": "NSIDC_CPRD",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/NSIDC_CPRD"
+        },
+        {
+            "rel": "child",
+            "title": "ORNL_CLOUD",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/ORNL_CLOUD"
+        },
+        {
+            "rel": "child",
+            "title": "FEDEO",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/FEDEO"
+        },
+        {
+            "rel": "child",
+            "title": "MLHUB",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/MLHUB"
+        },
+        {
+            "rel": "child",
+            "title": "LAADS",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LAADS"
+        },
+        {
+            "rel": "child",
+            "title": "LARC_ASDC",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LARC_ASDC"
+        },
+        {
+            "rel": "child",
+            "title": "LPDAAC_ECS",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPDAAC_ECS"
+        },
+        {
+            "rel": "child",
+            "title": "NOAA_NCEI",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/NOAA_NCEI"
+        },
+        {
+            "rel": "child",
+            "title": "OB_DAAC",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/OB_DAAC"
+        },
+        {
+            "rel": "child",
+            "title": "XYZ_PROV",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/XYZ_PROV"
+        },
+        {
+            "rel": "child",
+            "title": "GHRC_DAAC",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/GHRC_DAAC"
+        },
+        {
+            "rel": "child",
+            "title": "CSDA",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/CSDA"
+        },
+        {
+            "rel": "child",
+            "title": "NRSCC",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/NRSCC"
+        },
+        {
+            "rel": "child",
+            "title": "CEOS_EXTRA",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/CEOS_EXTRA"
+        },
+        {
+            "rel": "child",
+            "title": "AMD_KOPRI",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/AMD_KOPRI"
+        },
+        {
+            "rel": "child",
+            "title": "AMD_USAPDC",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/AMD_USAPDC"
+        },
+        {
+            "rel": "child",
+            "title": "LARC",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LARC"
+        },
+        {
+            "rel": "child",
+            "title": "SCIOPS",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/SCIOPS"
+        },
+        {
+            "rel": "child",
+            "title": "USGS_EROS",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/USGS_EROS"
+        },
+        {
+            "rel": "child",
+            "title": "LPCUMULUS",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCUMULUS"
+        },
+        {
+            "rel": "child",
+            "title": "MOPITT",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/MOPITT"
+        },
+        {
+            "rel": "child",
+            "title": "GHRC_CLOUD",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/GHRC_CLOUD"
+        },
+        {
+            "rel": "child",
+            "title": "LPCLOUD",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LPCLOUD"
+        },
+        {
+            "rel": "child",
+            "title": "ORNL_DAAC",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/ORNL_DAAC"
+        },
+        {
+            "rel": "child",
+            "title": "CCMEO",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/CCMEO"
+        },
+        {
+            "rel": "child",
+            "title": "POCLOUD",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/POCLOUD"
+        },
+        {
+            "rel": "child",
+            "title": "PODAAC",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/PODAAC"
+        },
+        {
+            "rel": "child",
+            "title": "SEDAC",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/SEDAC"
+        },
+        {
+            "rel": "child",
+            "title": "GES_DISC",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/GES_DISC"
+        },
+        {
+            "rel": "child",
+            "title": "LM_FIRMS",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/LM_FIRMS"
+        },
+        {
+            "rel": "child",
+            "title": "ENVIDAT",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/ENVIDAT"
+        },
+        {
+            "rel": "child",
+            "title": "TROPICSDPC",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/TROPICSDPC"
+        },
+        {
+            "rel": "child",
+            "title": "INPE",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/INPE"
+        },
+        {
+            "rel": "child",
+            "title": "ESDIS",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/ESDIS"
+        },
+        {
+            "rel": "child",
+            "title": "OB_CLOUD",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/OB_CLOUD"
+        },
+        {
+            "rel": "child",
+            "title": "USGS",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/USGS"
+        },
+        {
+            "rel": "child",
+            "title": "ALL",
+            "type": "application/json",
+            "href": "https://cmr.earthdata.nasa.gov/stac/ALL"
+        }
+    ],
+    "title": "NASA Common Metadata Repository CMR-STAC API",
+    "description": "This is the landing page for CMR-STAC. Each provider link contains a STAC endpoint."
+}

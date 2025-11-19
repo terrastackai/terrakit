@@ -1,0 +1,31 @@
+dataset_name: "terrakit_curated_dataset"
+working_dir: "./terrakit_curated_dataset/tmp"
+
+labels:
+  labels_folder: "./docs/examples/test_wildfire_vector"
+  label_type: vector # or raster
+  datetime_info: filename # or csv
+  
+download:
+  data_sources:
+  - data_connector: "sentinel_aws"
+    collection_name: "sentinel-2-l2a"
+    bands: ["blue", "green", "red"]
+  date_allowance: 
+    pre_days: 0
+    post_days: 21
+  transform:
+    scale_data_xarray: True
+    impute_nans: true
+    reproject: True
+
+chip:
+  sample_dim: 256
+
+store:
+  active: True
+  tortilla_name: "terrakit_curated_tortilla"
+  
+upload: # Not yet implemented
+
+

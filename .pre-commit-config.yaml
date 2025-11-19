@@ -1,0 +1,60 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.12.3
+    hooks:
+      - id: ruff-check
+        args: [ --fix ]
+      - id: ruff-format
+        types_or:
+          - python
+          - jupyter
+  - repo: local
+    hooks:
+    - id: pytest
+      name: pytest
+      entry: ./.venv/bin/pytest --durations=0 -m "not slow" --cov=terrakit tests 
+      language: system
+      types: [python]
+      pass_filenames: false
+      always_run: true
+      verbose: true
+  - repo: https://github.com/ibm/detect-secrets
+    # Running "pre-commit autoupdate" automatically updates rev to latest tag
+    rev: 0.13.1+ibm.64.dss
+    hooks:
+      - id: detect-secrets # pragma: whitelist secret
+        # Add options for detect-secrets-hook binary. You can run `detect-secrets-hook --help` to list out all possible options.
+        # You may also run `pre-commit run detect-secrets` to preview the scan result.
+        # when "--baseline" without "--use-all-plugins", pre-commit scan with just plugins in baseline file
+        # when "--baseline" with "--use-all-plugins", pre-commit scan with all available plugins
+        # add "--fail-on-unaudited" to fail pre-commit for unaudited potential secrets
+        args: [--baseline, .secrets.baseline, --use-all-plugins]
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: 'v1.17.1'
+    hooks:
+    -   id: mypy
+        name: mypy
+        entry: mypy .
+        pass_filenames: false
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.6.5
+    hooks:
+      - id: uv-export
+        args:
+          [
+            "--no-hashes",
+            "--no-emit-project",
+            "--frozen",
+            "--output-file=requirements.txt",
+            "--no-dev",
+          ]
+        always_run: true
+  - repo: local
+    hooks:
+      - id: check-header
+        name: check header
+        description: Adds a standard header to Python files
+        entry: python scripts/check_header.py
+        language: python
+        types: [file, python]
+        args: [--files]
