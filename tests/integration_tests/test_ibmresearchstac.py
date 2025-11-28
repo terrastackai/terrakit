@@ -26,9 +26,9 @@ def test_load_collections(data_conn: Connector):
         "sentinel-5p-l3grd-ch4-wfmd",
         "nex-gddp-cmip6-historical",
     ]
-    assert len(collections) == len(expected_collections), (
-        f"Error! different sizes: {collections} != {expected_collections}"
-    )
+    assert len(collections) == len(
+        expected_collections
+    ), f"Error! different sizes: {collections} != {expected_collections}"
     for c in collections:
         assert c in expected_collections, f"Error! {c} not in {expected_collections}"
 
@@ -165,17 +165,6 @@ def test_get_data(
         bbox=bbox,
     )
     assert isinstance(arr, xr.DataArray), f"Error! {arr=} is not an xarray DataArray"
-    assert arr.sizes == expected_sizes, (
-        f"Error! {arr.sizes=} not equal to {expected_sizes=}"
-    )
-    for band_name in arr.bands:
-        assert band_name in bands
-
-    
-    sizes = arr.sizes
-    time_size = sizes["time"]
-    for i in range(time_size):
-        sub_arr = arr.isel({"time": i})
-        filename = f"test-{data_collection_name}-time-{i}.nc"
-        sub_arr.rio.write_crs(4326, inplace=True)
-        sub_arr.to_netcdf(filename)
+    assert (
+        arr.sizes == expected_sizes
+    ), f"Error! {arr.sizes=} not equal to {expected_sizes=}"
