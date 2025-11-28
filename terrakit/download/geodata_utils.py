@@ -382,6 +382,9 @@ def save_data_array_as_netcdf(
     if not isinstance(save_file, str):
         raise TypeError("Error! save_file should be a string")
     else:
+        if kwargs.get("epsg") is not None:
+            epsg = kwargs.get("epsg")
+            da.rio.write_crs(epsg, inplace=True)
         da.to_netcdf(path=save_file, **kwargs)
 
 

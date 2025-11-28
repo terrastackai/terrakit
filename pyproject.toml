@@ -43,6 +43,7 @@ dependencies = [
         "tqdm==4.67.1",
         "xarray>=v2023.1.0 ",
         "urllib3==2.5.0",
+        "h5netcdf>=1.7.3",
 ]
 
 [dependency-groups]

@@ -119,6 +119,15 @@ def test_find_data_invalid(
             "data_conn",
         ),
         (
+            "sentinel-5p-l3grd-ch4-wfmd",
+            (-102.0, 31.0, -101.0, 32.0),
+            "2024-01-01",
+            "2024-01-02",
+            ["CH4_column_volume_mixing_ratio"],
+            {"bands": 1, "time": 2, "latitude": 24, "longitude": 24},
+            "data_conn",
+        ),
+        (
             "ch4",
             (-102.0, 31.9, -101.9, 32.0),
             "2024-12-31",
@@ -161,3 +170,12 @@ def test_get_data(
     )
     for band_name in arr.bands:
         assert band_name in bands
+
+    
+    sizes = arr.sizes
+    time_size = sizes["time"]
+    for i in range(time_size):
+        sub_arr = arr.isel({"time": i})
+        filename = f"test-{data_collection_name}-time-{i}.nc"
+        sub_arr.rio.write_crs(4326, inplace=True)
+        sub_arr.to_netcdf(filename)

@@ -397,6 +397,17 @@ class IBMResearchSTAC(Connector):
             bands=bands,
             properties=None,
         )
+        # extract EPSG from STAC item
+        # assumption: all items of this collection have the same CRS
+        item_as_dict: dict = items_as_dicts[0]
+        cube_dimensions = item_as_dict["properties"]["cube:dimensions"]
+        epsg: int | None = None
+        for cube_dim in cube_dimensions.values():
+            # find spatial cube dims
+            if cube_dim["type"] == "spatial":
+                epsg: int = cube_dim["reference_system"]
+                break
+
         data = file_reader.load_items()
         # persist data
         if save_file is not None:
@@ -405,7 +416,7 @@ class IBMResearchSTAC(Connector):
                 case ".tif":
                     save_data_array_to_file(da=data, save_file=save_file)
                 case ".nc":
-                    save_data_array_as_netcdf(da=data, save_file=save_file)
+                    save_data_array_as_netcdf(da=data, save_file=save_file, epsg=epsg)
                 case _:  # Default case (wildcard)
                     # Code to execute if no other pattern matches
                     raise ValueError(f"Error! Invalid extension: {extension}")
