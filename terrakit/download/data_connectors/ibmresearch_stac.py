@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any, Union
 import requests
 
-from terrakit.general_utils.exceptions import TerrakitMissingEnvironmentVariable
+from terrakit.general_utils.exceptions import TerrakitMissingEnvironmentVariable, TerrakitValueError
 
 from ..raster_file_reader import NetCDFFileReader
 from ..connector import Connector
@@ -204,19 +204,26 @@ class IBMResearchSTAC(Connector):
         )
         feature_collection = resp.json()
         all_items: list[dict] = feature_collection["features"]
-        # filter out items that do not have specified band
-        if len(bands) > 0:
-            items = list()
-            for i in all_items:
-                cube_variables: dict[str, Any] = i["properties"]["cube:variables"]
-                available_variables = list(cube_variables.keys())
-                if any(band in available_variables for band in bands):
-                    items.append(i)
+        if len(all_items) > 0:
+            # filter out items that do not have specified band
+            if len(bands) > 0:
+                items = list()
+                for i in all_items:
+                    cube_variables: dict[str, Any] = i["properties"]["cube:variables"]
+                    available_variables = list(cube_variables.keys())
+                    if any(band in available_variables for band in bands):
+                        items.append(i)
 
-            return items
+                return items
+            else:
+                return all_items
         else:
-            return all_items
-
+            msg = (
+                "Error! No data has been found for the specified parameters:"
+                f"{data_collection_name=} {bbox=} {date_start=} {date_end=} {bands=}"
+            )
+            raise TerrakitValueError(message=msg)
+        
     def _get_all_collections(self) -> list[dict]:
         """
         Fetch all collections from the STAC API.
@@ -335,12 +342,14 @@ class IBMResearchSTAC(Connector):
         for item_dict in items_as_dicts:
             item_properties: dict = item_dict["properties"]
             if item_properties.get("datetime") is not None:
-                unique_dates.add(item_properties["datetime"])
+                ts = pd.Timestamp(item_properties["datetime"])
             else:
-                unique_dates.add(item_properties["start_datetime"])
+                ts = pd.Timestamp(item_properties["start_datetime"])
 
+            date_str = ts.date().isoformat()
+            unique_dates.add(date_str)
             results.append(item_dict)
-        return list(unique_dates), results
+        return sorted(list(unique_dates)), results
 
     def get_data(
         self,

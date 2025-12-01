@@ -69,8 +69,11 @@ def test_find_data(
     )
     assert isinstance(dates, list), f"Error! {dates=} is not a list"
     assert len(dates) > 0
-    assert all(isinstance(d, str) for d in dates)
-
+    for d in dates:
+        assert isinstance(d, str)
+        # dates must be in iso format, i.e., %Y-%m-%d, which has size of 10 characters 
+        assert len(d) == 10
+    
     assert isinstance(metadata, list), f"Error! {metadata=} is not a list"
 
 
