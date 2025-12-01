@@ -8,7 +8,10 @@ from pathlib import Path
 from typing import Any, Union
 import requests
 
-from terrakit.general_utils.exceptions import TerrakitMissingEnvironmentVariable, TerrakitValueError
+from terrakit.general_utils.exceptions import (
+    TerrakitMissingEnvironmentVariable,
+    TerrakitValueError,
+)
 
 from ..raster_file_reader import NetCDFFileReader
 from ..connector import Connector
@@ -223,7 +226,7 @@ class IBMResearchSTAC(Connector):
                 f"{data_collection_name=} {bbox=} {date_start=} {date_end=} {bands=}"
             )
             raise TerrakitValueError(message=msg)
-        
+
     def _get_all_collections(self) -> list[dict]:
         """
         Fetch all collections from the STAC API.

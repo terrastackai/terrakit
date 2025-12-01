@@ -26,9 +26,9 @@ def test_load_collections(data_conn: Connector):
         "sentinel-5p-l3grd-ch4-wfmd",
         "nex-gddp-cmip6-historical",
     ]
-    assert len(collections) == len(
-        expected_collections
-    ), f"Error! different sizes: {collections} != {expected_collections}"
+    assert len(collections) == len(expected_collections), (
+        f"Error! different sizes: {collections} != {expected_collections}"
+    )
     for c in collections:
         assert c in expected_collections, f"Error! {c} not in {expected_collections}"
 
@@ -71,9 +71,9 @@ def test_find_data(
     assert len(dates) > 0
     for d in dates:
         assert isinstance(d, str)
-        # dates must be in iso format, i.e., %Y-%m-%d, which has size of 10 characters 
+        # dates must be in iso format, i.e., %Y-%m-%d, which has size of 10 characters
         assert len(d) == 10
-    
+
     assert isinstance(metadata, list), f"Error! {metadata=} is not a list"
 
 
@@ -168,6 +168,6 @@ def test_get_data(
         bbox=bbox,
     )
     assert isinstance(arr, xr.DataArray), f"Error! {arr=} is not an xarray DataArray"
-    assert (
-        arr.sizes == expected_sizes
-    ), f"Error! {arr.sizes=} not equal to {expected_sizes=}"
+    assert arr.sizes == expected_sizes, (
+        f"Error! {arr.sizes=} not equal to {expected_sizes=}"
+    )
