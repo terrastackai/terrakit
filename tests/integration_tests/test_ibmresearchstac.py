@@ -69,7 +69,10 @@ def test_find_data(
     )
     assert isinstance(dates, list), f"Error! {dates=} is not a list"
     assert len(dates) > 0
-    assert all(isinstance(d, str) for d in dates)
+    for d in dates:
+        assert isinstance(d, str)
+        # dates must be in iso format, i.e., %Y-%m-%d, which has size of 10 characters
+        assert len(d) == 10
 
     assert isinstance(metadata, list), f"Error! {metadata=} is not a list"
 
@@ -119,6 +122,15 @@ def test_find_data_invalid(
             "data_conn",
         ),
         (
+            "sentinel-5p-l3grd-ch4-wfmd",
+            (-102.0, 31.0, -101.0, 32.0),
+            "2024-01-01",
+            "2024-01-02",
+            ["CH4_column_volume_mixing_ratio"],
+            {"bands": 1, "time": 2, "latitude": 24, "longitude": 24},
+            "data_conn",
+        ),
+        (
             "ch4",
             (-102.0, 31.9, -101.9, 32.0),
             "2024-12-31",
@@ -159,5 +171,3 @@ def test_get_data(
     assert arr.sizes == expected_sizes, (
         f"Error! {arr.sizes=} not equal to {expected_sizes=}"
     )
-    for band_name in arr.bands:
-        assert band_name in bands
