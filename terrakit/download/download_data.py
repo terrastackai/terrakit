@@ -52,6 +52,7 @@ class DownloadCls:
         active (bool): Flag to activate/deactivate data download.
         max_cloud_cover (int): Maximum cloud cover percentage for data selection.
         keep_files (bool): Flag to keep shapefiles once they have been used. Downloaded files will not be removed.
+        set_no_data (bool): Flag to set non-labeled data as no-data. Default False
         datetime_bbox_shp_file (str): Path to shapefile containing datetime and bounding boxes to be downloaded.
         labels_shp_file (str): Path to shapefile containing labels.
 
@@ -107,6 +108,7 @@ class DownloadCls:
         active: bool = True,
         max_cloud_cover: int = 80,
         keep_files: bool = False,
+        set_no_data: bool = False,
         datetime_bbox_shp_file: str = "./tmp/terrakit_curated_dataset_all_bboxes.shp",
         labels_shp_file: str = "./tmp/terrakit_curated_dataset_labels.shp",
     ):
@@ -122,6 +124,7 @@ class DownloadCls:
             active (bool): Flag to activate/deactivate data download.
             max_cloud_cover (int): Maximum cloud cover percentage for data selection.
             keep_files (bool): Flag to keep shapefiles once they have been used. Downloaded files will not be removed.
+            set_no_data (bool): Flag to set non-labeled data as no-data. Default Falise
             datetime_bbox_shp_file (str): Path to shapefile containing datetime bounding boxes.
             labels_shp_file (str): Path to shapefile containing labels.
         """
@@ -132,6 +135,7 @@ class DownloadCls:
         self.active = active
         self.max_cloud_cover = max_cloud_cover
         self.keep_files = keep_files
+        self.set_no_data = set_no_data
         self.datetime_bbox_shp_file = datetime_bbox_shp_file
         self.labels_shp_file = labels_shp_file
         self.data_sources = data_sources
@@ -316,7 +320,7 @@ class DownloadCls:
             logging.info(f"Queried data: {queried_data}")
         return queried_data
 
-    def rasterize_vectors_to_the_queried_data(self, queried_data: list) -> int:
+    def rasterize_vectors_to_the_queried_data(self, queried_data: list, set_no_data: bool) -> int:
         """
         Rasterize vector data to the queried raster data.
 
@@ -332,16 +336,35 @@ class DownloadCls:
         label_gdf = self._read_shp_file(labels_shp_file)
 
         logging.info("Rasterizing vectors to the queried data")
+
+        # Verify label classes
+        if "labelclass" in label_gdf.columns:
+            label_classes = np.sort(label_gdf["labelclass"].unique())
+            logger.info(f"Label classes being used: {label_classes}")
+            if not set_no_data and 0 in label_classes:
+                logger.error("Labels are using class 0 which will be overwritten unless set_no_data is being set.")
+                return 0
+            
+            start_index = 0 if set_no_data else 1
+            # Check if continuous and otherwise provide a warning
+            if not (start_index in label_classes and label_classes[-1] == start_index + len(label_classes) - 1):
+                logger.warning("Label classes are not a continuous list of indicies, is this correct?")
+
+        background_value = -1 if set_no_data else 0 # 0 is rasterize default
         file_save_count = 0
         for q in queried_data:
             with rasterio.open(q, "r") as src:
                 out_meta = src.meta
                 out_meta.update({"count": 1})
+                label_column = label_gdf.get("labelclass", [1] * len(label_gdf)) # Default 1 if not set
                 image = rasterio.features.rasterize(
-                    ((g, 1) for g in label_gdf.geometry),
+                    ((g, class_id) for g, class_id in zip(label_gdf.geometry, label_column)),
                     out_shape=src.shape,
                     transform=src.transform,
+                    fill=background_value,
                 )
+                if set_no_data:
+                    out_meta.update({"nodata": -1})
                 # Write the burned image to geotiff
                 logging.info(f"Writing to {q.replace('.tif', '')}_labels.tif")
                 with rasterio.open(
@@ -362,6 +385,7 @@ def download_validation(
     datetime_bbox_shp_file: str = "./tmp/terrakit_curated_dataset_all_bboxes.shp",
     labels_shp_file: str = "./tmp/terrakit_curated_dataset_labels.shp",
     keep_files: bool = False,
+    set_no_data: bool = False,
 ) -> tuple[DownloadCls, DownloadModel]:
     """
     Validate and initialize the download process.
@@ -376,7 +400,8 @@ def download_validation(
         datetime_bbox_shp_file (str): Path to shapefile containing datetime bounding boxes.
         labels_shp_file (str): Path to shapefile containing labels.
         keep_files (bool): Flag to keep shapefiles once they have been used. Downloaded files will not be removed.
-
+        set_no_data (bool): Flag to set non-labeled data as no-data. Default False.
+    
     Returns:
         DownloadCls: Initialized DownloadCls object.
         DownloadModel: Validated DownloadModel instance.
@@ -445,6 +470,7 @@ def download_validation(
         max_cloud_cover=max_cloud_cover,
         datetime_bbox_shp_file=datetime_bbox_shp_file,
         keep_files=keep_files,
+        set_no_data=set_no_data,
         data_sources=data_source_list,
         date_allowance=date_allowance,
         labels_shp_file=labels_shp_file,
@@ -473,6 +499,7 @@ def download_data(
     datetime_bbox_shp_file: str = "./tmp/terrakit_curated_dataset_all_bboxes.shp",
     labels_shp_file: str = "./tmp/terrakit_curated_dataset_labels.shp",
     keep_files: bool = False,
+    set_no_data: bool = False,
 ) -> list:
     """
     Download and preprocess geospatial data.
@@ -488,6 +515,7 @@ def download_data(
         datetime_bbox_shp_file (str): Path to shapefile containing datetime bounding boxes.
         labels_shp_file (str): Path to shapefile containing labels.
         keep_files (bool): Flag to keep shapefiles once they have been used. Downloaded files will not be removed.
+        set_no_data (bool): Flag to set non-labeled data as no-data. Default False
 
     Returns:
         list: List of queried data file paths.
@@ -551,6 +579,7 @@ def download_data(
         datetime_bbox_shp_file=datetime_bbox_shp_file,
         labels_shp_file=labels_shp_file,
         keep_files=keep_files,
+        set_no_data=set_no_data,
     )
 
     logging.info("Listing collections..")
@@ -573,7 +602,8 @@ def download_data(
 
     # Rasterize
     file_save_count = download.rasterize_vectors_to_the_queried_data(
-        queried_data=queried_data
+        queried_data=queried_data,
+        set_no_data=set_no_data,
     )
 
     if file_save_count > 0:
