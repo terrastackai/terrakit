@@ -9,6 +9,7 @@ import pytest
 from pathlib import Path
 
 from terrakit.transform.labels import process_labels
+from terrakit.download.download_data import download_data
 from tests.component_tests.transform.conftest import (
     DATASET_NAME,
     DEFAULT_DATASET_NAME,
@@ -16,6 +17,7 @@ from tests.component_tests.transform.conftest import (
     WORKING_DIR,
     LABELS_FOLDER,
     LABELS_FOLDER_RASTER,
+    LABELS_FOLDER_CLASSES,
 )
 
 
@@ -197,3 +199,46 @@ class TestLabels_Provenance:
         )  # 2 shapefiles collections, each with 5 files, plus 1 data stat provenance file.
         assert len(os.listdir(Path(WORKING_DIR))) == num_files
         assert f"{DATASET_NAME}_metadata.json" in os.listdir(Path(WORKING_DIR))
+
+class TestLabels_Classes:
+    def test_process_labels__classes(
+        self,
+        process_labels_clean_up_working_dir,
+        caplog,
+    ):
+        """Test working directory can be set to some valid path"""
+        labels_gdf, grouped_boxes_gdf = process_labels(
+            dataset_name=DATASET_NAME,
+            working_dir=WORKING_DIR,
+            labels_folder=LABELS_FOLDER_CLASSES,
+        )
+
+        num_files = (
+            2 * 5 + 1
+        )  # 2 shapefiles collections, each with 5 files, plus 1 data stat provenance file.
+        assert len(os.listdir(Path(WORKING_DIR))) == num_files
+        assert f"{DATASET_NAME}_metadata.json" in os.listdir(Path(WORKING_DIR))
+
+        data_source = [
+            {
+                "data_connector": "sentinel_aws",
+                "collection_name": "sentinel-2-l2a",
+                "bands": ["blue", "green", "red"],
+                "save_file": "",
+            },
+        ]
+        queried_data = download_data(
+            dataset_name=DATASET_NAME,
+            working_dir=WORKING_DIR,
+            data_sources=data_source,
+            date_allowance={"pre_days": 0, "post_days": 21},
+            set_no_data=True,
+            transform={
+                "scale_data_xarray": True,
+                "impute_nans": True,
+                "reproject": True,
+                "set_no_data": True
+            },
+        )
+
+        assert "sentinel_aws_sentinel-2-l2a_2025-06-16_imputed_labels.tif" in os.listdir(Path(WORKING_DIR))

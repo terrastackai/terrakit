@@ -317,6 +317,13 @@ class LabelsCls:
                 )
                 failed_files.append(file_path)
 
+            # Check for label class
+            label_class = 1
+            class_pattern = r"_CLASS_(\d+)_"
+            match = re.search(class_pattern, filename)
+            if match:
+                label_class = int(match.group(1))
+
             # Append the datetime to the GeoDataFrame
             if gdf is not None:
                 if "geometry" not in gdf:
@@ -327,10 +334,11 @@ class LabelsCls:
                     failed_files.append(file_path)
                 elif label_date_string:
                     logging.info(
-                        f"Setting datetime to {label_date_string} for {filename}."
+                        f"Setting datetime to {label_date_string} and label class to {label_class} for {filename}."
                     )
                     gdf["datetime"] = label_date_string
                     gdf["filename"] = filename
+                    gdf["labelclass"] = label_class
                     gdf_list.append(gdf)
                     logger.info(f"Successfully processed {file_path}")
 
