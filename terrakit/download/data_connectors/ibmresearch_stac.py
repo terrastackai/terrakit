@@ -8,7 +8,10 @@ from pathlib import Path
 from typing import Any, Union
 import requests
 
-from terrakit.general_utils.exceptions import TerrakitMissingEnvironmentVariable
+from terrakit.general_utils.exceptions import (
+    TerrakitMissingEnvironmentVariable,
+    TerrakitValueError,
+)
 
 from ..raster_file_reader import NetCDFFileReader
 from ..connector import Connector
@@ -204,18 +207,25 @@ class IBMResearchSTAC(Connector):
         )
         feature_collection = resp.json()
         all_items: list[dict] = feature_collection["features"]
-        # filter out items that do not have specified band
-        if len(bands) > 0:
-            items = list()
-            for i in all_items:
-                cube_variables: dict[str, Any] = i["properties"]["cube:variables"]
-                available_variables = list(cube_variables.keys())
-                if any(band in available_variables for band in bands):
-                    items.append(i)
+        if len(all_items) > 0:
+            # filter out items that do not have specified band
+            if len(bands) > 0:
+                items = list()
+                for i in all_items:
+                    cube_variables: dict[str, Any] = i["properties"]["cube:variables"]
+                    available_variables = list(cube_variables.keys())
+                    if any(band in available_variables for band in bands):
+                        items.append(i)
 
-            return items
+                return items
+            else:
+                return all_items
         else:
-            return all_items
+            msg = (
+                "Error! No data has been found for the specified parameters:"
+                f"{data_collection_name=} {bbox=} {date_start=} {date_end=} {bands=}"
+            )
+            raise TerrakitValueError(message=msg)
 
     def _get_all_collections(self) -> list[dict]:
         """
@@ -335,12 +345,14 @@ class IBMResearchSTAC(Connector):
         for item_dict in items_as_dicts:
             item_properties: dict = item_dict["properties"]
             if item_properties.get("datetime") is not None:
-                unique_dates.add(item_properties["datetime"])
+                ts = pd.Timestamp(item_properties["datetime"])
             else:
-                unique_dates.add(item_properties["start_datetime"])
+                ts = pd.Timestamp(item_properties["start_datetime"])
 
+            date_str = ts.date().isoformat()
+            unique_dates.add(date_str)
             results.append(item_dict)
-        return list(unique_dates), results
+        return sorted(list(unique_dates)), results
 
     def get_data(
         self,
@@ -397,6 +409,17 @@ class IBMResearchSTAC(Connector):
             bands=bands,
             properties=None,
         )
+        # extract EPSG from STAC item
+        # assumption: all items of this collection have the same CRS
+        item_as_dict: dict = items_as_dicts[0]
+        cube_dimensions = item_as_dict["properties"]["cube:dimensions"]
+        epsg: int | None = None
+        for cube_dim in cube_dimensions.values():
+            # find spatial cube dims
+            if cube_dim["type"] == "spatial":
+                epsg: int = cube_dim["reference_system"]
+                break
+
         data = file_reader.load_items()
         # persist data
         if save_file is not None:
@@ -405,7 +428,7 @@ class IBMResearchSTAC(Connector):
                 case ".tif":
                     save_data_array_to_file(da=data, save_file=save_file)
                 case ".nc":
-                    save_data_array_as_netcdf(da=data, save_file=save_file)
+                    save_data_array_as_netcdf(da=data, save_file=save_file, epsg=epsg)
                 case _:  # Default case (wildcard)
                     # Code to execute if no other pattern matches
                     raise ValueError(f"Error! Invalid extension: {extension}")
