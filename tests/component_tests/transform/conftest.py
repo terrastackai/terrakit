@@ -24,6 +24,7 @@ DEFAULT_WORKING_DIR: str = "./tmp"
 LABELS_FOLDER: str = "./docs/examples/test_wildfire_vector"
 LABELS_FOLDER_RASTER: str = "./docs/examples/test_burn_scar_raster"
 LABELS_FOLDER_CSV_DATETIME: str = "./docs/examples/test_wildfire_vector_metadata_csv"
+LABELS_FOLDER_CLASSES: str = "./docs/examples/test_forest_classes_vector"
 EMPTY_LABELS_FOLDER: str = "./tests/tmp/labels"
 
 
