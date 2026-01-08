@@ -37,7 +37,7 @@ dependencies = [
         "sentinelhub==3.11.1",
         "shapely>=2.1.1",
         "stackstac==0.5.1",
-        "tacoreader>=0.5.6",
+        "tacoreader==0.5.6",
         "tacotoolbox==0.5.2",
         "tqdm==4.67.1",
         "xarray>=v2023.1.0 ",
