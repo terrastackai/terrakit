@@ -20,7 +20,7 @@ dependencies = [
         "boto3>=1.35.82,<1.40.22",
         "dask==2025.7.0",
         "folium>=0.20.0",
-        "huggingface-hub>=1.1.4",
+        "huggingface-hub",
         "geojson>=3.2.0",
         "geopandas>=1.1.1",
         "joblib==1.5.2",
