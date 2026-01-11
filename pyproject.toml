@@ -13,13 +13,15 @@ authors = [
     {"name" = "Catherine Wanjiru"},
     {"name" = "Benedikt Blumenstiel"},
     {"name" = "Brian Ogolla"},
+    {"name" = "Romeo Kienzler"},
     ]
 dependencies = [
-        "aiohttp>=3.12.15",
+        "aiohttp>=3.13.3",
         "contextily>=1.6.2",
         "boto3",
         "dask==2025.7.0",
         "folium>=0.20.0",
+        "h5netcdf>=1.7.3",
         "huggingface-hub",
         "geojson>=3.2.0",
         "geopandas>=1.1.1",
@@ -41,8 +43,7 @@ dependencies = [
         "tacotoolbox==0.5.2",
         "tqdm==4.67.1",
         "xarray>=v2023.1.0 ",
-        "urllib3==2.5.0",
-        "h5netcdf>=1.7.3",
+        "urllib3==2.6.3",
 ]
 
 [dependency-groups]
