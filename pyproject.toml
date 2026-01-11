@@ -43,7 +43,7 @@ dependencies = [
         "tacotoolbox==0.5.2",
         "tqdm==4.67.1",
         "xarray>=v2023.1.0 ",
-        "urllib3==2.6.3",
+        "urllib3>=2.6.3",
 ]
 
 [dependency-groups]
