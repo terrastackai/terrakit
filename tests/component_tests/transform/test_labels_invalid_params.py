@@ -299,6 +299,7 @@ class TestLabels_LabelType_FailureTests:
             DEFAULT_WORKING_DIR
         )
 
+
 class TestLabels_Classes_conflict:
     def test_process_labels__classes_conflict(
         self,
@@ -336,8 +337,11 @@ class TestLabels_Classes_conflict:
                 "scale_data_xarray": True,
                 "impute_nans": True,
                 "reproject": True,
-                "set_no_data": True
+                "set_no_data": True,
             },
         )
 
-        assert not "sentinel_aws_sentinel-2-l2a_2025-06-16_imputed_labels.tif" in os.listdir(Path(WORKING_DIR))
+        assert (
+            not "sentinel_aws_sentinel-2-l2a_2025-06-16_imputed_labels.tif"
+            in os.listdir(Path(WORKING_DIR))
+        )

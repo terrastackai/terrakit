@@ -200,6 +200,7 @@ class TestLabels_Provenance:
         assert len(os.listdir(Path(WORKING_DIR))) == num_files
         assert f"{DATASET_NAME}_metadata.json" in os.listdir(Path(WORKING_DIR))
 
+
 class TestLabels_Classes:
     def test_process_labels__classes(
         self,
@@ -237,8 +238,11 @@ class TestLabels_Classes:
                 "scale_data_xarray": True,
                 "impute_nans": True,
                 "reproject": True,
-                "set_no_data": True
+                "set_no_data": True,
             },
         )
 
-        assert "sentinel_aws_sentinel-2-l2a_2025-06-16_imputed_labels.tif" in os.listdir(Path(WORKING_DIR))
+        assert (
+            "sentinel_aws_sentinel-2-l2a_2025-06-16_imputed_labels.tif"
+            in os.listdir(Path(WORKING_DIR))
+        )

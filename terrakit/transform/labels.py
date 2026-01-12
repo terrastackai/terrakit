@@ -383,21 +383,35 @@ class LabelsCls:
             label_bbox_date_gdf = label_bbox_gdf[label_bbox_gdf.datetime == d]
 
             for lc in list(label_bbox_date_gdf.labelclass.unique()):
-                label_bbox_date_and_class_gdf = label_bbox_date_gdf[label_bbox_date_gdf.labelclass == lc]
+                label_bbox_date_and_class_gdf = label_bbox_date_gdf[
+                    label_bbox_date_gdf.labelclass == lc
+                ]
 
                 # Find intersecting bounding boxes and merge, then repeat
                 intersects = label_bbox_date_and_class_gdf.sjoin(
                     label_bbox_date_and_class_gdf, how="left", predicate="intersects"
                 )
-                intersects.drop([c for c in intersects.columns if c.endswith("_right")], axis=1, inplace=True)
-                intersects.rename( columns=lambda c: c[:-5] if c.endswith("_left") else c, inplace=True)
+                intersects.drop(
+                    [c for c in intersects.columns if c.endswith("_right")],
+                    axis=1,
+                    inplace=True,
+                )
+                intersects.rename(
+                    columns=lambda c: c[:-5] if c.endswith("_left") else c, inplace=True
+                )
                 label_bbox_date_grouped_gdf = intersects.dissolve(aggfunc="min")
 
                 intersects = label_bbox_date_grouped_gdf.sjoin(
                     label_bbox_date_grouped_gdf, how="left", predicate="intersects"
                 )
-                intersects.drop([c for c in intersects.columns if c.endswith("_right")], axis=1, inplace=True)
-                intersects.rename( columns=lambda c: c[:-5] if c.endswith("_left") else c, inplace=True)
+                intersects.drop(
+                    [c for c in intersects.columns if c.endswith("_right")],
+                    axis=1,
+                    inplace=True,
+                )
+                intersects.rename(
+                    columns=lambda c: c[:-5] if c.endswith("_left") else c, inplace=True
+                )
                 label_bbox_date_grouped_gdf = intersects.dissolve(aggfunc="min")
 
                 # Calculate the bounding box from the combined area

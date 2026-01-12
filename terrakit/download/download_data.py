@@ -320,7 +320,9 @@ class DownloadCls:
             logging.info(f"Queried data: {queried_data}")
         return queried_data
 
-    def rasterize_vectors_to_the_queried_data(self, queried_data: list, set_no_data: bool) -> int:
+    def rasterize_vectors_to_the_queried_data(
+        self, queried_data: list, set_no_data: bool
+    ) -> int:
         """
         Rasterize vector data to the queried raster data.
 
@@ -342,23 +344,35 @@ class DownloadCls:
             label_classes = np.sort(label_gdf["labelclass"].unique())
             logger.info(f"Label classes being used: {label_classes}")
             if not set_no_data and 0 in label_classes:
-                logger.error("Labels are using class 0 which will be overwritten unless set_no_data is being set.")
+                logger.error(
+                    "Labels are using class 0 which will be overwritten unless set_no_data is being set."
+                )
                 return 0
-            
+
             start_index = 0 if set_no_data else 1
             # Check if continuous and otherwise provide a warning
-            if not (start_index in label_classes and label_classes[-1] == start_index + len(label_classes) - 1):
-                logger.warning("Label classes are not a continuous list of indicies, is this correct?")
+            if not (
+                start_index in label_classes
+                and label_classes[-1] == start_index + len(label_classes) - 1
+            ):
+                logger.warning(
+                    "Label classes are not a continuous list of indicies, is this correct?"
+                )
 
-        background_value = -1 if set_no_data else 0 # 0 is rasterize default
+        background_value = -1 if set_no_data else 0  # 0 is rasterize default
         file_save_count = 0
         for q in queried_data:
             with rasterio.open(q, "r") as src:
                 out_meta = src.meta
                 out_meta.update({"count": 1})
-                label_column = label_gdf.get("labelclass", [1] * len(label_gdf)) # Default 1 if not set
+                label_column = label_gdf.get(
+                    "labelclass", [1] * len(label_gdf)
+                )  # Default 1 if not set
                 image = rasterio.features.rasterize(
-                    ((g, class_id) for g, class_id in zip(label_gdf.geometry, label_column)),
+                    (
+                        (g, class_id)
+                        for g, class_id in zip(label_gdf.geometry, label_column)
+                    ),
                     out_shape=src.shape,
                     transform=src.transform,
                     fill=background_value,
@@ -401,7 +415,7 @@ def download_validation(
         labels_shp_file (str): Path to shapefile containing labels.
         keep_files (bool): Flag to keep shapefiles once they have been used. Downloaded files will not be removed.
         set_no_data (bool): Flag to set non-labeled data as no-data. Default False.
-    
+
     Returns:
         DownloadCls: Initialized DownloadCls object.
         DownloadModel: Validated DownloadModel instance.

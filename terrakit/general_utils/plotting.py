@@ -51,9 +51,11 @@ def plot_label_dataframes(labels_gdf: DataFrame, grouped_bbox_gdf: DataFrame) ->
     cmap = plt.cm.get_cmap("tab10", len(classes))
 
     for date_id in range(0, len(dates)):
-        filename = '\n'.join(labels_gdf.loc[labels_gdf["datetime"] == dates[date_id]][
-            "filename"
-        ].unique())
+        filename = "\n".join(
+            labels_gdf.loc[labels_gdf["datetime"] == dates[date_id]][
+                "filename"
+            ].unique()
+        )
 
         axs[date_id].set_title(filename)
         axs[date_id].set_xlabel("lng")
@@ -62,14 +64,24 @@ def plot_label_dataframes(labels_gdf: DataFrame, grouped_bbox_gdf: DataFrame) ->
         for class_id in range(0, len(classes)):
             cls = classes[class_id]
             grouped_bbox_gdf.loc[
-                (grouped_bbox_gdf["datetime"] == dates[date_id]) & (grouped_bbox_gdf["labelclass"] == classes[class_id])
+                (grouped_bbox_gdf["datetime"] == dates[date_id])
+                & (grouped_bbox_gdf["labelclass"] == classes[class_id])
             ].boundary.plot(ax=axs[date_id], color=cmap(class_id), label="bbox")
-            labels_gdf.loc[(labels_gdf["datetime"] == dates[date_id]) & (labels_gdf["labelclass"] == classes[class_id])].boundary.plot(
+            labels_gdf.loc[
+                (labels_gdf["datetime"] == dates[date_id])
+                & (labels_gdf["labelclass"] == classes[class_id])
+            ].boundary.plot(
                 ax=axs[date_id], color=cmap(class_id), label=f"label class {cls}"
             )
 
         if len(classes) > 1:
-            axs[date_id].legend(loc="upper left", bbox_to_anchor=(1.02, 1.0), borderaxespad=0.0, title="Classes")
+            axs[date_id].legend(
+                loc="upper left",
+                bbox_to_anchor=(1.02, 1.0),
+                borderaxespad=0.0,
+                title="Classes",
+            )
+
 
 def plot_labels_on_map(
     labels_gdf: DataFrame, grouped_bbox_gdf: DataFrame
@@ -92,9 +104,11 @@ def plot_labels_on_map(
     cmap = plt.cm.get_cmap("tab10", len(classes))
 
     for date_id in range(0, len(dates)):
-        filenames = ','.join(labels_gdf.loc[labels_gdf["datetime"] == dates[date_id]][
-            "filename"
-        ].unique())
+        filenames = ",".join(
+            labels_gdf.loc[labels_gdf["datetime"] == dates[date_id]][
+                "filename"
+            ].unique()
+        )
 
         bbox = grouped_bbox_gdf.loc[grouped_bbox_gdf["datetime"] == dates[date_id]]
 
@@ -116,11 +130,20 @@ def plot_labels_on_map(
         )
 
         for class_id in range(0, len(classes)):
-            filename = ','.join(labels_gdf.loc[(labels_gdf["datetime"] == dates[date_id]) & (labels_gdf["labelclass"] == classes[class_id])][
-                "filename"
-            ].unique())
-            class_bbox = grouped_bbox_gdf.loc[(grouped_bbox_gdf["datetime"] == dates[date_id]) & (grouped_bbox_gdf["labelclass"] == classes[class_id])]
-            labels = labels_gdf.loc[(labels_gdf["datetime"] == dates[date_id]) & (labels_gdf["labelclass"] == classes[class_id])]
+            filename = ",".join(
+                labels_gdf.loc[
+                    (labels_gdf["datetime"] == dates[date_id])
+                    & (labels_gdf["labelclass"] == classes[class_id])
+                ]["filename"].unique()
+            )
+            class_bbox = grouped_bbox_gdf.loc[
+                (grouped_bbox_gdf["datetime"] == dates[date_id])
+                & (grouped_bbox_gdf["labelclass"] == classes[class_id])
+            ]
+            labels = labels_gdf.loc[
+                (labels_gdf["datetime"] == dates[date_id])
+                & (labels_gdf["labelclass"] == classes[class_id])
+            ]
             color_hex = to_hex(cmap(class_id))
             folium.GeoJson(
                 class_bbox.to_json(),
@@ -128,8 +151,8 @@ def plot_labels_on_map(
                 style_function=lambda feat, c=color_hex: {
                     "color": c,
                     "weight": 2,
-                    "fillOpacity": 0
-                }
+                    "fillOpacity": 0,
+                },
             ).add_to(m)
 
             folium.GeoJson(
@@ -139,10 +162,10 @@ def plot_labels_on_map(
                     "color": c,
                     "fillColor": c,
                     "weight": 2,
-                    "fillOpacity": 0.5
-                }
+                    "fillOpacity": 0.5,
+                },
             ).add_to(m)
-        
+
         folium.LayerControl().add_to(m)
 
         map_collection.append(m)
