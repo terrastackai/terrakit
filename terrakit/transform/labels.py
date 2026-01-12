@@ -382,34 +382,37 @@ class LabelsCls:
         for d in list(label_bbox_gdf.datetime.unique()):
             label_bbox_date_gdf = label_bbox_gdf[label_bbox_gdf.datetime == d]
 
-            # Find intersecting bounding boxes and merge, then repeat
-            intersects = label_bbox_date_gdf.sjoin(
-                label_bbox_date_gdf, how="left", predicate="intersects"
-            )
-            label_bbox_date_grouped_gdf = intersects.dissolve(aggfunc="min")
+            for lc in list(label_bbox_date_gdf.labelclass.unique()):
+                label_bbox_date_and_class_gdf = label_bbox_date_gdf[label_bbox_date_gdf.labelclass == lc]
 
-            label_bbox_date_grouped_gdf.drop(["index_right"], axis=1, inplace=True)
-            intersects = label_bbox_date_grouped_gdf.sjoin(
-                label_bbox_date_grouped_gdf, how="left", predicate="intersects"
-            )
-            label_bbox_date_grouped_gdf = intersects.dissolve(aggfunc="min")
+                # Find intersecting bounding boxes and merge, then repeat
+                intersects = label_bbox_date_and_class_gdf.sjoin(
+                    label_bbox_date_and_class_gdf, how="left", predicate="intersects"
+                )
+                intersects.drop([c for c in intersects.columns if c.endswith("_right")], axis=1, inplace=True)
+                intersects.rename( columns=lambda c: c[:-5] if c.endswith("_left") else c, inplace=True)
+                label_bbox_date_grouped_gdf = intersects.dissolve(aggfunc="min")
 
-            # Calculate the bounding box from the combined area
-            label_bbox_date_grouped_bbox_gdf = copy.deepcopy(
-                label_bbox_date_grouped_gdf
-            )
-            label_bbox_date_grouped_bbox_gdf["geometry"] = (
-                label_bbox_date_grouped_bbox_gdf.geometry.apply(
-                    lambda x: box(*x.bounds)
-                ).tolist()
-            )
-            label_bbox_date_grouped_bbox_gdf["datetime"] = (
-                label_bbox_date_grouped_bbox_gdf["datetime_left_left"]
-            )
+                intersects = label_bbox_date_grouped_gdf.sjoin(
+                    label_bbox_date_grouped_gdf, how="left", predicate="intersects"
+                )
+                intersects.drop([c for c in intersects.columns if c.endswith("_right")], axis=1, inplace=True)
+                intersects.rename( columns=lambda c: c[:-5] if c.endswith("_left") else c, inplace=True)
+                label_bbox_date_grouped_gdf = intersects.dissolve(aggfunc="min")
 
-            label_bbox_grouped_bbox_list = label_bbox_grouped_bbox_list + [
-                label_bbox_date_grouped_bbox_gdf
-            ]
+                # Calculate the bounding box from the combined area
+                label_bbox_date_grouped_bbox_gdf = copy.deepcopy(
+                    label_bbox_date_grouped_gdf
+                )
+                label_bbox_date_grouped_bbox_gdf["geometry"] = (
+                    label_bbox_date_grouped_bbox_gdf.geometry.apply(
+                        lambda x: box(*x.bounds)
+                    ).tolist()
+                )
+
+                label_bbox_grouped_bbox_list = label_bbox_grouped_bbox_list + [
+                    label_bbox_date_grouped_bbox_gdf
+                ]
 
         label_bbox_grouped_bbox_gdf = pd.concat(
             label_bbox_grouped_bbox_list, ignore_index=True

@@ -6,6 +6,7 @@
 
 import contextily as cx
 import folium
+from matplotlib.colors import to_hex
 import matplotlib.pyplot as plt
 import numpy as np
 import random
@@ -42,24 +43,33 @@ def plot_label_dataframes(labels_gdf: DataFrame, grouped_bbox_gdf: DataFrame) ->
 
     """
     dates = grouped_bbox_gdf["datetime"].unique()
+    classes = grouped_bbox_gdf["labelclass"].unique()
 
     fig, axs = plt.subplots(1, len(dates), figsize=(15, 4))
+    if len(dates) == 1:
+        axs = [axs]
+    cmap = plt.cm.get_cmap("tab10", len(classes))
 
-    for plot_id in range(0, len(dates)):
-        filename = labels_gdf.loc[labels_gdf["datetime"] == dates[plot_id]][
+    for date_id in range(0, len(dates)):
+        filename = '\n'.join(labels_gdf.loc[labels_gdf["datetime"] == dates[date_id]][
             "filename"
-        ].unique()[0]
+        ].unique())
 
-        grouped_bbox_gdf.loc[
-            grouped_bbox_gdf["datetime"] == dates[plot_id]
-        ].boundary.plot(ax=axs[plot_id], label="bbox")
-        labels_gdf.loc[labels_gdf["datetime"] == dates[plot_id]].boundary.plot(
-            ax=axs[plot_id], color="red", label="label"
-        )
-        axs[plot_id].set_title(filename)
-        axs[plot_id].set_xlabel("lng")
-        axs[plot_id].set_ylabel("lat")
+        axs[date_id].set_title(filename)
+        axs[date_id].set_xlabel("lng")
+        axs[date_id].set_ylabel("lat")
 
+        for class_id in range(0, len(classes)):
+            cls = classes[class_id]
+            grouped_bbox_gdf.loc[
+                (grouped_bbox_gdf["datetime"] == dates[date_id]) & (grouped_bbox_gdf["labelclass"] == classes[class_id])
+            ].boundary.plot(ax=axs[date_id], color=cmap(class_id), label="bbox")
+            labels_gdf.loc[(labels_gdf["datetime"] == dates[date_id]) & (labels_gdf["labelclass"] == classes[class_id])].boundary.plot(
+                ax=axs[date_id], color=cmap(class_id), label=f"label class {cls}"
+            )
+
+        if len(classes) > 1:
+            axs[date_id].legend(loc="upper left", bbox_to_anchor=(1.02, 1.0), borderaxespad=0.0, title="Classes")
 
 def plot_labels_on_map(
     labels_gdf: DataFrame, grouped_bbox_gdf: DataFrame
@@ -78,14 +88,15 @@ def plot_labels_on_map(
     title_list = []
 
     dates = grouped_bbox_gdf["datetime"].unique()
+    classes = grouped_bbox_gdf["labelclass"].unique()
+    cmap = plt.cm.get_cmap("tab10", len(classes))
 
-    for plot_id in range(0, len(dates)):
-        filename = labels_gdf.loc[labels_gdf["datetime"] == "2024-08-26"][
+    for date_id in range(0, len(dates)):
+        filenames = ','.join(labels_gdf.loc[labels_gdf["datetime"] == dates[date_id]][
             "filename"
-        ].unique()[0]
+        ].unique())
 
-        bbox = grouped_bbox_gdf.loc[grouped_bbox_gdf["datetime"] == dates[plot_id]]
-        labels = labels_gdf.loc[labels_gdf["datetime"] == dates[plot_id]]
+        bbox = grouped_bbox_gdf.loc[grouped_bbox_gdf["datetime"] == dates[date_id]]
 
         center_lat = (bbox.bounds.miny.mean() + bbox.bounds.maxy.mean()) / 2
         center_lon = (bbox.bounds.minx.mean() + bbox.bounds.maxx.mean()) / 2
@@ -94,23 +105,46 @@ def plot_labels_on_map(
             location=[center_lat, center_lon], zoom_start=5, tiles="OpenStreetMap"
         )
 
-        folium.GeoJson(
-            bbox.to_json(),
-            name=f"Download tile bounding box {filename}",
-        ).add_to(m)
-
-        folium.GeoJson(labels.to_json(), name="Shapefile Data", colors="red").add_to(m)
-
         m.fit_bounds(
             [
                 [bbox.bounds.miny.mean(), bbox.bounds.minx.mean()],
                 [bbox.bounds.maxy.mean(), bbox.bounds.maxx.mean()],
             ]
         )
-        folium.LayerControl().add_to(m)
         title_list.append(
-            f"\n\nDownload tile bounding box and labels for: {filename}\n"
+            f"\n\nDownload tile bounding box and labels for: {filenames}\n"
         )
+
+        for class_id in range(0, len(classes)):
+            filename = ','.join(labels_gdf.loc[(labels_gdf["datetime"] == dates[date_id]) & (labels_gdf["labelclass"] == classes[class_id])][
+                "filename"
+            ].unique())
+            class_bbox = grouped_bbox_gdf.loc[(grouped_bbox_gdf["datetime"] == dates[date_id]) & (grouped_bbox_gdf["labelclass"] == classes[class_id])]
+            labels = labels_gdf.loc[(labels_gdf["datetime"] == dates[date_id]) & (labels_gdf["labelclass"] == classes[class_id])]
+            color_hex = to_hex(cmap(class_id))
+            folium.GeoJson(
+                class_bbox.to_json(),
+                name=f"Download tile bounding box {filename}",
+                style_function=lambda feat, c=color_hex: {
+                    "color": c,
+                    "weight": 2,
+                    "fillOpacity": 0
+                }
+            ).add_to(m)
+
+            folium.GeoJson(
+                labels.to_json(),
+                name=f"Shapefile Data {filename}",
+                style_function=lambda feat, c=color_hex: {
+                    "color": c,
+                    "fillColor": c,
+                    "weight": 2,
+                    "fillOpacity": 0.5
+                }
+            ).add_to(m)
+        
+        folium.LayerControl().add_to(m)
+
         map_collection.append(m)
 
     return map_collection, title_list
