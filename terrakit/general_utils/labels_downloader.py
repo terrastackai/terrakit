@@ -23,6 +23,11 @@ EXAMPLE_RASTER_LABEL_FILES = [
     "subsetted_512x512_HLS.S30.T10SGD.2021306.v1.4.mask.tif",
 ]
 
+EXAMPLE_CLASS_LABEL_FILES = [
+    "EMSR801_AOI01_DEL_MONIT02_CLASS_0_observedEventA_v1_2025-04-23.json",
+    "EMSR801_AOI01_DEL_MONIT02_CLASS_1_observedEventA_v1_2025-04-23.json",
+]
+
 
 # Copernicus Emergency Mapping Service API
 COPERNICUS_URL = "https://rapidmapping.emergency.copernicus.eu/backend"

@@ -106,6 +106,30 @@ def download_data_setup():
         shutil.copy(shp_file, DEFAULT_WORKING_DIR)
 
 
+@pytest.fixture
+def download_data_setup_classes():
+    """Setup fixture for multi-class label tests using pre-generated shapefiles."""
+    print("Starting multi-class label test...")
+    # Ensure dir does not exist before starting
+    if os.path.exists(DEFAULT_WORKING_DIR):
+        print(f"{DEFAULT_WORKING_DIR} being deleted before starting the test...")
+        shutil.rmtree(DEFAULT_WORKING_DIR)
+    print(f"Creating {DEFAULT_WORKING_DIR}..")
+    Path(DEFAULT_WORKING_DIR).mkdir(parents=True, exist_ok=True)
+    
+    # Copy pre-generated class label shapefiles
+    shp_files = glob(
+        "./tests/resources/component_test_data/download/terrakit_curated_dataset_classes_all_bbox*"
+    )
+    for shp_file in shp_files:
+        shutil.copy(shp_file, DEFAULT_WORKING_DIR)
+    shp_files = glob(
+        "./tests/resources/component_test_data/download/terrakit_curated_dataset_classes_labels*"
+    )
+    for shp_file in shp_files:
+        shutil.copy(shp_file, DEFAULT_WORKING_DIR)
+
+
 ###################################################################################################
 
 
