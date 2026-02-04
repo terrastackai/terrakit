@@ -327,7 +327,7 @@ class TestLabels_Classes_conflict:
                 "save_file": "",
             },
         ]
-        queried_data = download_data(
+        download_data(
             dataset_name=DEFAULT_DATASET_NAME,
             working_dir=WORKING_DIR,
             data_sources=data_source,
@@ -342,6 +342,6 @@ class TestLabels_Classes_conflict:
         )
 
         assert (
-            not "sentinel_aws_sentinel-2-l2a_2025-06-16_imputed_labels.tif"
-            in os.listdir(Path(WORKING_DIR))
+            "sentinel_aws_sentinel-2-l2a_2025-06-16_imputed_labels.tif"
+            not in os.listdir(Path(WORKING_DIR))
         )
