@@ -3,6 +3,7 @@
 
 
 import csv
+import json
 import os
 import pytest
 import shutil
@@ -15,6 +16,7 @@ from terrakit.general_utils.labels_downloader import (
     hugging_face_file_downloader,
     EXAMPLE_LABEL_FILES,
     EXAMPLE_RASTER_LABEL_FILES,
+    EXAMPLE_CLASS_LABEL_FILES,
 )
 
 DATASET_NAME = "terrakit_testing"
@@ -24,7 +26,7 @@ DEFAULT_WORKING_DIR: str = "./tmp"
 LABELS_FOLDER: str = "./docs/examples/test_wildfire_vector"
 LABELS_FOLDER_RASTER: str = "./docs/examples/test_burn_scar_raster"
 LABELS_FOLDER_CSV_DATETIME: str = "./docs/examples/test_wildfire_vector_metadata_csv"
-LABELS_FOLDER_CLASSES: str = "./docs/examples/test_forest_classes_vector"
+LABELS_FOLDER_CLASSES: str = "./docs/examples/test_wildfire_classes_vector"
 EMPTY_LABELS_FOLDER: str = "./tests/tmp/labels"
 
 
@@ -64,6 +66,53 @@ def download_example_labels():
                 subfolder="training",
                 dest=LABELS_FOLDER_RASTER,
             )
+
+    # Create class label files by downloading and splitting the regular label file
+    if (
+        Path(LABELS_FOLDER_CLASSES).is_dir() is False
+        or set(EXAMPLE_CLASS_LABEL_FILES).issubset(
+            glob(f"{LABELS_FOLDER_CLASSES}/*.json")
+        )
+        is False
+    ):
+        # Clean up the labels folder to ensure we start fresh
+        if Path(LABELS_FOLDER_CLASSES).exists():
+            shutil.rmtree(LABELS_FOLDER_CLASSES)
+        Path(LABELS_FOLDER_CLASSES).mkdir(parents=True, exist_ok=True)
+
+        # Download MONIT02 from EMSR801 (contains 2 spatial features from same date)
+        downloaded_file = rapid_mapping_geojson_downloader(
+            event_id="801",
+            aoi="01",
+            monitoring_number="02",
+            version="v1",
+            dest=LABELS_FOLDER_CLASSES,
+        )
+
+        # Split the downloaded file into separate CLASS files based on features
+        with open(downloaded_file, "r") as f:
+            data = json.load(f)
+
+        # Create CLASS_0 file with first feature (large burnt area)
+        class_0_data = data.copy()
+        class_0_data["features"] = [data["features"][1]]  # Larger area feature
+        class_0_file = downloaded_file.replace(
+            "_observedEventA_v1_", "_CLASS_0_observedEventA_v1_"
+        )
+        with open(class_0_file, "w") as f:
+            json.dump(class_0_data, f)
+
+        # Create CLASS_1 file with second feature (small burnt area)
+        class_1_data = data.copy()
+        class_1_data["features"] = [data["features"][0]]  # Smaller area feature
+        class_1_file = downloaded_file.replace(
+            "_observedEventA_v1_", "_CLASS_1_observedEventA_v1_"
+        )
+        with open(class_1_file, "w") as f:
+            json.dump(class_1_data, f)
+
+        # Remove the original combined file
+        os.remove(downloaded_file)
 
 
 @pytest.fixture

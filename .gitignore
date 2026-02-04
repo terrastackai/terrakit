@@ -118,6 +118,7 @@ dmypy.json
 
 # Test data
 test_wildfire_vector
+test_wildfire_classes_vector
 
 # Ruff
 .ruff_cache

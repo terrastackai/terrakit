@@ -18,6 +18,7 @@ from glob import glob
 from pathlib import Path
 from pydantic import ValidationError
 from shapely.geometry import box, shape
+from shapely.ops import unary_union
 from rasterio.features import shapes
 from typing import Literal
 
@@ -382,51 +383,28 @@ class LabelsCls:
         for d in list(label_bbox_gdf.datetime.unique()):
             label_bbox_date_gdf = label_bbox_gdf[label_bbox_gdf.datetime == d]
 
+
+            # Get the union of all geometries to find the overall bounds
+            all_geoms = label_bbox_date_gdf.geometry.tolist()
+            combined_bounds = unary_union(all_geoms).bounds
+            combined_bbox = box(*combined_bounds)
+
+            logging.info(f"Date {d}: Combined bbox bounds = {combined_bounds}")
+            logging.info(
+                f"  Number of label classes: {len(label_bbox_date_gdf.labelclass.unique())}"
+            )
+
+            # Create one row per class, all with the same combined bbox
+            # This ensures plotting functions can iterate over all classes
             for lc in list(label_bbox_date_gdf.labelclass.unique()):
-                label_bbox_date_and_class_gdf = label_bbox_date_gdf[
-                    label_bbox_date_gdf.labelclass == lc
-                ]
-
-                # Find intersecting bounding boxes and merge, then repeat
-                intersects = label_bbox_date_and_class_gdf.sjoin(
-                    label_bbox_date_and_class_gdf, how="left", predicate="intersects"
+                label_bbox_class_row = (
+                    label_bbox_date_gdf[label_bbox_date_gdf.labelclass == lc]
+                    .iloc[[0]]
+                    .copy()
                 )
-                intersects.drop(
-                    [c for c in intersects.columns if c.endswith("_right")],
-                    axis=1,
-                    inplace=True,
-                )
-                intersects.rename(
-                    columns=lambda c: c[:-5] if c.endswith("_left") else c, inplace=True
-                )
-                label_bbox_date_grouped_gdf = intersects.dissolve(aggfunc="min")
-
-                intersects = label_bbox_date_grouped_gdf.sjoin(
-                    label_bbox_date_grouped_gdf, how="left", predicate="intersects"
-                )
-                intersects.drop(
-                    [c for c in intersects.columns if c.endswith("_right")],
-                    axis=1,
-                    inplace=True,
-                )
-                intersects.rename(
-                    columns=lambda c: c[:-5] if c.endswith("_left") else c, inplace=True
-                )
-                label_bbox_date_grouped_gdf = intersects.dissolve(aggfunc="min")
-
-                # Calculate the bounding box from the combined area
-                label_bbox_date_grouped_bbox_gdf = copy.deepcopy(
-                    label_bbox_date_grouped_gdf
-                )
-                label_bbox_date_grouped_bbox_gdf["geometry"] = (
-                    label_bbox_date_grouped_bbox_gdf.geometry.apply(
-                        lambda x: box(*x.bounds)
-                    ).tolist()
-                )
-
-                label_bbox_grouped_bbox_list = label_bbox_grouped_bbox_list + [
-                    label_bbox_date_grouped_bbox_gdf
-                ]
+                label_bbox_class_row["geometry"] = [combined_bbox]
+                logging.info(f"  Adding bbox for class {lc}: {combined_bbox.bounds}")
+                label_bbox_grouped_bbox_list.append(label_bbox_class_row)
 
         label_bbox_grouped_bbox_gdf = pd.concat(
             label_bbox_grouped_bbox_list, ignore_index=True

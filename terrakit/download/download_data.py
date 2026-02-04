@@ -230,9 +230,15 @@ class DownloadCls:
         )
         grouped_bbox_gdf = self._read_shp_file(bbox_shp_file)
 
+        # Deduplicate by datetime and geometry to avoid downloading same tile multiple times
+        # This happens when multiple label classes exist for the same date/location
+        grouped_bbox_gdf_unique = grouped_bbox_gdf.drop_duplicates(
+            subset=["datetime", "geometry"], keep="first"
+        ).reset_index(drop=True)
+
         queried_data = []
-        for li in range(0, len(grouped_bbox_gdf)):
-            l = grouped_bbox_gdf.loc[li]  # noqa
+        for li in range(0, len(grouped_bbox_gdf_unique)):
+            l = grouped_bbox_gdf_unique.loc[li]  # noqa
 
             from_date = (
                 datetime.strptime(l.datetime, "%Y-%m-%d")
@@ -305,9 +311,6 @@ class DownloadCls:
                         f"Error while transforming data... {e}"
                     ) from e
 
-                for t in da.time.values:  # type: ignore[union-attr]
-                    date = t.astype(str)[:10]
-
                 for i, t in enumerate(da.time.values):  # type: ignore[union-attr]
                     date = t.astype(str)[:10]
                     queried_data.append(
@@ -344,10 +347,14 @@ class DownloadCls:
             label_classes = np.sort(label_gdf["labelclass"].unique())
             logger.info(f"Label classes being used: {label_classes}")
             if not set_no_data and 0 in label_classes:
-                logger.error(
-                    "Labels are using class 0 which will be overwritten unless set_no_data is being set."
+                raise TerrakitValueError(
+                    "Labels are using class 0 which conflicts with the background class. "
+                    "Either use set_no_data=True or ensure label classes start from 1.",
+                    details={
+                        "label_classes": label_classes.tolist(),
+                        "set_no_data": set_no_data,
+                    },
                 )
-                return 0
 
             start_index = 0 if set_no_data else 1
             # Check if continuous and otherwise provide a warning
@@ -385,7 +392,7 @@ class DownloadCls:
                     f"{q.replace('.tif', '')}_labels.tif", "w", **out_meta
                 ) as dst:
                     dst.write(image, indexes=1)
-                    file_save_count = +1
+                    file_save_count += 1
         return file_save_count
 
 
