@@ -3,7 +3,6 @@
 
 
 import csv
-import json
 import os
 import pytest
 import shutil
@@ -13,6 +12,7 @@ from pathlib import Path
 
 from terrakit.general_utils.labels_downloader import (
     rapid_mapping_geojson_downloader,
+    rapid_mapping_class_split,
     hugging_face_file_downloader,
     EXAMPLE_LABEL_FILES,
     EXAMPLE_RASTER_LABEL_FILES,
@@ -87,30 +87,7 @@ def download_example_labels():
             dest=LABELS_FOLDER_CLASSES,
         )
 
-        # Split the downloaded file into separate CLASS files based on features
-        with open(downloaded_file, "r") as f:
-            data = json.load(f)
-
-        # Create CLASS_0 file with first feature (large burnt area)
-        class_0_data = data.copy()
-        class_0_data["features"] = [data["features"][1]]  # Larger area feature
-        class_0_file = downloaded_file.replace(
-            "_observedEventA_v1_", "_CLASS_0_observedEventA_v1_"
-        )
-        with open(class_0_file, "w") as f:
-            json.dump(class_0_data, f)
-
-        # Create CLASS_1 file with second feature (small burnt area)
-        class_1_data = data.copy()
-        class_1_data["features"] = [data["features"][0]]  # Smaller area feature
-        class_1_file = downloaded_file.replace(
-            "_observedEventA_v1_", "_CLASS_1_observedEventA_v1_"
-        )
-        with open(class_1_file, "w") as f:
-            json.dump(class_1_data, f)
-
-        # Remove the original combined file
-        os.remove(downloaded_file)
+        rapid_mapping_class_split(downloaded_file)
 
 
 @pytest.fixture
