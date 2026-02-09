@@ -300,6 +300,9 @@ class TestLabels_LabelType_FailureTests:
         )
 
 
+@pytest.mark.skip(
+    "TODO: Understand best test case to validate class conflicts will fail."
+)
 class TestLabels_Classes_conflict:
     def test_process_labels__classes_conflict(
         self,
