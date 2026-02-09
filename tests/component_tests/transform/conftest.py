@@ -34,7 +34,10 @@ EMPTY_LABELS_FOLDER: str = "./tests/tmp/labels"
 def download_example_labels():
     if (
         Path(LABELS_FOLDER).is_dir() is False
-        or set(EXAMPLE_LABEL_FILES).issubset(glob(f"{LABELS_FOLDER}/*.json")) is False
+        or set(EXAMPLE_LABEL_FILES).issubset(
+            [Path(f).name for f in glob(f"{LABELS_FOLDER}/*.json")]
+        )
+        is False
     ):
         rapid_mapping_geojson_downloader(
             event_id="748",
@@ -54,7 +57,7 @@ def download_example_labels():
     if (
         Path(LABELS_FOLDER_RASTER).is_dir() is False
         or set(EXAMPLE_RASTER_LABEL_FILES).issubset(
-            glob(f"{LABELS_FOLDER_RASTER}/*.tif")
+            [Path(f).name for f in glob(f"{LABELS_FOLDER_RASTER}/*.tif")]
         )
         is False
     ):
@@ -71,15 +74,10 @@ def download_example_labels():
     if (
         Path(LABELS_FOLDER_CLASSES).is_dir() is False
         or set(EXAMPLE_CLASS_LABEL_FILES).issubset(
-            glob(f"{LABELS_FOLDER_CLASSES}/*.json")
+            [Path(f).name for f in glob(f"{LABELS_FOLDER_CLASSES}/*.json")]
         )
         is False
     ):
-        # Clean up the labels folder to ensure we start fresh
-        if Path(LABELS_FOLDER_CLASSES).exists():
-            shutil.rmtree(LABELS_FOLDER_CLASSES)
-        Path(LABELS_FOLDER_CLASSES).mkdir(parents=True, exist_ok=True)
-
         # Download MONIT02 from EMSR801 (contains 2 spatial features from same date)
         downloaded_file = rapid_mapping_geojson_downloader(
             event_id="801",

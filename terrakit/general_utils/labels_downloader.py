@@ -3,10 +3,10 @@
 
 
 import os
+
+from huggingface_hub import hf_hub_download
 from pathlib import Path
 from zipfile import ZipFile
-from huggingface_hub import hf_hub_download
-
 
 from terrakit.general_utils.rest import get
 from terrakit.general_utils.exceptions import TerrakitBaseException
@@ -14,7 +14,7 @@ from terrakit.general_utils.exceptions import TerrakitBaseException
 # Define a list of example labels used for demonstration and test purposes.
 EXAMPLE_LABEL_FILES = [
     "EMSR801_AOI01_DEL_MONIT02_observedEventA_v1_2025-04-23.json",
-    "EMSR748_AOI01_DEL_MONIT05_observedEventA_v1_2024-08-30.json",
+    "EMSR748_AOI01_DEL_MONIT05_observedEventA_v1_2024-08-26.json",
 ]
 
 
