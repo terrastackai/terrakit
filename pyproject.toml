@@ -24,7 +24,7 @@ dependencies = [
         "h5netcdf>=1.7.3",
         "huggingface-hub",
         "geojson>=3.2.0",
-        "geopandas>=1.1.1",
+        "geopandas>=1.1.2",
         "joblib==1.5.2",
         "jsonargparse>=4.40.2",
         "nest-asyncio>=1.6.0",
