@@ -3,13 +3,16 @@
 
 
 import logging
+import os
 import xarray as xr
+
 from typing import Any, Union
 
 from ..connector import Connector
 from ..geodata_utils import (
     load_and_list_collections,
 )
+from terrakit.general_utils.exceptions import TerrakitValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +20,7 @@ logger = logging.getLogger(__name__)
 ###  Supporting functions
 ######################################################################################################
 
+CDSAPI_URL = "https://cds.climate.copernicus.eu/api"
 
 ######################################################################################################
 ###  Connector class
@@ -33,7 +37,7 @@ class CDS(Connector):
 
     def __init__(self):
         """
-        Initialize CDS with collections and configuration.
+        Initialize climate_data_store with collections and configuration.
         """
         self.connector_type: str = "climate_data_store"
         self.collections: list[Any] = load_and_list_collections(
@@ -65,10 +69,10 @@ class CDS(Connector):
         data_connector_spec=None,
     ) -> Union[tuple[list[Any], list[dict[str, Any]]], tuple[None, None]]:
         """
-        This function retrieves unique dates and corresponding data results from a specified Sentinel Hub data collection.
+        This function retrieves unique dates and corresponding data results from a specified Climate Data Store data collection.
 
         Args:
-            data_collection_name (str): The name of the Sentinel Hub data collection to search.
+            data_collection_name (str): The name of the Climate Data Store data collection to search.
             date_start (str): The start date for the time interval in 'YYYY-MM-DD' format.
             date_end (str): The end date for the time interval in 'YYYY-MM-DD' format.
             area_polygon (Polygon, optional): A polygon defining the area of interest.
@@ -80,6 +84,11 @@ class CDS(Connector):
         Returns:
             tuple: A tuple containing a sorted list of unique dates and a list of data results.
         """
+        if "CDSAPI_KEY" not in os.environ:
+            raise TerrakitValidationError(
+                message="Error: Missing credentials 'CDSAPI_KEY'. Please update .env with correct credentials."
+            )
+
         unique_dates: list[str] = []
         results: list[dict[str, Any]] = [{}]
         return unique_dates, results
@@ -98,7 +107,7 @@ class CDS(Connector):
         working_dir=".",
     ):
         """
-        Fetches data from SentinelHub for the specified collection, date range, area, and bands.
+        Fetches data from <new_connector> for the specified collection, date range, area, and bands.
 
         Args:
             data_collection_name (str): Name of the data collection to fetch data from.

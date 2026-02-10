@@ -28,12 +28,9 @@ class TestClimateDataStore:
         collections = dc.connector.list_collections()
         assert collections == expected_collections
 
-    @pytest.mark.skip()
     def test__missing_credentials(
         self,
         unset_evn_vars,
-        connector_type,
-        collection,
         start_date,
         bbox,
         reset_dot_env,
@@ -41,7 +38,7 @@ class TestClimateDataStore:
         """
         Test that find_data only runs if credentials are provided.
         """
-
+        collection = "derived-era5-single-levels-daily-statistics"
         with pytest.raises(TerrakitValidationError, match="Error: Missing credentials"):
-            dc = DataConnector(connector_type=connector_type)
+            dc = DataConnector(connector_type=self.connector_type)
             dc.connector.find_data(collection, start_date, start_date, bbox=bbox)

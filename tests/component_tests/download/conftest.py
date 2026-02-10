@@ -1,4 +1,4 @@
-# © Copyright IBM Corporation 2025
+# © Copyright IBM Corporation 2025-2026
 # SPDX-License-Identifier: Apache-2.0
 
 
@@ -57,10 +57,12 @@ def unset_evn_vars():
         os.getenv("SH_CLIENT_ID")
         and os.getenv("SH_CLIENT_SECRET")
         and os.getenv("NASA_EARTH_BEARER_TOKEN")
+        and os.getenv("CDSAPI_KEY")
     ):
         del os.environ["SH_CLIENT_ID"]
         del os.environ["SH_CLIENT_SECRET"]
         del os.environ["NASA_EARTH_BEARER_TOKEN"]
+        del os.environ["CDSAPI_KEY"]
 
 
 @pytest.fixture
@@ -68,6 +70,7 @@ def invalid_evn_vars():
     os.environ["SH_CLIENT_ID"] = "<invalid>"
     os.environ["SH_CLIENT_SECRET"] = "<invalid>"
     os.environ["NASA_EARTH_BEARER_TOKEN"] = "<invalid>"
+    os.environ["CDSAPI_KEY"] = "<invalid>"
 
 
 @pytest.fixture
