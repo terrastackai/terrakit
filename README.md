@@ -69,7 +69,7 @@ The following data connectors and associated collections are available:
 | sentinelhub       | s2_l1c, dem, s1_grd, hls_l30, s2_l2a, hls_s30 |
 | nasa_earthdata    | HLSL30_2.0, HLSS30_2.0  |
 | sentinel_aws      | sentinel-2-l2a  |
-| climate_data_store| derived-era5-single-levels-daily-statistics |
+| climate_data_store| derived-era5-single-levels-daily-statistics, projections-cordex-domains-single-levels|
 | IBMResearchSTAC   |  ukcp18-land-cpm-uk-2.2km, ch4, sentinel-5p-l3grd-ch4-wfmd |
 | TheWeatherCompany | weathercompany-daily-forecast |
 

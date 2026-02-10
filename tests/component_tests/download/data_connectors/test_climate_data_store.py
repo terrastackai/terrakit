@@ -12,17 +12,18 @@ from terrakit.general_utils.exceptions import (
 class TestClimateDataStore:
     connector_type = "climate_data_store"
 
-    @pytest.mark.skip()
     def test_valid_data_connector(self):
         dc = DataConnector(connector_type=self.connector_type)
         assert dc.connector is not None
 
-    @pytest.mark.skip()
-    def test_list_collections_sentinel_aws(
+    def test_list_collections_climate_data_store(
         self,
         **kwargs,
     ):
-        expected_collections = ["sentinel-2-l2a"]
+        expected_collections = [
+            "projections-cordex-domains-single-levels",
+            "derived-era5-single-levels-daily-statistics",
+        ]
         dc = DataConnector(connector_type=self.connector_type)
         collections = dc.connector.list_collections()
         assert collections == expected_collections
