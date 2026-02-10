@@ -5042,7 +5042,7 @@ requires-dist = [
     { name = "dask", specifier = "==2025.7.0" },
     { name = "folium", specifier = ">=0.20.0" },
     { name = "geojson", specifier = ">=3.2.0" },
-    { name = "geopandas", specifier = ">=1.1.1" },
+    { name = "geopandas", specifier = ">=1.1.2" },
     { name = "h5netcdf", specifier = ">=1.7.3" },
     { name = "huggingface-hub" },
     { name = "joblib", specifier = "==1.5.2" },
