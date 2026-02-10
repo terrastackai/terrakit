@@ -1,4 +1,4 @@
-# © Copyright IBM Corporation 2025
+# © Copyright IBM Corporation 2025-2026
 # SPDX-License-Identifier: Apache-2.0
 
 
@@ -66,10 +66,10 @@ class ConnectorTemplate(Connector):
         data_connector_spec=None,
     ) -> Union[tuple[list[Any], list[dict[str, Any]]], tuple[None, None]]:
         """
-        This function retrieves unique dates and corresponding data results from a specified Sentinel Hub data collection.
+        This function retrieves unique dates and corresponding data results from a specified <new_connector> data collection.
 
         Args:
-            data_collection_name (str): The name of the Sentinel Hub data collection to search.
+            data_collection_name (str): The name of the <new_connector> data collection to search.
             date_start (str): The start date for the time interval in 'YYYY-MM-DD' format.
             date_end (str): The end date for the time interval in 'YYYY-MM-DD' format.
             area_polygon (Polygon, optional): A polygon defining the area of interest.
