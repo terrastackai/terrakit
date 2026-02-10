@@ -383,7 +383,6 @@ class LabelsCls:
         for d in list(label_bbox_gdf.datetime.unique()):
             label_bbox_date_gdf = label_bbox_gdf[label_bbox_gdf.datetime == d]
 
-
             # Get the union of all geometries to find the overall bounds
             all_geoms = label_bbox_date_gdf.geometry.tolist()
             combined_bounds = unary_union(all_geoms).bounds

@@ -116,7 +116,7 @@ def download_data_setup_classes():
         shutil.rmtree(DEFAULT_WORKING_DIR)
     print(f"Creating {DEFAULT_WORKING_DIR}..")
     Path(DEFAULT_WORKING_DIR).mkdir(parents=True, exist_ok=True)
-    
+
     # Copy pre-generated class label shapefiles
     shp_files = glob(
         "./tests/resources/component_test_data/download/terrakit_curated_dataset_classes_all_bbox*"

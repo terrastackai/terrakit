@@ -218,7 +218,7 @@ class TestLabels_Classes:
         )  # 2 shapefiles collections, each with 5 files, plus 1 data stat provenance file.
         assert len(os.listdir(Path(WORKING_DIR))) == num_files
         assert f"{DATASET_NAME}_metadata.json" in os.listdir(Path(WORKING_DIR))
-        
+
         # Verify multi-class labels were processed
         assert isinstance(grouped_boxes_gdf, pd.DataFrame)
         assert len(grouped_boxes_gdf) > 0
