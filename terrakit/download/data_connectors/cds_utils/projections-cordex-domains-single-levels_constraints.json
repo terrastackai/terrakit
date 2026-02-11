@@ -1,0 +1,120 @@
+{
+  "type": "Collection",
+  "id": "projections-cordex-domains-single-levels",
+  "stac_version": "1.1.0",
+  "title": "CORDEX regional climate model data on single levels",
+  "description": "This catalogue entry provides Regional Climate Model (RCM) data on single levels from a number of experiments, models, domains, resolutions, ensemble members, time frequencies and periods computed over several regional domains all over the World in the framework of the Coordinated Regional Climate Downscaling Experiment (CORDEX). The term \"single levels\" is used to express that the variables are 2D-matrices computed on one vertical level which can be surface (or a level close to the surface) or a dedicated pressure level in the atmosphere. Multiple vertical levels are excluded from this catalogue entry.\nHigh-resolution Regional Climate Models (RCMs) can provide climate change information on regional and local scales in relatively fine detail, which cannot be obtained from coarse scale Global Climate Models (GCMs). This is manifested in better description of small-scale regional climate characteristics and also in more accurate representation of extreme events. Consequently, outputs of such RCMs are indispensable in supporting regional and local climate impact studies and adaptation decisions. RCMs are not independent from the GCMs, since the GCMs provide lateral and lower boundary conditions to the regional models. In that sense RCMs can be viewed as magnifying glasses of the GCMs.\nThe CORDEX experiments consist of RCM simulations representing different future socio-economic scenarios (forcings), different combinations of GCMs and RCMs and different ensemble members of the same GCM-RCM combinations. This experiment design through the ensemble members allows for studies addressing questions related to the key uncertainties in future climate change. These uncertainties come from differences in the scenarios of future socio-economic development, the imperfection of regional and global models used and the internal (natural) variability of the climate system. This experiment design allows for studies addressing questions related to the key uncertainties in future climate change:\n\nwhat will future climate forcing be?\nwhat will be the response of the climate system to changes in forcing?\nwhat is the uncertainty related to natural variability of the climate system?\n\nThe term \"experiment\" in the CDS form refers to three main categories:\n\nEvaluation: CORDEX experiment driven by ECMWF ERA-Interim reanalysis for a past period. These experiments can be used to evaluate the quality of the RCMs using perfect boundary conditions as provided by a reanalysis system. The period covered is typically 1980-2010;\nHistorical: CORDEX experiment which covers a period for which modern climate observations exist. Boundary conditions are provided by GCMs. These experiments, that follow the observed changes in climate forcing, show how the RCMs perform for the past climate when forced by GCMs and can be used as a reference period for comparison with scenario runs for the future. The period covered is typically 1950-2005;\nScenario: Ensemble of CORDEX climate projection experiments using RCP (Representative Concentration Pathways) forcing scenarios. These scenarios are the RCP 2.6, 4.5 and 8.5 scenarios providing different pathways of the future climate forcing. Boundary conditions are provided by GCMs. The period covered is typically 2006-2100.\n\nIn CORDEX, the same experiments were done using different RCMs (labelled as “Regional Climate Model” in the CDS form).\nIn addition, for each RCM, there is a variety of GCMs, which can be used as lateral boundary conditions. The GCMs used are coming from the CMIP5 (5th phase of the Coupled Model Intercomparison Project) archive. These GCM boundary conditions are labelled as “Global Climate Model” in the form and are also available in the CDS.\nAdditionally, the uncertainty related to internal variability of the climate system is sampled by running several simulations with the same RCM-GCM combination. On the forms, these are indexed as separate ensemble members (the naming convention for ensemble members is available in the documentation). For each GCM, the same experiment was repeatedly done using slightly different conditions (like initial conditions or different physical parameterisations for instance) producing in that way an ensemble of experiments closely related. More details behind these sequential ensemble numbers is available in the detailed documentation.\nThe data are produced by the institutes and modelling centres participating in the different CORDEX domains with partial support from different international and national contributions including support from COPERNICUS for some of the EURO-CORDEX runs.\nThe data can be used for commercial purposes (unrestricted use) with the exception of the simulations from the following RCMs: BOUN-RegCM4-3 model (for Central Asia and Middle East and North Africa domains) and RU-CORE-RegCM4-3 model (for South-East Asia domain). Precise terms of use are provided in the CORDEX licence.",
+  "summaries": {},
+  "providers": [
+    {
+      "name": "ECMWF"
+    }
+  ],
+  "keywords": [
+    "Temporal coverage: Past",
+    "Spatial coverage: Europe",
+    "Temporal coverage: Present",
+    "Variable domain: Atmosphere (surface)",
+    "Variable domain: Atmosphere (upper air)",
+    "Product type: Climate projections",
+    "Temporal coverage: Future"
+  ],
+  "license": "other",
+  "extent": {
+    "spatial": {
+      "bbox": [
+        [
+          360.0,
+          -90.0,
+          0.0,
+          90.0
+        ]
+      ]
+    },
+    "temporal": {
+      "interval": [
+        [
+          "1950-01-01T00:00:00+00:00",
+          "2100-12-31T00:00:00+00:00"
+        ]
+      ]
+    }
+  },
+  "links": [
+    {
+      "rel": "self",
+      "type": "application/json",
+      "href": "https://cds.climate.copernicus.eu/api/catalogue/v1/collections/projections-cordex-domains-single-levels"
+    },
+    {
+      "rel": "parent",
+      "type": "application/json",
+      "href": "https://cds.climate.copernicus.eu/api/catalogue/v1/"
+    },
+    {
+      "rel": "root",
+      "type": "application/json",
+      "href": "https://cds.climate.copernicus.eu/api/catalogue/v1/"
+    },
+    {
+      "rel": "qa",
+      "href": "https://cds.climate.copernicus.eu/datasets/projections-cordex-domains-single-levels?tab=quality_assurance_tab",
+      "title": "Quality assessment of the dataset",
+      "type": "text/html"
+    },
+    {
+      "rel": "license",
+      "href": "https://object-store.os-api.cci2.ecmwf.int:443/cci2-prod-catalogue/licences/cordex-licence/cordex-licence_08fc76dd4edee86a8ac7ae6a7368c9a25b87a23bc5a1a60f11e9af6ed48eea35.pdf",
+      "title": "CORDEX licence",
+      "rev": 1,
+      "id": "cordex-licence"
+    },
+    {
+      "rel": "form",
+      "href": "https://object-store.os-api.cci2.ecmwf.int:443/cci2-prod-catalogue/resources/projections-cordex-domains-single-levels/form_de59d5b3df31700387af03031b8c27f72264384b37d01d08bddeeb32c3470d6d.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "constraints",
+      "href": "https://object-store.os-api.cci2.ecmwf.int:443/cci2-prod-catalogue/resources/projections-cordex-domains-single-levels/constraints_953327d50d70e11c67d715c45af818d43db99e18eace62ef26adc2cdf0c6184d.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "retrieve",
+      "href": "https://cds.climate.copernicus.eu/api/retrieve/v1/processes/projections-cordex-domains-single-levels",
+      "type": "application/json"
+    },
+    {
+      "rel": "costing_api",
+      "href": "https://cds.climate.copernicus.eu/api/retrieve/v1/processes/projections-cordex-domains-single-levels/costing",
+      "type": "application/json"
+    },
+    {
+      "rel": "layout",
+      "href": "https://object-store.os-api.cci2.ecmwf.int:443/cci2-prod-catalogue/resources/projections-cordex-domains-single-levels/layout_39f4e7d4f881ff9e4dbf87bdc9ba52bb106a62598498e5150c2765104d4601cb.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "messages",
+      "href": "https://cds.climate.copernicus.eu/api/catalogue/v1/collections/projections-cordex-domains-single-levels/messages",
+      "title": "All active messages on CORDEX regional climate model data on single levels"
+    }
+  ],
+  "assets": {
+    "thumbnail": {
+      "href": "https://object-store.os-api.cci2.ecmwf.int:443/cci2-prod-catalogue/resources/projections-cordex-domains-single-levels/overview_a414d6d59c8c872f6765b2cbc73ee0d7c043535d442867864c02964ba08524db.png",
+      "type": "image/jpg",
+      "roles": [
+        "thumbnail"
+      ]
+    }
+  },
+  "published": "2019-08-27T00:00:00Z",
+  "updated": "2019-08-27T00:00:00Z",
+  "sci:doi": "10.24381/cds.bc91edc3",
+  "cads:disabled_reason": null,
+  "cads:sanity_check": {
+    "status": "unknown",
+    "timestamp": null
+  }
+}
