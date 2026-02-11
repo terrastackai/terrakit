@@ -1,4 +1,4 @@
-# © Copyright IBM Corporation 2025
+# © Copyright IBM Corporation 2025-2026
 # SPDX-License-Identifier: Apache-2.0
 
 
@@ -380,11 +380,15 @@ class SentinelHub(Connector):
             bands (list, optional): List of bands to retrieve. Defaults to all bands.
             maxcc (int, optional): Maximum cloud cover threshold (0-100). Defaults to 100.
             data_connector_spec (dict, optional): Data connector specification. Defaults to None.
-            save_file (str, optional): Path to save the output file. Defaults to None.
+            save_file (str, optional): Path to save the output file. If provided, individual GeoTIFF files
+                will be saved for each date with the naming pattern: {save_file}_{date}.tif. Each file
+                contains all requested bands for that specific date. If None, no files are saved to disk. Defaults to None.
             working_dir (str, optional): Working directory for temporary files. Defaults to '.'.
 
         Returns:
-            xarray: An xarray Datasets containing the fetched data with dimensions (time, band, y, x).
+            xarray.DataArray: An xarray DataArray containing all fetched data with dimensions (time, band, y, x).
+                All dates are stacked along the time dimension, and all bands are stacked along the band dimension.
+                If save_file is provided, individual date files are also saved to disk.
 
         Raises:
             TerrakitValidationError: If a validation error occurs.
