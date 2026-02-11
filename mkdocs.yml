@@ -31,6 +31,7 @@ nav:
       - Sentinel AWS: api/data_connectors/sentinelaws.md
       - Sentinel Hub: api/data_connectors/sentinel_hub.md
       - NASA Earthdata: api/data_connectors/nasa_earthdata.md
+      - Climate Data Store: api/data_connectors/climate_data_store.md
       - IBM Research STAC: api/data_connectors/ibmresearchstac.md
       - The Weather Company: api/data_connectors/theweathercompany.md
     - Download Transformations: api/download_transformations/transformations.md
