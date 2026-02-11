@@ -11,7 +11,8 @@ nav:
     - Upload: upload.md
   - TerraKit DataConnectors:
     - Data Connectors: data_connectors.md
-    - Cordex Domains: cordex_domains.md
+    - CORDEX Domains: api/data_connectors/collections/cordex_domains.md
+    - ERA5 Domains: api/data_connectors/collections/era5_domains.md
   - Examples: 
     - examples/labels_to_data.ipynb
     - examples/terrakit_download.ipynb
