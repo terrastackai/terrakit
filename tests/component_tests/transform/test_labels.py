@@ -225,3 +225,18 @@ class TestLabels_Classes:
         assert isinstance(labels_gdf, pd.DataFrame)
         assert len(labels_gdf) > 0
         assert "2/2 label files were successfully processed." in caplog.text
+
+        # Verify class 0 and class 1 are present in labels
+        assert "labelclass" in labels_gdf.columns
+        assert 0 in labels_gdf["labelclass"].values, (
+            "Class 0 should be present in labels"
+        )
+        assert 1 in labels_gdf["labelclass"].values, (
+            "Class 1 should be present in labels"
+        )
+
+        # Verify both classes are in the grouped boxes
+        assert "labelclass" in grouped_boxes_gdf.columns
+        assert set(grouped_boxes_gdf["labelclass"].values) == {0, 1}, (
+            "Both class 0 and 1 should be in grouped boxes"
+        )
