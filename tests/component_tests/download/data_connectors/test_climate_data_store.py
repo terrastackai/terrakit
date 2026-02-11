@@ -6,7 +6,6 @@ import os
 import pandas as pd
 import pytest
 import xarray as xr
-from pathlib import Path
 from rasterio.crs import CRS
 
 from terrakit import DataConnector
@@ -14,83 +13,6 @@ from terrakit.general_utils.exceptions import (
     TerrakitValidationError,
     TerrakitValueError,
 )
-
-
-@pytest.fixture
-def mock_cds_client(monkeypatch):
-    """
-    Mock CDS API client to copy test zip file instead of downloading from CDS.
-
-    This fixture patches cdsapi.Client to return a mock that copies
-    ./7fbb992ea3687a2ec12f2ba1de4cc73a.zip to the requested output path.
-
-    # The following request was used to generate the test zip file:
-    # request = {
-    #     "variable": [
-    #         "10m_u_component_of_wind",
-    #         "10m_v_component_of_wind",
-    #         "2m_temperature",
-    #         "total_precipitation",
-    #         "10m_wind_gust_since_previous_post_processing",
-    #     ],
-    #     "product_type": "reanalysis",
-    #     "year": "2025",
-    #     "month": ["01"],
-    #     "day": ["01", "02"],
-    #     "time_zone": "utc+00:00",
-    #     "area": [90, -180, -90, 180],
-    #     "daily_statistic": "daily_mean",
-    #     "frequency": "6_hourly",
-    #     "format": "netcdf",
-    # }
-
-    # #
-    # cds = cdsapi.Client()
-    # downloaded_filename = cds.retrieve(data_collection_name, request).download()
-
-    Usage:
-        def test_cds_download(mock_cds_client):
-            # CDS API calls will use the mock
-            dc = DataConnector(connector_type="climate_data_store")
-            data = dc.connector.get_data(...)
-    """
-    import shutil
-    from unittest.mock import MagicMock
-
-    # Path to test zip file
-    TEST_ZIP = Path("./7fbb992ea3687a2ec12f2ba1de4cc73a.zip")
-
-    # Create mock client
-    mock_client = MagicMock()
-
-    def mock_retrieve(collection_name, request_params, output_path):
-        """Copy test zip to output_path instead of downloading."""
-        if not TEST_ZIP.exists():
-            raise FileNotFoundError(
-                f"Test data not found: {TEST_ZIP}\n"
-                "Please ensure 7fbb992ea3687a2ec12f2ba1de4cc73a.zip exists in project root"
-            )
-
-        # Ensure output directory exists
-        output_file = Path(output_path)
-        output_file.parent.mkdir(parents=True, exist_ok=True)
-
-        # Copy test zip to requested location
-        shutil.copy(TEST_ZIP, output_file)
-
-        return str(output_file)
-
-    # Assign mock retrieve method
-    mock_client.retrieve = mock_retrieve
-
-    # Mock the cdsapi.Client class to return our mock
-    def mock_cdsapi_client(*args, **kwargs):
-        return mock_client
-
-    # Patch cdsapi.Client
-    monkeypatch.setattr("cdsapi.Client", mock_cdsapi_client)
-
-    return mock_client
 
 
 class TestClimateDataStore:

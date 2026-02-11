@@ -374,7 +374,7 @@ def mock_cds_client(monkeypatch):
     Mock CDS API client to copy test zip file instead of downloading from CDS.
 
     This fixture patches cdsapi.Client to return a mock that copies
-    ./7fbb992ea3687a2ec12f2ba1de4cc73a.zip to the requested output path.
+    ./tests/resources/climate_data_store/era5_daily_statistics_test_data.zip to the requested output path.
 
     # The following request was used to generate the original test zip file:
     # request = {
@@ -423,7 +423,7 @@ def mock_cds_client(monkeypatch):
         if not TEST_ZIP.exists():
             raise FileNotFoundError(
                 f"Test data not found: {TEST_ZIP}\n"
-                "Please ensure /Users/rosielickorish/Documents/IBMResearch/2026/terrakit/tests/resources/scripts/generate_cds_test_data.py exists."
+                "Please ensure ./tests/resources/scripts/generate_cds_test_data.py exists."
             )
 
         # Ensure output directory exists
