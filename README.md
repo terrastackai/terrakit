@@ -61,7 +61,7 @@ Data connectors are classes which enable a user to search for data and query dat
 * get_data()
 
 
-### Available data connectors
+### Available collections
 The following data connectors and associated collections are available:
 
 | Connectors        | Collections |

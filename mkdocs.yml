@@ -9,6 +9,9 @@ nav:
     - Tile and Chip: chip.md
     - Store: store.md
     - Upload: upload.md
+  - TerraKit DataConnectors:
+    - Data Connectors: data_connectors.md
+    - Cordex Domains: cordex_domains.md
   - Examples: 
     - examples/labels_to_data.ipynb
     - examples/terrakit_download.ipynb
