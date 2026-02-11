@@ -5,19 +5,27 @@
 import cdsapi
 import json
 import logging
+import math
 import os
+import pandas as pd
+import requests
+import shutil
 import xarray as xr
+import zipfile
 from datetime import datetime, timedelta
+from pathlib import Path
 from shapely.geometry import box
 from typing import Any, Dict, Union
-from pathlib import Path
 
+from terrakit.download.geodata_utils import save_cog
 from ..connector import Connector
 from ..geodata_utils import (
     load_and_list_collections,
+    save_data_array_to_file,
 )
 from terrakit.general_utils.exceptions import (
     TerrakitValidationError,
+    TerrakitValueError,
 )
 from terrakit.validate.helpers import (
     check_collection_exists,
@@ -25,7 +33,11 @@ from terrakit.validate.helpers import (
     check_start_end_date_in_correct_order,
     basic_bbox_validation,
 )
-from .cds_utils.cordex_utils import CORDEX_DOMAINS, get_domain_info
+from .cds_utils.cordex_utils import (
+    CORDEX_DOMAINS,
+    get_domain_info,
+    find_matching_domains,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -82,8 +94,6 @@ class CDS(Connector):
         Raises:
             TerrakitValidationError: If no matching domain found
         """
-        from .cds_utils.cordex_utils import find_matching_domains
-
         matching_domains = find_matching_domains(bbox)
 
         if not matching_domains:
@@ -130,30 +140,416 @@ class CDS(Connector):
         )
         return best_domain
 
-    def list_cordex_domains(self) -> Dict[str, Any]:
+    def _convert_netcdf_to_geotiffs(
+        self, netcdf_path: str, bbox: list, output_dir: str, collection_name: str
+    ) -> list[str]:
+        """Convert CDS NetCDF to individual GeoTIFF files, one per date."""
+
+        ds = xr.open_dataset(netcdf_path)
+        output_files = []
+
+        # Determine dimension names
+        lon_name = "longitude" if "longitude" in ds.dims else "lon"
+        lat_name = "latitude" if "latitude" in ds.dims else "lat"
+        time_name = "time" if "time" in ds.dims else "valid_time"
+
+        # Get the main data variable
+        data_vars = [
+            v for v in ds.data_vars if v not in [lon_name, lat_name, time_name]
+        ]
+        var_name = data_vars[0]
+
+        # Process each time step
+        for time_idx in range(len(ds[time_name])):
+            # Extract data for this time step
+            da = ds[var_name].isel({time_name: time_idx})
+
+            # Get the date
+            time_value = ds[time_name].isel({time_name: time_idx}).values
+            date_str = pd.Timestamp(time_value).strftime("%Y-%m-%d")
+
+            # Add CRS and spatial dimensions
+            da = da.rio.write_crs("EPSG:4326")
+            da = da.rio.set_spatial_dims(x_dim=lon_name, y_dim=lat_name)
+
+            # Create output filename
+            output_filename = f"{collection_name}_{date_str}.tif"
+            output_path = Path(output_dir) / output_filename
+
+            # Use TerraKit's save_cog function
+            save_cog(da, str(output_path))
+            output_files.append(str(output_path))
+
+            logger.info(f"Created GeoTIFF: {output_filename}")
+
+        ds.close()
+        return output_files
+
+    def _estimate_request_size(
+        self,
+        collection_name: str,
+        date_start: str,
+        date_end: str,
+        bbox: list,
+        bands: list,
+    ) -> dict:
         """
-        List all available CORDEX domains with their information.
+        Estimate the size and duration of a CDS request.
 
         Returns:
-            dict: Dictionary of domain codes and their information
+            dict with keys: 'num_days', 'num_variables', 'area_km2',
+                        'estimated_mb', 'estimated_minutes'
         """
-        cordex_domains: Dict[str, Any] = self.cordex_domains
-        return cordex_domains
 
-    def get_cordex_domain_info(self, domain_code: str) -> dict:
+        # Calculate number of days
+        start = datetime.strptime(date_start, "%Y-%m-%d")
+        end = datetime.strptime(date_end, "%Y-%m-%d")
+        num_days = (end - start).days + 1
+
+        # Calculate area in km²
+        # Approximate conversion: 1 degree ≈ 111 km at equator
+        lon_range = bbox[2] - bbox[0]
+        lat_range = bbox[3] - bbox[1]
+        avg_lat = (bbox[1] + bbox[3]) / 2
+
+        # Adjust longitude distance by latitude (cosine correction)
+        lon_km = lon_range * 111 * math.cos(math.radians(avg_lat))
+        lat_km = lat_range * 111
+        area_km2 = lon_km * lat_km
+
+        # Number of variables
+        num_variables = len(bands) if bands else 1
+
+        # Estimate file size (rough approximations based on CDS data)
+        if self._is_cordex_collection(collection_name):
+            # CORDEX: ~0.5 MB per day per variable for typical domain
+            mb_per_day_per_var = 0.5
+        else:
+            # ERA5: depends on resolution and area
+            # ~0.1 MB per day per variable per 10,000 km²
+            mb_per_day_per_var = (area_km2 / 10000) * 0.1
+
+        estimated_mb = num_days * num_variables * mb_per_day_per_var
+
+        # Estimate download time
+        # CDS queue time: 1-5 minutes (average 2)
+        # Download speed: ~5 MB/min (conservative estimate)
+        queue_time_min = 2
+        download_time_min = estimated_mb / 5
+        estimated_minutes = queue_time_min + download_time_min
+
+        return {
+            "num_days": num_days,
+            "num_variables": num_variables,
+            "area_km2": round(area_km2, 2),
+            "estimated_mb": round(estimated_mb, 2),
+            "estimated_minutes": round(estimated_minutes, 1),
+        }
+
+    def _download_from_cds(
+        self,
+        collection_name: str,
+        date_start: str,
+        date_end: str,
+        bbox: list,
+        bands: list = [],
+        query_params: dict = {},
+        working_dir: str = ".",
+    ) -> str:
         """
-        Get information for a specific CORDEX domain.
+        Download data from CDS API with size and time estimates.
 
         Args:
-            domain_code: CORDEX domain code (e.g., 'EUR-11')
+            collection_name: CDS dataset name
+            date_start: Start date (YYYY-MM-DD)
+            date_end: End date (YYYY-MM-DD)
+            bbox: Bounding box [min_lon, min_lat, max_lon, max_lat]
+            bands: List of variables/bands to download
+            working_dir: Directory to save the downloaded zip file
 
         Returns:
-            dict: Domain information including name, bbox, and resolution
-
-        Raises:
-            TerrakitValueError: If domain code not found
+            Path to downloaded zip file in working_dir
         """
-        return get_domain_info(domain_code)
+
+        # Ensure working_dir exists
+        Path(working_dir).mkdir(parents=True, exist_ok=True)
+
+        # Estimate request size
+        estimate = self._estimate_request_size(
+            collection_name, date_start, date_end, bbox, bands
+        )
+
+        # Log detailed information
+        logger.info(f"Submitting CDS request for {collection_name}")
+        logger.info(
+            f"Date range: {date_start} to {date_end} ({estimate['num_days']} days)"
+        )
+        logger.info(f"Area: {estimate['area_km2']} km²")
+        logger.info(f"Variables: {estimate['num_variables']}")
+        logger.info(f"Estimated size: ~{estimate['estimated_mb']} MB")
+        logger.info(f"Estimated time: ~{estimate['estimated_minutes']} minutes")
+
+        # Connect and build request
+        client = self._connect_to_cds()
+        request_params = self._build_request_params(
+            collection_name,
+            date_start,
+            date_end,
+            bbox,
+            bands,
+            self._load_constraints(collection_name),
+            query_params,
+        )
+
+        # Log request parameters for debugging
+        logger.debug("CDS Request Parameters:")
+        logger.debug(json.dumps(request_params, indent=2))
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_filename = f"cds_{collection_name}_{timestamp}.zip"
+        output_zip = str(Path(working_dir) / output_filename)
+
+        logger.info("Request submitted to CDS queue. Please wait...")
+
+        try:
+            start_time = datetime.now()
+            client.retrieve(collection_name, request_params, output_zip)
+
+            # Log success
+            actual_time = (datetime.now() - start_time).total_seconds() / 60
+            logger.info(f"✓ Download complete: {output_zip}")
+            logger.info(f"Actual time: {actual_time:.1f} minutes")
+
+            return output_zip
+
+        except requests.HTTPError as e:
+            # Parse CDS-specific error messages
+            error_details = self._parse_cds_error(e)
+
+            logger.error("=" * 70)
+            logger.error("CLIMATE DATA STORE REQUEST FAILED")
+            logger.error("=" * 70)
+            logger.error(f"Collection: {collection_name}")
+            logger.error(f"Error Type: {error_details['type']}")
+            logger.error(f"Error Message: {error_details['message']}")
+            logger.error("")
+            logger.error("Request Parameters:")
+            logger.error(json.dumps(request_params, indent=2))
+            logger.error("")
+            logger.error("Possible causes:")
+            for cause in error_details["possible_causes"]:
+                logger.error(f"  - {cause}")
+            logger.error("=" * 70)
+
+            raise TerrakitValidationError(
+                message=f"CLIMATE DATA STORE REQUEST FAILED: {error_details['message']}\n"
+                f"Collection: {collection_name}\n"
+                f"Error type: {error_details['type']}\n"
+                f"See logs for full request parameters and troubleshooting tips."
+            )
+
+        except Exception as e:
+            logger.error("=" * 70)
+            logger.error("UNEXPECTED ERROR DURING CDS DOWNLOAD")
+            logger.error("=" * 70)
+            logger.error(f"Collection: {collection_name}")
+            logger.error(f"Error: {str(e)}")
+            logger.error("")
+            logger.error("Request Parameters:")
+            logger.error(json.dumps(request_params, indent=2))
+            logger.error("=" * 70)
+
+            raise TerrakitValidationError(
+                message=f"Failed to download from CDS: {str(e)}\n"
+                f"Collection: {collection_name}\n"
+                f"See logs for full request parameters."
+            )
+
+    def _parse_cds_error(self, error: requests.HTTPError) -> dict:
+        """
+        Parse CDS API error and provide helpful troubleshooting information.
+
+        Returns:
+            dict with keys: 'type', 'message', 'possible_causes'
+        """
+        error_str = str(error)
+
+        # Common CDS error patterns
+        if "ValueError" in error_str:
+            return {
+                "type": "ValueError",
+                "message": "Invalid parameter value in request",
+                "possible_causes": [
+                    "Variable/band name not valid for this collection",
+                    "Date outside collection temporal range",
+                    "Invalid area/bbox coordinates",
+                    "Missing required parameters",
+                    "Check CDS documentation for valid parameter values",
+                ],
+            }
+        elif "400" in error_str or "Bad Request" in error_str:
+            return {
+                "type": "Bad Request (400)",
+                "message": "CDS rejected the request parameters",
+                "possible_causes": [
+                    "Invalid parameter format",
+                    "Required parameter missing",
+                    "Parameter value out of range",
+                    "Check parameter names match CDS API expectations",
+                ],
+            }
+        elif "401" in error_str or "Unauthorized" in error_str:
+            return {
+                "type": "Unauthorized (401)",
+                "message": "Authentication failed",
+                "possible_causes": [
+                    "Invalid or missing CDS API key",
+                    "API key not set in environment (CDSAPI_KEY)",
+                    "Account not activated or suspended",
+                ],
+            }
+        elif "403" in error_str or "Forbidden" in error_str:
+            return {
+                "type": "Forbidden (403)",
+                "message": "Access denied to this dataset",
+                "possible_causes": [
+                    "Dataset license not accepted",
+                    "Visit CDS website to accept terms and conditions",
+                    "Account lacks permissions for this dataset",
+                ],
+            }
+        else:
+            return {
+                "type": "Unknown Error",
+                "message": error_str,
+                "possible_causes": [
+                    "Check CDS service status",
+                    "Verify request parameters",
+                    "Review CDS API documentation",
+                ],
+            }
+
+    def _build_request_params(
+        self,
+        collection_name: str,
+        date_start: str,
+        date_end: str,
+        bbox: list,
+        bands: list,
+        constraints: dict,
+        query_params: dict = {},
+    ) -> Dict[str, Any]:
+        """
+        Build CDS API request parameters based on collection type.
+
+        Args:
+            collection_name: CDS dataset name
+            date_start: Start date (YYYY-MM-DD)
+            date_end: End date (YYYY-MM-DD)
+            bbox: Bounding box [min_lon, min_lat, max_lon, max_lat]
+            bands: List of variables/bands to download
+            constraints: Collection constraints from metadata
+            query_params: Additional collection-specific parameters (e.g., daily_statistic, frequency)
+
+        Returns:
+            Dictionary of request parameters for CDS API
+        """
+        params: Dict[str, Any] = {}
+
+        # Handle different collection types
+        if self._is_cordex_collection(collection_name):
+            # CORDEX collections need domain instead of bbox
+            domain_code = self._get_cordex_domain_from_bbox(bbox)
+            params["domain"] = domain_code
+
+            # Set default parameters for CORDEX collections
+            # These can be overridden by query_params
+            params["experiment"] = "historical"
+            params["horizontal_resolution"] = "0_44_degree_x_0_44_degree"
+            params["temporal_resolution"] = "daily_mean"
+            params["ensemble_member"] = "r1i1p1"
+            params["format"] = "netcdf"
+
+            # Add start_year and end_year based on date range
+            start_date = datetime.strptime(date_start, "%Y-%m-%d")
+            end_date = datetime.strptime(date_end, "%Y-%m-%d")
+            params["start_year"] = [str(start_date.year)]
+            params["end_year"] = [str(end_date.year)]
+
+        else:
+            # ERA5 and other collections use bbox directly
+            params["area"] = [
+                bbox[0],  # West
+                bbox[1],  # South
+                bbox[2],  # East
+                bbox[3],  # North
+            ]
+
+            # Set default parameters for ERA5 collections
+            # These can be overridden by query_params
+            params["product_type"] = "reanalysis"
+            params["format"] = "netcdf"
+            params["daily_statistic"] = "daily_mean"
+            params["frequency"] = "6_hourly"
+            params["time_zone"] = "utc+00:00"
+
+        # Add temporal parameters
+        params["year"] = self._get_years_list(date_start, date_end)
+        params["month"] = self._get_months_list(date_start, date_end)
+        params["day"] = self._get_days_list(date_start, date_end)
+
+        # Add variables/bands
+        if bands:
+            params["variable"] = bands
+        elif "variable" in constraints:
+            # Use first available variable if none specified
+            params["variable"] = [constraints["variable"][0]]
+
+        # Merge query_params - these override any defaults set above
+        # This allows users to specify collection-specific parameters like:
+        # - daily_statistic: "daily_mean", "daily_maximum", "daily_minimum", "daily_standard_deviation"
+        # - frequency: "1hr", "3hr", "6hr", "day", "mon", "sem", "fx"
+        # - product_type: override default "reanalysis"
+        # - time_zone: override default "utc+00:00"
+        params.update(query_params)
+
+        return params
+
+    def _get_years_list(self, date_start: str, date_end: str) -> list[str]:
+        """Get list of years between start and end dates."""
+        start = datetime.strptime(date_start, "%Y-%m-%d")
+        end = datetime.strptime(date_end, "%Y-%m-%d")
+        return [str(year) for year in range(start.year, end.year + 1)]
+
+    def _get_months_list(self, date_start: str, date_end: str) -> list[str]:
+        """Get list of months between start and end dates."""
+        start = datetime.strptime(date_start, "%Y-%m-%d")
+        end = datetime.strptime(date_end, "%Y-%m-%d")
+
+        months = set()
+        current = start
+        while current <= end:
+            months.add(f"{current.month:02d}")
+            # Move to next month
+            if current.month == 12:
+                current = current.replace(year=current.year + 1, month=1)
+            else:
+                current = current.replace(month=current.month + 1)
+
+        return sorted(list(months))
+
+    def _get_days_list(self, date_start: str, date_end: str) -> list[str]:
+        """Get list of days between start and end dates."""
+        start = datetime.strptime(date_start, "%Y-%m-%d")
+        end = datetime.strptime(date_end, "%Y-%m-%d")
+
+        days = set()
+        current = start
+        while current <= end:
+            days.add(f"{current.day:02d}")
+            current += timedelta(days=1)
+
+        return sorted(list(days))
 
     def _get_constraint_value(
         self, constraints: dict, *keys: str, collection_name: str = ""
@@ -345,6 +741,31 @@ class CDS(Connector):
             raise TerrakitValidationError(error_msg)
         return client
 
+    def list_cordex_domains(self) -> Dict[str, Any]:
+        """
+        List all available CORDEX domains with their information.
+
+        Returns:
+            dict: Dictionary of domain codes and their information
+        """
+        cordex_domains: Dict[str, Any] = self.cordex_domains
+        return cordex_domains
+
+    def get_cordex_domain_info(self, domain_code: str) -> dict:
+        """
+        Get information for a specific CORDEX domain.
+
+        Args:
+            domain_code: CORDEX domain code (e.g., 'EUR-11')
+
+        Returns:
+            dict: Domain information including name, bbox, and resolution
+
+        Raises:
+            TerrakitValueError: If domain code not found
+        """
+        return get_domain_info(domain_code)
+
     def list_collections(self) -> list[Any]:
         """
         Lists the available collections.
@@ -354,6 +775,53 @@ class CDS(Connector):
         """
         logger.info("Listing available collections")
         return self.collections
+
+    def list_bands(self, data_collection_name: str) -> list[dict[str, Any]]:
+        """
+        List available bands for a given collection.
+
+        Parameters:
+            data_collection_name (str): The name of the collection to get bands for.
+
+        Returns:
+            list[dict[str, Any]]: A list of band dictionaries containing band information.
+                Each dictionary contains keys like 'band_name', 'resolution', 'description', etc.
+
+        Raises:
+            TerrakitValidationError: If the collection is not found or has no band information.
+
+        Example:
+            ```python
+            from terrakit import DataConnector
+            dc = DataConnector(connector_type="climate_data_store")
+            dc = DataConnector(connector_type='climate_data_store')
+            bands = dc.connector.list_bands(data_collection_name='derived-era5-single-levels-daily-statistics')
+            print(f'\nFound {len(bands)} bands for derived-era5-single-levels-daily-statistics')
+            print('\nFirst 3 bands:')
+            for band in bands[:3]:
+                print(f"  - {band['band_name']}: {band.get('description', 'N/A')}")
+            ```
+        """
+        # Check if collection exists
+        check_collection_exists(data_collection_name, self.collections)
+
+        # Find the collection details
+        collection_details = None
+        for collection in self.collections_details:
+            if collection["collection_name"] == data_collection_name:
+                collection_details = collection
+                break
+
+        if collection_details is None or "bands" not in collection_details:
+            raise TerrakitValidationError(
+                message=f"No band information found for collection '{data_collection_name}'"
+            )
+
+        bands_list: list[dict[str, Any]] = collection_details["bands"]
+        logger.info(
+            f"Found {len(bands_list)} bands for collection '{data_collection_name}'"
+        )
+        return bands_list
 
     def find_data(
         self,
@@ -433,9 +901,9 @@ class CDS(Connector):
         data_connector_spec=None,
         save_file=None,
         working_dir=".",
-    ):
+    ) -> Union[xr.DataArray, None]:
         """
-        Fetches data from <new_connector> for the specified collection, date range, area, and bands.
+        Fetches data from Climate Data Store for the specified collection, date range, area, and bands.
 
         Args:
             data_collection_name (str): Name of the data collection to fetch data from.
@@ -444,53 +912,150 @@ class CDS(Connector):
             area_polygon (list, optional): Polygon defining the area of interest. Defaults to None.
             bbox (list, optional): Bounding box defining the area of interest. Defaults to None.
             bands (list, optional): List of bands to retrieve. Defaults to all bands.
-            maxcc (int, optional): Maximum cloud cover threshold (0-100). Defaults to 100.
+            query_params (dict, optional): Additional query parameters. Defaults to {}.
             data_connector_spec (dict, optional): Data connector specification. Defaults to None.
-            save_file (str, optional): Path to save the output file. Defaults to None.
+            save_file (str, optional): Path to save the output file. If provided, individual GeoTIFF files
+                will be saved for each date with the naming pattern: {save_file}_{date}.tif
+                (e.g., 'output_2025-01-01.tif', 'output_2025-01-02.tif'). Each file contains all
+                requested bands for that specific date. If None, no files are saved to disk. Defaults to None.
             working_dir (str, optional): Working directory for temporary files. Defaults to '.'.
 
         Returns:
-            xarray: An xarray Datasets containing the fetched data with dimensions (time, band, y, x).
+            xarray.DataArray: An xarray DataArray containing all fetched data with dimensions (time, band, y, x).
+                All dates are stacked along the time dimension, and all bands are stacked along the band dimension.
+                If save_file is provided, individual date files are also saved to disk.
+
+        Example:
+            ```python
+            import terrakit
+            data_connector = "climate_data_store"
+            dc = terrakit.DataConnector(connector_type=data_connector)
+            data = dc.connector.get_data(
+                data_collection_name="derived-era5-single-levels-daily-statistics",
+                date_start="2025-01-01",
+                date_end="2025-01-02",
+                bbox=[-1.32, 51.06, -1.30, 51.08],
+                bands=["2m_temperature"],
+                query_params={
+                    "daily_statistic": "daily_minimum",
+                    "frequency": "1hr",
+                    "time_zone": "utc+03:00"
+                    }
+                )
+                save_file="./derived-era5-single-levels-daily-statistics",
+            ```
         """
 
-        # cds_client = self._connect_to_cds()
+        # 1. Download zip from CDS API
+        zip_path = self._download_from_cds(
+            data_collection_name,
+            date_start,
+            date_end,
+            bbox,
+            bands,
+            query_params,
+            working_dir,
+        )
 
-        # da = xr.DataArray()
+        # 2. Extract NetCDF from zip
+        extract_dir = Path(working_dir) / "temp_netcdf"
+        extract_dir.mkdir(parents=True, exist_ok=True)
 
-        # First construct the query
-        # request = {
-        #     "variable": [
-        #         "10m_u_component_of_wind",
-        #         "10m_v_component_of_wind",
-        #         "2m_temperature",
-        #         "total_precipitation",
-        #         "10m_wind_gust_since_previous_post_processing",
-        #     ],
-        #     "product_type": "reanalysis",
-        #     "year": "2025",
-        #     "month": ["01"],
-        #     "day": ["01", "02", "03", "04"],
-        #     "time_zone": "utc+00:00",
-        #     "area": [90, -180, -90, 180],
-        #     "daily_statistic": "daily_mean",
-        #     "frequency": "6_hourly",
-        #     "format": "netcdf",
-        # }
+        with zipfile.ZipFile(zip_path, "r") as zip_ref:
+            zip_ref.extractall(extract_dir)
 
-        # #
-        # cds = cdsapi.Client()
-        # downloaded_filename = cds.retrieve(data_collection_name, request).download()
+        # 3. Find NetCDF file(s)
+        netcdf_files = list(extract_dir.glob("*.nc"))
+        if not netcdf_files:
+            raise TerrakitValueError(f"No NetCDF files found in {zip_path}")
 
-        da = xr.DataArray()
+        # 4. Load NetCDF and process into DataArray per date
+        # CDS may return multiple NetCDF files (one per variable)
+        # We need to merge them by date to avoid duplicates
+
+        # First, collect all data organized by date
+        date_data_dict: Dict[
+            str, Dict[str, xr.DataArray]
+        ] = {}  # {date_str: {var_name: DataArray}}
+
+        for netcdf_file in netcdf_files:
+            ds = xr.open_dataset(netcdf_file)
+
+            # Determine dimension names
+            lon_name = "longitude" if "longitude" in ds.dims else "lon"
+            lat_name = "latitude" if "latitude" in ds.dims else "lat"
+            time_name = "time" if "time" in ds.dims else "valid_time"
+
+            # Get the main data variable(s) - these are our bands
+            data_vars = [
+                v for v in ds.data_vars if v not in [lon_name, lat_name, time_name]
+            ]
+
+            # Process each time step
+            for time_idx in range(len(ds[time_name])):
+                # Extract the date for this time step
+                time_value = ds[time_name].isel({time_name: time_idx}).values
+                date_str = pd.Timestamp(time_value).strftime("%Y-%m-%d")
+
+                # Initialize dict for this date if not exists
+                if date_str not in date_data_dict:
+                    date_data_dict[date_str] = {}
+
+                # Store each variable for this date
+                for var_name in data_vars:
+                    # Extract data for this specific time step
+                    da_var = ds[var_name].isel({time_name: time_idx})
+
+                    # Add CRS and spatial dimensions
+                    da_var = da_var.rio.write_crs("EPSG:4326")
+                    da_var = da_var.rio.set_spatial_dims(x_dim=lon_name, y_dim=lat_name)
+
+                    # Store in dict
+                    date_data_dict[date_str][var_name] = da_var
+
+            ds.close()
+
+        # Now process each unique date
+        da_list = []
+        for date_str in sorted(date_data_dict.keys()):
+            data_date_datetime = datetime.strptime(date_str, "%Y-%m-%d")
+            var_dict = date_data_dict[date_str]
+
+            # Collect all variables for this date
+            band_arrays = []
+            band_names = []
+            for var_name in sorted(var_dict.keys()):
+                da_var = var_dict[var_name]
+                # Expand dims to add band dimension
+                da_var = da_var.expand_dims(dim="band")
+                band_arrays.append(da_var)
+                band_names.append(var_name)
+
+            # Concatenate all bands for this time step
+            da_time = xr.concat(band_arrays, dim="band")
+            da_time = da_time.assign_coords({"band": band_names})
+
+            # Expand time dimension and assign time coordinate
+            da_time = da_time.expand_dims(dim="time")
+            da_time = da_time.assign_coords({"time": [data_date_datetime]})
+
+            # Save individual date file if save_file is provided
+            if save_file is not None:
+                usave_file = save_file.replace(".tif", f"_{date_str}.tif")
+                save_data_array_to_file(da_time, usave_file)
+
+            # Add this date's data to the list for final concatenation
+            da_list.append(da_time)
+
+        # 5. Concatenate all time steps into final DataArray
+        da = xr.concat(da_list, dim="time", join="override", combine_attrs="override")
+
+        # # 6. Save final concatenated file (optional, for the full time series)
+        # save_data_array_to_file(da, save_file)
+
+        # 7. Cleanup temporary files
+        shutil.rmtree(extract_dir)
+        Path(zip_path).unlink()
+
+        logger.info(f"Processed {len(da_list)} time steps into DataArray")
         return da
-
-
-#### If licenses have not been accepted.
-# HTTPError: 403 Client Error: Forbidden for url: https://cds.climate.copernicus.eu/api/retrieve/v1/processes/derived-era5-single-levels-daily-statistics/execution
-# required licences not accepted
-# Not all the required licences have been accepted; please visit https://cds.climate.copernicus.eu/datasets/derived-era5-single-levels-daily-statistics?tab=download#manage-licences to accept the required licence(s).
-
-
-# https://object-store.os-api.cci2.ecmwf.int/cci2-prod-catalogue/resources/derived-era5-single-levels-daily-statistics/constraints_a0b1ad068fce54320fa1350cc56b8692d66b395cf066d0c8bbf1579816e074b8.json
-# 532 entries
-# dict_keys(['daily_statistic', 'day', 'frequency', 'month', 'product_type', 'time_zone', 'variable', 'year'])

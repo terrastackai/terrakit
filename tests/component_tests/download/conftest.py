@@ -365,3 +365,84 @@ def mock_aws_get_data(mocker, mock_aws_find_items):
 
 
 ###################################################################################################
+
+
+############################# CLIMATE DATA STORE helper functions and fixtures ############################
+@pytest.fixture
+def mock_cds_client(monkeypatch):
+    """
+    Mock CDS API client to copy test zip file instead of downloading from CDS.
+
+    This fixture patches cdsapi.Client to return a mock that copies
+    ./7fbb992ea3687a2ec12f2ba1de4cc73a.zip to the requested output path.
+
+    # The following request was used to generate the original test zip file:
+    # request = {
+    #     "variable": [
+    #         "10m_u_component_of_wind",
+    #         "10m_v_component_of_wind",
+    #         "2m_temperature",
+    #         "total_precipitation",
+    #         "10m_wind_gust_since_previous_post_processing",
+    #     ],
+    #     "product_type": "reanalysis",
+    #     "year": "2025",
+    #     "month": ["01"],
+    #     "day": ["01", "02"],
+    #     "time_zone": "utc+00:00",
+    #     "area": [90, -180, -90, 180],
+    #     "daily_statistic": "daily_mean",
+    #     "frequency": "6_hourly",
+    #     "format": "netcdf",
+    # }
+    # cds = cdsapi.Client()
+    # downloaded_filename = cds.retrieve(data_collection_name, request).download()
+
+    # This data is now replaced by synthetic test data, the script for generating the test zip file can be found in /Users/rosielickorish/Documents/IBMResearch/2026/terrakit/tests/resources/scripts.
+
+    Usage:
+        def test_cds_download(mock_cds_client):
+            # CDS API calls will use the mock
+            dc = DataConnector(connector_type="climate_data_store")
+            data = dc.connector.get_data(...)
+    """
+    import shutil
+    from pathlib import Path
+    from unittest.mock import MagicMock
+
+    # Path to test zip file
+    TEST_ZIP = Path(
+        "./tests/resources/climate_data_store/era5_daily_statistics_test_data.zip"
+    )
+
+    # Create mock client
+    mock_client = MagicMock()
+
+    def mock_retrieve(collection_name, request_params, output_path):
+        """Copy test zip to output_path instead of downloading."""
+        if not TEST_ZIP.exists():
+            raise FileNotFoundError(
+                f"Test data not found: {TEST_ZIP}\n"
+                "Please ensure /Users/rosielickorish/Documents/IBMResearch/2026/terrakit/tests/resources/scripts/generate_cds_test_data.py exists."
+            )
+
+        # Ensure output directory exists
+        output_file = Path(output_path)
+        output_file.parent.mkdir(parents=True, exist_ok=True)
+
+        # Copy test zip to requested location
+        shutil.copy(TEST_ZIP, output_file)
+
+        return str(output_file)
+
+    # Assign mock retrieve method
+    mock_client.retrieve = mock_retrieve
+
+    # Mock the cdsapi.Client class to return our mock
+    def mock_cdsapi_client(*args, **kwargs):
+        return mock_client
+
+    # Patch cdsapi.Client
+    monkeypatch.setattr("cdsapi.Client", mock_cdsapi_client)
+
+    return mock_client
