@@ -63,7 +63,17 @@ EMSR801_AOI01_DEL_MONIT02_observedEventA_v1.json,2025-04-23
 TerraKit will look a file called `metadata.csv` in the `labels_folder`.
 
 ### label_type
-`label_type`: Set to either `raster` or `vector`. TerraKit expects label data in either vector or raster format. 
+`label_type`: Set to either `raster` or `vector`. TerraKit expects label data in either vector or raster format.
+
+### Multi-class Labels
+For multi-class label datasets, TerraKit supports automatic class detection through filename patterns. Include `_CLASS_<number>_` in your label filenames to specify the class:
+
+```
+EMSR801_AOI01_DEL_MONIT02_CLASS_0_observedEventA_v1_2025-04-23.json
+EMSR801_AOI01_DEL_MONIT02_CLASS_1_observedEventA_v1_2025-04-23.json
+```
+
+The class number will be extracted from the filename and used during rasterization. If no `_CLASS_` pattern is found, the label defaults to class 1. This enables visualization with distinct colors for each class and proper handling of multi-class segmentation tasks.
 
 ## Download example labels
 To download a set of example labels, use the `rapid_mapping_geojson_downloader` function to get started:

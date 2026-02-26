@@ -16,6 +16,7 @@ from tests.component_tests.transform.conftest import (
     WORKING_DIR,
     LABELS_FOLDER,
     LABELS_FOLDER_RASTER,
+    LABELS_FOLDER_CLASSES,
 )
 
 
@@ -197,3 +198,45 @@ class TestLabels_Provenance:
         )  # 2 shapefiles collections, each with 5 files, plus 1 data stat provenance file.
         assert len(os.listdir(Path(WORKING_DIR))) == num_files
         assert f"{DATASET_NAME}_metadata.json" in os.listdir(Path(WORKING_DIR))
+
+
+class TestLabels_Classes:
+    def test_process_labels__classes(
+        self,
+        process_labels_clean_up_working_dir,
+        caplog,
+    ):
+        """Test process_labels works with multi-class label files"""
+        labels_gdf, grouped_boxes_gdf = process_labels(
+            dataset_name=DATASET_NAME,
+            working_dir=WORKING_DIR,
+            labels_folder=LABELS_FOLDER_CLASSES,
+        )
+
+        num_files = (
+            2 * 5 + 1
+        )  # 2 shapefiles collections, each with 5 files, plus 1 data stat provenance file.
+        assert len(os.listdir(Path(WORKING_DIR))) == num_files
+        assert f"{DATASET_NAME}_metadata.json" in os.listdir(Path(WORKING_DIR))
+
+        # Verify multi-class labels were processed
+        assert isinstance(grouped_boxes_gdf, pd.DataFrame)
+        assert len(grouped_boxes_gdf) > 0
+        assert isinstance(labels_gdf, pd.DataFrame)
+        assert len(labels_gdf) > 0
+        assert "2/2 label files were successfully processed." in caplog.text
+
+        # Verify class 0 and class 1 are present in labels
+        assert "labelclass" in labels_gdf.columns
+        assert 0 in labels_gdf["labelclass"].values, (
+            "Class 0 should be present in labels"
+        )
+        assert 1 in labels_gdf["labelclass"].values, (
+            "Class 1 should be present in labels"
+        )
+
+        # Verify both classes are in the grouped boxes
+        assert "labelclass" in grouped_boxes_gdf.columns
+        assert set(grouped_boxes_gdf["labelclass"].values) == {0, 1}, (
+            "Both class 0 and 1 should be in grouped boxes"
+        )

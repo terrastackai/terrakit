@@ -12,9 +12,11 @@ from pathlib import Path
 
 from terrakit.general_utils.labels_downloader import (
     rapid_mapping_geojson_downloader,
+    rapid_mapping_class_split,
     hugging_face_file_downloader,
     EXAMPLE_LABEL_FILES,
     EXAMPLE_RASTER_LABEL_FILES,
+    EXAMPLE_CLASS_LABEL_FILES,
 )
 
 DATASET_NAME = "terrakit_testing"
@@ -24,6 +26,7 @@ DEFAULT_WORKING_DIR: str = "./tmp"
 LABELS_FOLDER: str = "./docs/examples/test_wildfire_vector"
 LABELS_FOLDER_RASTER: str = "./docs/examples/test_burn_scar_raster"
 LABELS_FOLDER_CSV_DATETIME: str = "./docs/examples/test_wildfire_vector_metadata_csv"
+LABELS_FOLDER_CLASSES: str = "./docs/examples/test_wildfire_classes_vector"
 EMPTY_LABELS_FOLDER: str = "./tests/tmp/labels"
 
 
@@ -31,7 +34,10 @@ EMPTY_LABELS_FOLDER: str = "./tests/tmp/labels"
 def download_example_labels():
     if (
         Path(LABELS_FOLDER).is_dir() is False
-        or set(EXAMPLE_LABEL_FILES).issubset(glob(f"{LABELS_FOLDER}/*.json")) is False
+        or set(EXAMPLE_LABEL_FILES).issubset(
+            [Path(f).name for f in glob(f"{LABELS_FOLDER}/*.json")]
+        )
+        is False
     ):
         rapid_mapping_geojson_downloader(
             event_id="748",
@@ -51,7 +57,7 @@ def download_example_labels():
     if (
         Path(LABELS_FOLDER_RASTER).is_dir() is False
         or set(EXAMPLE_RASTER_LABEL_FILES).issubset(
-            glob(f"{LABELS_FOLDER_RASTER}/*.tif")
+            [Path(f).name for f in glob(f"{LABELS_FOLDER_RASTER}/*.tif")]
         )
         is False
     ):
@@ -63,6 +69,25 @@ def download_example_labels():
                 subfolder="training",
                 dest=LABELS_FOLDER_RASTER,
             )
+
+    # Create class label files by downloading and splitting the regular label file
+    if (
+        Path(LABELS_FOLDER_CLASSES).is_dir() is False
+        or set(EXAMPLE_CLASS_LABEL_FILES).issubset(
+            [Path(f).name for f in glob(f"{LABELS_FOLDER_CLASSES}/*.json")]
+        )
+        is False
+    ):
+        # Download MONIT02 from EMSR801 (contains 2 spatial features from same date)
+        downloaded_file = rapid_mapping_geojson_downloader(
+            event_id="801",
+            aoi="01",
+            monitoring_number="02",
+            version="v1",
+            dest=LABELS_FOLDER_CLASSES,
+        )
+
+        rapid_mapping_class_split(downloaded_file)
 
 
 @pytest.fixture

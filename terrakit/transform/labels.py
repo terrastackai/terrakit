@@ -18,6 +18,7 @@ from glob import glob
 from pathlib import Path
 from pydantic import ValidationError
 from shapely.geometry import box, shape
+from shapely.ops import unary_union
 from rasterio.features import shapes
 from typing import Literal
 
@@ -317,6 +318,13 @@ class LabelsCls:
                 )
                 failed_files.append(file_path)
 
+            # Check for label class
+            label_class = 1
+            class_pattern = r"_CLASS_(\d+)_"
+            match = re.search(class_pattern, filename)
+            if match:
+                label_class = int(match.group(1))
+
             # Append the datetime to the GeoDataFrame
             if gdf is not None:
                 if "geometry" not in gdf:
@@ -327,10 +335,11 @@ class LabelsCls:
                     failed_files.append(file_path)
                 elif label_date_string:
                     logging.info(
-                        f"Setting datetime to {label_date_string} for {filename}."
+                        f"Setting datetime to {label_date_string} and label class to {label_class} for {filename}."
                     )
                     gdf["datetime"] = label_date_string
                     gdf["filename"] = filename
+                    gdf["labelclass"] = label_class
                     gdf_list.append(gdf)
                     logger.info(f"Successfully processed {file_path}")
 
@@ -374,34 +383,27 @@ class LabelsCls:
         for d in list(label_bbox_gdf.datetime.unique()):
             label_bbox_date_gdf = label_bbox_gdf[label_bbox_gdf.datetime == d]
 
-            # Find intersecting bounding boxes and merge, then repeat
-            intersects = label_bbox_date_gdf.sjoin(
-                label_bbox_date_gdf, how="left", predicate="intersects"
-            )
-            label_bbox_date_grouped_gdf = intersects.dissolve(aggfunc="min")
+            # Get the union of all geometries to find the overall bounds
+            all_geoms = label_bbox_date_gdf.geometry.tolist()
+            combined_bounds = unary_union(all_geoms).bounds
+            combined_bbox = box(*combined_bounds)
 
-            label_bbox_date_grouped_gdf.drop(["index_right"], axis=1, inplace=True)
-            intersects = label_bbox_date_grouped_gdf.sjoin(
-                label_bbox_date_grouped_gdf, how="left", predicate="intersects"
-            )
-            label_bbox_date_grouped_gdf = intersects.dissolve(aggfunc="min")
-
-            # Calculate the bounding box from the combined area
-            label_bbox_date_grouped_bbox_gdf = copy.deepcopy(
-                label_bbox_date_grouped_gdf
-            )
-            label_bbox_date_grouped_bbox_gdf["geometry"] = (
-                label_bbox_date_grouped_bbox_gdf.geometry.apply(
-                    lambda x: box(*x.bounds)
-                ).tolist()
-            )
-            label_bbox_date_grouped_bbox_gdf["datetime"] = (
-                label_bbox_date_grouped_bbox_gdf["datetime_left_left"]
+            logging.info(f"Date {d}: Combined bbox bounds = {combined_bounds}")
+            logging.info(
+                f"  Number of label classes: {len(label_bbox_date_gdf.labelclass.unique())}"
             )
 
-            label_bbox_grouped_bbox_list = label_bbox_grouped_bbox_list + [
-                label_bbox_date_grouped_bbox_gdf
-            ]
+            # Create one row per class, all with the same combined bbox
+            # This ensures plotting functions can iterate over all classes
+            for lc in list(label_bbox_date_gdf.labelclass.unique()):
+                label_bbox_class_row = (
+                    label_bbox_date_gdf[label_bbox_date_gdf.labelclass == lc]
+                    .iloc[[0]]
+                    .copy()
+                )
+                label_bbox_class_row["geometry"] = [combined_bbox]
+                logging.info(f"  Adding bbox for class {lc}: {combined_bbox.bounds}")
+                label_bbox_grouped_bbox_list.append(label_bbox_class_row)
 
         label_bbox_grouped_bbox_gdf = pd.concat(
             label_bbox_grouped_bbox_list, ignore_index=True

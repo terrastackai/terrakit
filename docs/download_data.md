@@ -148,6 +148,23 @@ The shapefile `{dataset_name}_labels.shp` must contain a `datetime` field and `g
 ### Keep files: `keep_files`
 Flag to preserve shapefiles in the working directory once they have been used by the download data step. Downloaded files will not be removed. Set to `True` to ensure shapefiles remain in place.
 
+### Set No Data: `set_no_data`
+Controls how label rasterization handles the background (no-data) pixels. When set to `True`, background pixels are assigned a no-data value (-1), allowing label class 0 to be used for actual labels. When set to `False` (default), background pixels are assigned value 0, which means label classes must start from 1 to avoid conflicts.
+
+**Important:** If your labels use class 0 and `set_no_data=False`, TerraKit will raise a `TerrakitValueError` because class 0 would conflict with the background class. In this case, you must either:
+- Set `set_no_data=True` to use -1 for background pixels, or
+- Ensure your label classes start from 1 instead of 0
+
+Example with multi-class labels using class 0:
+```python
+queried_data = download_data(
+    data_sources=config["download"]["data_sources"],
+    date_allowance=config["download"]["date_allowance"],
+    set_no_data=True,  # Required when using class 0
+    transform=config["download"]["transform"],
+)
+```
+
 ## Data Connectors
 Data connectors are classes which enable a user to search for data and query data from a particular data source using a common set of functions.  Each data connector has the following mandatory methods:
 

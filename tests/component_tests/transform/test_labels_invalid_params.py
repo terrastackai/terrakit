@@ -11,6 +11,7 @@ from glob import glob
 from pathlib import Path
 
 from terrakit.transform.labels import process_labels
+from terrakit.download.download_data import download_data
 from terrakit.general_utils.exceptions import (
     TerrakitValidationError,
     TerrakitValueError,
@@ -22,6 +23,7 @@ from tests.component_tests.transform.conftest import (
     LABELS_FOLDER_CSV_DATETIME,
     WORKING_DIR,
     DEFAULT_WORKING_DIR,
+    LABELS_FOLDER_CLASSES,
 )
 
 
