@@ -1,6 +1,6 @@
 [project]
 name = "TerraKit"
-version = "0.1.5"
+version = "0.1.6"
 description = "A Python package for finding and getting geospatial data."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -34,7 +34,7 @@ dependencies = [
         "python-dotenv>=1.1.1",
         "rasterio==1.4.3",
         "rioxarray[interp]==0.19.0",
-        "s3fs>=0.4.2,<2024.0.0",
+        "s3fs==0.4.2",
         "scikit-learn>=1.7.1",
         "sentinelhub==3.11.1",
         "shapely>=2.1.1",
