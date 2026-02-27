@@ -4977,7 +4977,7 @@ wheels = [
 
 [[package]]
 name = "terrakit"
-version = "0.1.5"
+version = "0.1.6"
 source = { editable = "." }
 dependencies = [
     { name = "aiohttp" },
@@ -5054,7 +5054,7 @@ requires-dist = [
     { name = "python-dotenv", specifier = ">=1.1.1" },
     { name = "rasterio", specifier = "==1.4.3" },
     { name = "rioxarray", extras = ["interp"], specifier = "==0.19.0" },
-    { name = "s3fs", specifier = ">=0.4.2,<2024.0.0" },
+    { name = "s3fs", specifier = "==0.4.2" },
     { name = "scikit-learn", specifier = ">=1.7.1" },
     { name = "sentinelhub", specifier = "==3.11.1" },
     { name = "shapely", specifier = ">=2.1.1" },
