@@ -1,4 +1,4 @@
-# © Copyright IBM Corporation 2025
+# © Copyright IBM Corporation 2025-2026
 # SPDX-License-Identifier: Apache-2.0
 
 
@@ -7,13 +7,13 @@ import logging
 
 from pydantic import ValidationError
 
-from terrakit.download.data_connectors.theweathercompany import TheWeatherCompany
-
 from .download.connector import Connector
 from .download.data_connectors.nasa_earthdata import NASA_EarthData
 from .download.data_connectors.sentinel_aws import Sentinel_AWS
 from .download.data_connectors.ibmresearch_stac import IBMResearchSTAC
 from .download.data_connectors.sentinelhub import SentinelHub
+from .download.data_connectors.climate_data_store import CDS
+from .download.data_connectors.theweathercompany import TheWeatherCompany
 from .general_utils.exceptions import TerrakitValidationError
 from .validate.data_connector import ConnectorType
 
@@ -37,6 +37,7 @@ class DataConnectorFactory:
                 - "sentinelhub"
                 - "nasa_earthdata"
                 - "sentinel_aws"
+                - "climate_data_store"
 
         Returns:
             object: An instance of the specified data connector class.
@@ -54,6 +55,8 @@ class DataConnectorFactory:
             return IBMResearchSTAC()
         elif connector_type.connector_type == "TheWeatherCompany":
             return TheWeatherCompany()
+        elif connector_type.connector_type == "climate_data_store":
+            return CDS()
         # -----> Include new connectors here < ------
         # elif connector_type == "<new_connector>"
         #   return NewConnectorClass()
