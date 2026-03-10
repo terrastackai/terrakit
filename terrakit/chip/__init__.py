@@ -2,4 +2,4 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from terrakit.chip import tiling
+from terrakit.chip import tiling as tiling
