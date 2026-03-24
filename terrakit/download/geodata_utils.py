@@ -1,4 +1,4 @@
-# © Copyright IBM Corporation 2025
+# © Copyright IBM Corporation 2025-2026
 # SPDX-License-Identifier: Apache-2.0
 
 
@@ -14,6 +14,7 @@ import typing
 import numpy as np
 import os
 import pandas as pd
+import rasterio
 
 from sentinelhub import (
     CRS,
@@ -25,6 +26,119 @@ from typing import Any, Dict, Union
 
 
 logger = logging.getLogger(__name__)
+
+
+def map_netcdf_variables_to_requested_bands(
+    netcdf_files: list,
+    requested_bands: list,
+) -> Dict[str, str]:
+    """
+    Create a mapping from NetCDF variable names to requested band names.
+
+    Data providers often return abbreviated variable names (e.g., "t2m" for "2m_temperature").
+    This function intelligently matches NetCDF variable names to the requested band names
+    using multiple strategies: attribute matching, substring matching, and pattern matching.
+
+    Args:
+        netcdf_files: List of paths to NetCDF files
+        requested_bands: List of requested band/variable names
+
+    Returns:
+        Dictionary mapping NetCDF variable names to requested band names
+
+    Example:
+        >>> netcdf_files = ["data.nc"]
+        >>> requested_bands = ["2m_temperature", "mean_total_precipitation_rate"]
+        >>> mapping = map_netcdf_variables_to_requested_bands(netcdf_files, requested_bands)
+        >>> print(mapping)
+        {'t2m': '2m_temperature', 'avg_tprate': 'mean_total_precipitation_rate'}
+    """
+    netcdf_to_band_map: Dict[str, str] = {}
+
+    # Build mapping by examining NetCDF variable attributes
+    for netcdf_file in netcdf_files:
+        ds = xr.open_dataset(netcdf_file)
+
+        # Determine dimension names (common variations)
+        lon_name = "longitude" if "longitude" in ds.dims else "lon"
+        lat_name = "latitude" if "latitude" in ds.dims else "lat"
+        time_name = "time" if "time" in ds.dims else "valid_time"
+
+        # Get data variables (exclude coordinate variables)
+        data_vars = [
+            v for v in ds.data_vars if v not in [lon_name, lat_name, time_name]
+        ]
+
+        for netcdf_var in data_vars:
+            if netcdf_var in netcdf_to_band_map:
+                continue  # Already mapped
+
+            # Try to match using variable attributes
+            var_attrs = ds[netcdf_var].attrs
+            long_name = var_attrs.get("long_name", "").lower()
+            standard_name = var_attrs.get("standard_name", "").lower()
+
+            # Try to find a matching requested band
+            matched = False
+            match_method = ""
+
+            for requested_band in requested_bands:
+                requested_normalized = requested_band.replace("_", " ").lower()
+
+                # Strategy 1: Check if requested band name appears in long_name or standard_name
+                if (
+                    requested_normalized in long_name
+                    or requested_normalized in standard_name
+                ):
+                    netcdf_to_band_map[netcdf_var] = requested_band
+                    matched = True
+                    match_method = "attribute matching (long_name/standard_name)"
+                    break
+
+                # Strategy 2: Check if NetCDF var name is part of the requested band name
+                # e.g., "t2m" might be in "2m_temperature" (after normalization)
+                if netcdf_var in requested_band.replace("_", ""):
+                    netcdf_to_band_map[netcdf_var] = requested_band
+                    matched = True
+                    match_method = "NetCDF variable name substring matching"
+                    break
+
+                # Strategy 3: Check for common abbreviation patterns
+                # e.g., "avg_tprate" -> "mean_total_precipitation_rate"
+                if "avg" in netcdf_var and "mean" in requested_band:
+                    # Check if other parts match
+                    netcdf_parts = netcdf_var.replace("avg_", "").replace("_", "")
+                    requested_parts = requested_band.replace("mean_", "").replace(
+                        "_", ""
+                    )
+                    if (
+                        netcdf_parts in requested_parts
+                        or requested_parts in netcdf_parts
+                    ):
+                        netcdf_to_band_map[netcdf_var] = requested_band
+                        matched = True
+                        match_method = "abbreviation pattern matching (avg->mean)"
+                        break
+
+            # Log the result
+            if matched:
+                logger.info(
+                    f"Mapped NetCDF variable '{netcdf_var}' to requested band "
+                    f"'{netcdf_to_band_map[netcdf_var]}' using {match_method}"
+                )
+            else:
+                # If no match found, use the NetCDF variable name as fallback
+                netcdf_to_band_map[netcdf_var] = netcdf_var
+                logger.warning(
+                    f"Could not match NetCDF variable '{netcdf_var}' to any requested band. "
+                    f"Using NetCDF variable name '{netcdf_var}' as band label. "
+                    f"Requested bands: {requested_bands}"
+                )
+
+        ds.close()
+
+    logger.info(f"Final band name mapping: {netcdf_to_band_map}")
+    return netcdf_to_band_map
 
 
 def list_data_connectors(as_json: bool = False) -> Union[list, Dict[str, Any], Any]:
@@ -358,14 +472,70 @@ def save_data_array_to_file(da, save_file, imputed=False) -> None:
 
 def save_cog(ds, filename="cogeo.tif") -> None:
     """
-    Save an xarray Dataset as a Cloud Optimized GeoTIFF.
+    Save an xarray Dataset as a Cloud Optimized GeoTIFF with band descriptions.
 
     Parameters:
         ds (xarray.Dataset): The input Dataset.
         filename (str): The path and filename for the output GeoTIFF.
     """
     logger.info(f"Saving cloud optimized geotiff to {filename}")
-    ds.rio.to_raster(raster_path=filename, driver="COG")
+
+    # Check if we need to set band descriptions
+    set_band_descriptions = False
+    band_names = []
+    if "band" in ds.coords and hasattr(ds, "band"):
+        band_names = ds.band.values
+        set_band_descriptions = len(band_names) > 0
+
+    if set_band_descriptions:
+        # For COG with band descriptions, we need a two-step process:
+        # 1. Save as regular GeoTIFF with band descriptions
+        # 2. Convert to COG format
+        import tempfile
+        from pathlib import Path
+
+        # Create temporary file for intermediate GeoTIFF
+        temp_dir = Path(filename).parent
+        with tempfile.NamedTemporaryFile(
+            suffix=".tif", dir=temp_dir, delete=False
+        ) as tmp:
+            temp_file = tmp.name
+
+        try:
+            # Step 1: Save as regular GeoTIFF
+            ds.rio.to_raster(raster_path=temp_file, driver="GTiff")
+
+            # Step 2: Set band descriptions on the regular GeoTIFF
+            with rasterio.open(temp_file, "r+") as dst:
+                for i, band_name in enumerate(band_names, start=1):
+                    dst.set_band_description(i, str(band_name))
+
+            # Step 3: Convert to COG with band descriptions preserved
+            with rasterio.open(temp_file) as src:
+                # Create a clean profile for COG, removing unsupported options
+                profile = src.profile.copy()
+                # Remove options that COG driver doesn't support
+                for key in ["blockxsize", "blockysize", "tiled", "interleave"]:
+                    profile.pop(key, None)
+                profile.update(
+                    driver="COG",
+                    compress="deflate",
+                )
+
+                with rasterio.open(filename, "w", **profile) as dst:
+                    # Copy data
+                    for i in range(1, src.count + 1):
+                        dst.write(src.read(i), i)
+                        # Copy band description
+                        dst.set_band_description(i, src.descriptions[i - 1])
+
+            logger.info(f"Set band descriptions: {[str(b) for b in band_names]}")
+        finally:
+            # Clean up temporary file
+            Path(temp_file).unlink(missing_ok=True)
+    else:
+        # No band descriptions needed, save directly as COG
+        ds.rio.to_raster(raster_path=filename, driver="COG")
 
 
 def save_data_array_as_netcdf(

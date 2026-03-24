@@ -1,0 +1,172 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "source": "CORDEX Domain Specification",
+    "last_updated": "2026-02-11",
+    "description": "CORDEX regional climate domains with geographic extents and resolutions"
+  },
+  "domains": {
+        "AFR-44": {
+            "name": "Africa",
+            "bbox": [-24.64, -45.76, 60.28, 42.24],
+            "resolution": "0.44°",
+            "resolution_km": "~50 km"
+        },
+        "AFR-22": {
+            "name": "Africa",
+            "bbox": [-24.64, -45.76, 60.28, 42.24],
+            "resolution": "0.22°",
+            "resolution_km": "~25 km"
+        },
+        "ANT-44": {
+            "name": "Antarctica",
+            "bbox": [-180.0, -89.5, 180.0, -60.0],
+            "resolution": "0.44°",
+            "resolution_km": "~50 km"
+        },
+        "ARC-44": {
+            "name": "Arctic",
+            "bbox": [-180.0, 60.0, 180.0, 90.0],
+            "resolution": "0.44°",
+            "resolution_km": "~50 km"
+        },
+        "AUS-44": {
+            "name": "Australasia",
+            "bbox": [89.5, -52.36, 179.99, 12.21],
+            "resolution": "0.44°",
+            "resolution_km": "~50 km"
+        },
+        "AUS-22": {
+            "name": "Australasia",
+            "bbox": [89.5, -52.36, 179.99, 12.21],
+            "resolution": "0.22°",
+            "resolution_km": "~25 km"
+        },
+        "CAM-44": {
+            "name": "Central America",
+            "bbox": [-122.0, -19.76, -59.52, 34.24],
+            "resolution": "0.44°",
+            "resolution_km": "~50 km"
+        },
+        "CAM-22": {
+            "name": "Central America",
+            "bbox": [-122.0, -19.76, -59.52, 34.24],
+            "resolution": "0.22°",
+            "resolution_km": "~25 km"
+        },
+        "CAS-44": {
+            "name": "Central Asia",
+            "bbox": [34.0, 18.0, 115.0, 70.0],
+            "resolution": "0.44°",
+            "resolution_km": "~50 km"
+        },
+        "CAS-22": {
+            "name": "Central Asia",
+            "bbox": [34.0, 18.0, 115.0, 70.0],
+            "resolution": "0.22°",
+            "resolution_km": "~25 km"
+        },
+        "EAS-44": {
+            "name": "East Asia",
+            "bbox": [65.0, -15.0, 155.0, 65.0],
+            "resolution": "0.44°",
+            "resolution_km": "~50 km"
+        },
+        "EAS-22": {
+            "name": "East Asia",
+            "bbox": [65.0, -15.0, 155.0, 65.0],
+            "resolution": "0.22°",
+            "resolution_km": "~25 km"
+        },
+        "EUR-44": {
+            "name": "Europe",
+            "bbox": [-44.0, 22.0, 65.0, 72.0],
+            "resolution": "0.44°",
+            "resolution_km": "~50 km"
+        },
+        "EUR-22": {
+            "name": "Europe",
+            "bbox": [-44.0, 22.0, 65.0, 72.0],
+            "resolution": "0.22°",
+            "resolution_km": "~25 km"
+        },
+        "EUR-11": {
+            "name": "Europe",
+            "bbox": [-44.0, 22.0, 65.0, 72.0],
+            "resolution": "0.11°",
+            "resolution_km": "~12.5 km"
+        },
+        "MED-44": {
+            "name": "Mediterranean",
+            "bbox": [-10.0, 30.0, 40.0, 48.0],
+            "resolution": "0.44°",
+            "resolution_km": "~50 km"
+        },
+        "MED-22": {
+            "name": "Mediterranean",
+            "bbox": [-10.0, 30.0, 40.0, 48.0],
+            "resolution": "0.22°",
+            "resolution_km": "~25 km"
+        },
+        "MNA-44": {
+            "name": "Middle East and North Africa",
+            "bbox": [-25.0, 0.0, 75.0, 50.0],
+            "resolution": "0.44°",
+            "resolution_km": "~50 km"
+        },
+        "MNA-22": {
+            "name": "Middle East and North Africa",
+            "bbox": [-25.0, 0.0, 75.0, 50.0],
+            "resolution": "0.22°",
+            "resolution_km": "~25 km"
+        },
+        "NAM-44": {
+            "name": "North America",
+            "bbox": [-172.0, 12.0, -35.0, 76.0],
+            "resolution": "0.44°",
+            "resolution_km": "~50 km"
+        },
+        "NAM-22": {
+            "name": "North America",
+            "bbox": [-172.0, 12.0, -35.0, 76.0],
+            "resolution": "0.22°",
+            "resolution_km": "~25 km"
+        },
+        "SAM-44": {
+            "name": "South America",
+            "bbox": [-93.0, -56.0, -25.0, 18.0],
+            "resolution": "0.44°",
+            "resolution_km": "~50 km"
+        },
+        "SAM-22": {
+            "name": "South America",
+            "bbox": [-93.0, -56.0, -25.0, 18.0],
+            "resolution": "0.22°",
+            "resolution_km": "~25 km"
+        },
+        "WAS-44": {
+            "name": "South Asia (West Asia)",
+            "bbox": [20.0, -15.0, 115.0, 45.0],
+            "resolution": "0.44°",
+            "resolution_km": "~50 km"
+        },
+        "WAS-22": {
+            "name": "South Asia (West Asia)",
+            "bbox": [20.0, -15.0, 115.0, 45.0],
+            "resolution": "0.22°",
+            "resolution_km": "~25 km"
+        },
+        "SEA-44": {
+            "name": "Southeast Asia",
+            "bbox": [89.0, -15.0, 146.0, 27.0],
+            "resolution": "0.44°",
+            "resolution_km": "~50 km"
+        },
+        "SEA-22": {
+            "name": "Southeast Asia",
+            "bbox": [89.0, -15.0, 146.0, 27.0],
+            "resolution": "0.22°",
+            "resolution_km": "~25 km"
+        }
+    }
+}

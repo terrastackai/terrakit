@@ -1,14 +1,17 @@
-# © Copyright IBM Corporation 2025
+# © Copyright IBM Corporation 2025-2026
 # SPDX-License-Identifier: Apache-2.0
 
 
 import logging
 
 from datetime import datetime, date
+from typing import cast, Literal
 
 from terrakit.general_utils.exceptions import TerrakitValueError
 
 logger = logging.getLogger(__name__)
+
+HISTORIC_TIME_LIMIT = "1950-01-01"
 
 
 def check_collection_exists(data_collection_name: str, collections: list):
@@ -28,6 +31,24 @@ def check_collection_exists(data_collection_name: str, collections: list):
         raise TerrakitValueError(error_msg)
 
 
+def check_start_end_date_in_correct_order(date_start: str, date_end: str) -> None:
+    """
+    Validate the start and end dates ensuring the end date is after the start date.
+    Parameters:
+        date_start (str): The start date in ISO format (YYYY-MM-DD).
+        date_end (str): The end date in ISO format (YYYY-MM-DD).
+    Raises:
+        TerrakitValueError: If the start date before end date.
+    """
+    start = date.fromisoformat(date_start)
+    end = date.fromisoformat(date_end)
+    delta = end - start
+    if delta.days < 0:
+        err_msg = f"Invalid date range: {date_start} to {date_end}. End date must be greater than start date."
+        logger.error(err_msg)
+        raise TerrakitValueError(err_msg)
+
+
 def check_start_end_date(date_start: str, date_end: str) -> None:
     """
     Validate the start and end dates ensuring the end date is after the start date.
@@ -39,21 +60,36 @@ def check_start_end_date(date_start: str, date_end: str) -> None:
     Raises:
         TerrakitValueError: If the date range is invalid.
     """
+    # Check start date and end date independently. Ensures valid format, dates are in future or
     check_datetime(start=True, date_str=date_start)
     check_datetime(start=False, date_str=date_end)
 
-    start = date.fromisoformat(date_start)
-    end = date.fromisoformat(date_end)
-    delta = end - start
-    if delta.days < 0:
-        err_msg = f"Invalid date range: {date_start} to {date_end}. End date must be greater than start date."
+    check_start_end_date_in_correct_order(date_start, date_end)
+
+
+def check_date_format(date_str: str, start_or_end: Literal["start", "end"]) -> date:
+    """
+    Validate a date string ensuring it's in ISO format.
+    Parameters:
+        date_str (str): The date string to validate.
+        start_or_end (bool): True if validating the start date, False for end date.
+    Returns:
+        date: The date as a datetime object.
+    Raises:
+        TerrakitValueError: If the date format is incorrect.
+    """
+    try:
+        query_date = date.fromisoformat(date_str)
+    except ValueError as e:
+        err_msg = f"Invalid {start_or_end} date format: {date_str}. Please use ISO format (YYYY-MM-DD)."
         logger.error(err_msg)
-        raise TerrakitValueError(err_msg)
+        raise TerrakitValueError(err_msg, e)  # type: ignore [arg-type]
+    return query_date
 
 
 def check_datetime(start: bool, date_str: str) -> None:
     """
-    Validate a date string ensuring it's in ISO format and not in the future.
+    Validate a date string ensuring it's in ISO format and not in the future or before a set time period.
 
     Parameters:
         start (bool): True if validating the start date, False for end date.
@@ -62,27 +98,19 @@ def check_datetime(start: bool, date_str: str) -> None:
     Raises:
         TerrakitValueError: If the date format is incorrect or the date is in the future.
     """
-    if start:
-        start_or_end = "start"
-    else:
-        start_or_end = "end"
-    try:
-        query_date = date.fromisoformat(date_str)
-    except ValueError as e:
-        err_msg = f"Invalid {start_or_end} date format: {date_str}. Please use ISO format (YYYY-MM-DD)."
-        logger.error(err_msg)
-        raise TerrakitValueError(err_msg, e)  # type: ignore [arg-type]
+    start_or_end = cast(Literal["start", "end"], "start" if start else "end")
 
-    if query_date > datetime.date(datetime.now()):
+    # Call check_date_format to validate and parse the date
+    query_date = check_date_format(date_str, start_or_end)
+
+    if query_date > datetime.now().date():
         err_msg = f"Invalid {start_or_end} date: {date_str}. Date must be in the past."
         logger.error(err_msg)
         raise TerrakitValueError(
             err_msg,
         )
-    if query_date < datetime.strptime("01/01/1950", "%d/%m/%Y").date():
-        err_msg = (
-            f"Invalid {start_or_end} date: {date_str}. Date must be after 01/01/1950."
-        )
+    if query_date < date.fromisoformat(HISTORIC_TIME_LIMIT):
+        err_msg = f"Invalid {start_or_end} date: {date_str}. Date must be after {HISTORIC_TIME_LIMIT}."
         logger.error(err_msg)
         raise TerrakitValueError(
             err_msg,
@@ -106,14 +134,11 @@ def check_area_polygon(area_polygon, connector_type: str) -> None:
         raise TerrakitValueError(err_msg)
 
 
-def check_bbox(bbox: list, connector_type: str) -> None:
+def basic_bbox_validation(bbox: list | None, connector_type: str) -> None:
     """
     Validate the bounding box ensuring it's a list of four floats and not a degenerate rectangle.
-
     Parameters:
         bbox (list): The bounding box to check.
-        connector_type (str): The type of connector.
-
     Raises:
         TerrakitValueError: If the bounding box is invalid.
     """
@@ -129,6 +154,23 @@ def check_bbox(bbox: list, connector_type: str) -> None:
         err_msg = f"Error: Issue finding data from {connector_type} with bbox '{bbox}'. Please specify 'bbox' as a list of length 4."
         logger.error(err_msg)
         raise TerrakitValueError(err_msg)
+
+
+def check_bbox(bbox: list | None, connector_type: str) -> None:
+    """
+    Validate the bounding box ensuring it's a list of four floats and not a degenerate rectangle.
+
+    Parameters:
+        bbox (list): The bounding box to check.
+        connector_type (str): The type of connector.
+
+    Raises:
+        TerrakitValueError: If the bounding box is invalid.
+    """
+    basic_bbox_validation(bbox, connector_type)
+    if bbox is None:
+        return  # basic_bbox_validation already raised an error
+
     for item in bbox:
         try:
             float(item)

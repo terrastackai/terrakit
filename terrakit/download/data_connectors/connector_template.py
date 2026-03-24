@@ -1,4 +1,4 @@
-# © Copyright IBM Corporation 2025
+# © Copyright IBM Corporation 2025-2026
 # SPDX-License-Identifier: Apache-2.0
 
 
@@ -66,10 +66,10 @@ class ConnectorTemplate(Connector):
         data_connector_spec=None,
     ) -> Union[tuple[list[Any], list[dict[str, Any]]], tuple[None, None]]:
         """
-        This function retrieves unique dates and corresponding data results from a specified Sentinel Hub data collection.
+        This function retrieves unique dates and corresponding data results from a specified <new_connector> data collection.
 
         Args:
-            data_collection_name (str): The name of the Sentinel Hub data collection to search.
+            data_collection_name (str): The name of the <new_connector> data collection to search.
             date_start (str): The start date for the time interval in 'YYYY-MM-DD' format.
             date_end (str): The end date for the time interval in 'YYYY-MM-DD' format.
             area_polygon (Polygon, optional): A polygon defining the area of interest.
@@ -99,7 +99,7 @@ class ConnectorTemplate(Connector):
         working_dir=".",
     ):
         """
-        Fetches data from SentinelHub for the specified collection, date range, area, and bands.
+        Fetches data from <new_connector> for the specified collection, date range, area, and bands.
 
         Args:
             data_collection_name (str): Name of the data collection to fetch data from.
@@ -110,11 +110,15 @@ class ConnectorTemplate(Connector):
             bands (list, optional): List of bands to retrieve. Defaults to all bands.
             maxcc (int, optional): Maximum cloud cover threshold (0-100). Defaults to 100.
             data_connector_spec (dict, optional): Data connector specification. Defaults to None.
-            save_file (str, optional): Path to save the output file. Defaults to None.
+            save_file (str, optional): Path to save the output file. If provided, individual GeoTIFF files
+                will be saved for each date with the naming pattern: {save_file}_{date}.tif. Each file
+                contains all requested bands for that specific date. If None, no files are saved to disk. Defaults to None.
             working_dir (str, optional): Working directory for temporary files. Defaults to '.'.
 
         Returns:
-            xarray: An xarray Datasets containing the fetched data with dimensions (time, band, y, x).
+            xarray.DataArray: An xarray DataArray containing all fetched data with dimensions (time, band, y, x).
+                All dates are stacked along the time dimension, and all bands are stacked along the band dimension.
+                If save_file is provided, individual date files are also saved to disk.
         """
         da = xr.DataArray()
         return da

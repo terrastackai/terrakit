@@ -1,4 +1,4 @@
-# © Copyright IBM Corporation 2025
+# © Copyright IBM Corporation 2025-2026
 # SPDX-License-Identifier: Apache-2.0
 
 
@@ -266,3 +266,215 @@ def plot_chip_and_label_pairs(
         print(
             f"label_{i}: {chip_list[i].replace(chip_suffix, chip_label_suffix).split('/')[-1]}"
         )
+
+
+def plot_era5_variable(dataset, variable_name, time_index=0):
+    """
+    Plot a single variable from the dataset with spatial map and optional profile.
+    Handles both datasets with time dimension and single-date datasets without time dimension.
+
+    Parameters:
+        dataset: xarray Dataset with variables as data variables
+        variable_name: Name of the variable to plot
+        time_index: Time index to plot (default: 0, first day only) - ignored if no time dimension
+    """
+    if variable_name not in dataset.data_vars:
+        raise ValueError(
+            f"Variable '{variable_name}' not found in dataset. Available: {list(dataset.data_vars)}"
+        )
+
+    # Get the variable data
+    var_data = dataset[variable_name]
+    step_type = var_data.attrs.get("GRIB_stepType", "unknown")
+
+    # Determine coordinate names
+    lat_name = "latitude" if "latitude" in var_data.dims else "lat"
+    lon_name = "longitude" if "longitude" in var_data.dims else "lon"
+    time_name = (
+        "time"
+        if "time" in var_data.dims
+        else ("valid_time" if "valid_time" in var_data.dims else None)
+    )
+
+    # Get spatial dimensions
+    n_lat = len(var_data[lat_name])
+    n_lon = len(var_data[lon_name])
+
+    # Select data for this time step (if time dimension exists)
+    if time_name and time_name in var_data.dims:
+        spatial_slice = var_data.isel({time_name: time_index})
+        time_str = str(var_data[time_name].values[time_index])[:10]
+    else:
+        # No time dimension - use data as is
+        spatial_slice = var_data
+        # Try to get time from coordinates
+        if "time" in var_data.coords:
+            time_str = str(var_data.coords["time"].values)[:10]
+        elif "valid_time" in var_data.coords:
+            time_str = str(var_data.coords["valid_time"].values)[:10]
+        else:
+            time_str = "unknown date"
+
+    # Check if we have enough spatial data for meaningful plots
+    if n_lat > 1 and n_lon > 1:
+        # Full 2D spatial data - create profile and map
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 5))
+
+        # Plot 1: Longitude profile at middle latitude
+        lat_idx = n_lat // 2
+        spatial_profile = spatial_slice.isel({lat_name: lat_idx})
+        spatial_profile.plot(ax=ax1, marker="o", markersize=6)
+        ax1.set_title(
+            f"stepType: {step_type} | Variable: {variable_name}\nLongitude Profile at lat={float(var_data[lat_name].values[lat_idx]):.2f}"
+        )
+        ax1.set_xlabel("Longitude")
+        ax1.set_ylabel(f"{var_data.attrs.get('units', 'Value')}")
+        ax1.grid(True, alpha=0.3)
+
+        # Plot 2: Spatial map
+        im = spatial_slice.plot.pcolormesh(ax=ax2, cmap="viridis", add_colorbar=True)  # noqa: F841
+        ax2.set_title(
+            f"stepType: {step_type} | Variable: {variable_name}\nSpatial Map at {time_str}"
+        )
+        ax2.set_xlabel("Longitude")
+        ax2.set_ylabel("Latitude")
+
+    elif n_lat > 1:
+        # Only latitude varies - plot latitude profile
+        fig, ax = plt.subplots(1, 1, figsize=(10, 6))
+        spatial_slice.plot.pcolormesh(ax=ax, cmap="viridis", add_colorbar=True)
+
+        ax.set_title(
+            f"stepType: {step_type} | Variable: {variable_name}\nLatitude Profile at {time_str}"
+        )
+        ax.set_xlabel("Latitude")
+        ax.set_ylabel(f"{var_data.attrs.get('units', 'Value')}")
+        ax.grid(True, alpha=0.3)
+
+    elif n_lon > 1:
+        # Only longitude varies - plot longitude profile
+        fig, ax = plt.subplots(1, 1, figsize=(10, 6))
+        spatial_slice.plot.pcolormesh(ax=ax, cmap="viridis", add_colorbar=True)
+
+        ax.set_title(
+            f"stepType: {step_type} | Variable: {variable_name}\nLongitude Profile at {time_str}"
+        )
+        ax.set_xlabel("Longitude")
+        ax.set_ylabel(f"{var_data.attrs.get('units', 'Value')}")
+        ax.grid(True, alpha=0.3)
+
+    else:
+        # Single point - just display the value
+        fig, ax = plt.subplots(1, 1, figsize=(8, 6))
+        value = float(spatial_slice.values)
+        ax.text(
+            0.5,
+            0.5,
+            f"{variable_name}\n{value:.4f} {var_data.attrs.get('units', '')}",
+            ha="center",
+            va="center",
+            fontsize=16,
+            transform=ax.transAxes,
+        )
+        ax.set_title(f"stepType: {step_type} | Single Point Value at {time_str}")
+        ax.axis("off")
+
+    plt.tight_layout()
+    return fig
+
+
+def plot_era5_variables_comparison(dataset, time_index=0):
+    """
+    Plot all variables side by side with spatial maps for the first day.
+    Handles both datasets with time dimension and single-date datasets without time dimension.
+
+    Parameters:
+        dataset: xarray Dataset with variables as data variables
+        time_index: Time index to plot (default: 0, first day only) - ignored if no time dimension
+    """
+    variables = list(dataset.data_vars)
+    n_vars = len(variables)
+
+    # Determine coordinate names from first variable
+    first_var = dataset[variables[0]]
+    time_name = (
+        "time"
+        if "time" in first_var.dims
+        else ("valid_time" if "valid_time" in first_var.dims else None)
+    )
+    lat_name = "latitude" if "latitude" in first_var.dims else "lat"
+    lon_name = "longitude" if "longitude" in first_var.dims else "lon"
+
+    # Check spatial dimensions
+    n_lat = len(first_var[lat_name])
+    n_lon = len(first_var[lon_name])
+
+    # Get time string
+    if time_name and time_name in first_var.dims:
+        time_str = str(first_var[time_name].values[time_index])[:10]
+    elif "time" in first_var.coords:
+        time_str = str(first_var.coords["time"].values)[:10]
+    elif "valid_time" in first_var.coords:
+        time_str = str(first_var.coords["valid_time"].values)[:10]
+    else:
+        time_str = "unknown date"
+
+    # Determine grid layout
+    n_cols = min(3, n_vars)  # Max 3 columns
+    n_rows = (n_vars + n_cols - 1) // n_cols
+
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(6 * n_cols, 5 * n_rows))
+
+    if n_vars == 1:
+        axes = [axes]
+    else:
+        axes = axes.flatten()
+
+    for v_idx, var_name in enumerate(variables):
+        ax = axes[v_idx]
+        var_data = dataset[var_name]
+
+        # Select data for this time step (if time dimension exists)
+        if time_name and time_name in var_data.dims:
+            data = var_data.isel({time_name: time_index})
+        else:
+            data = var_data
+
+        step_type = var_data.attrs.get("GRIB_stepType", "unknown")
+
+        # Plot based on spatial dimensions
+        if n_lat > 1 and n_lon > 1:
+            # 2D spatial map
+            data.plot.pcolormesh(ax=ax, cmap="viridis", add_colorbar=True)
+            ax.set_xlabel("Longitude")
+            ax.set_ylabel("Latitude")
+        elif n_lat > 1 or n_lon > 1:
+            # 1D profile
+            data.plot(ax=ax, marker="o")
+            ax.set_ylabel(f"{var_data.attrs.get('units', 'Value')}")
+            ax.grid(True, alpha=0.3)
+        else:
+            # Single point
+            value = float(data.values)
+            ax.text(
+                0.5,
+                0.5,
+                f"{value:.4f}\n{var_data.attrs.get('units', '')}",
+                ha="center",
+                va="center",
+                fontsize=12,
+                transform=ax.transAxes,
+            )
+            ax.axis("off")
+
+        ax.set_title(
+            f"stepType: {step_type} | {var_name}", fontsize=10, fontweight="bold"
+        )
+
+    # Hide extra subplots
+    for idx in range(n_vars, len(axes)):
+        axes[idx].axis("off")
+
+    plt.suptitle(f"All Variables - {time_str}", fontsize=14, fontweight="bold", y=1.02)
+    plt.tight_layout()
+    return fig

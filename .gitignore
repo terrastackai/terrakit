@@ -115,7 +115,7 @@ dmypy.json
 *.tortilla
 *metadata.json
 *.nc
-
+*.zip
 # Test data
 test_wildfire_vector
 
