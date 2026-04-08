@@ -10,6 +10,7 @@ from pydantic import ValidationError
 from terrakit.download.data_connectors.theweathercompany import TheWeatherCompany
 
 from .download.connector import Connector
+from .download.data_connectors.local_file_system import LocalFileSystem
 from .download.data_connectors.nasa_earthdata import NASA_EarthData
 from .download.data_connectors.sentinel_aws import Sentinel_AWS
 from .download.data_connectors.ibmresearch_stac import IBMResearchSTAC
@@ -54,6 +55,8 @@ class DataConnectorFactory:
             return IBMResearchSTAC()
         elif connector_type.connector_type == "TheWeatherCompany":
             return TheWeatherCompany()
+        elif connector_type.connector_type == "local_file_system":
+            return LocalFileSystem()
         # -----> Include new connectors here < ------
         # elif connector_type == "<new_connector>"
         #   return NewConnectorClass()
