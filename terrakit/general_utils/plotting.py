@@ -285,7 +285,11 @@ def plot_era5_variable(dataset, variable_name, time_index=0):
 
     # Get the variable data
     var_data = dataset[variable_name]
-    step_type = var_data.attrs.get("GRIB_stepType", "unknown")
+
+    # Get descriptive name for the variable (prefer long_name, fallback to standard_name)
+    var_display_name = var_data.attrs.get(
+        "long_name", var_data.attrs.get("standard_name", variable_name)
+    )
 
     # Determine coordinate names
     lat_name = "latitude" if "latitude" in var_data.dims else "lat"
@@ -325,7 +329,7 @@ def plot_era5_variable(dataset, variable_name, time_index=0):
         spatial_profile = spatial_slice.isel({lat_name: lat_idx})
         spatial_profile.plot(ax=ax1, marker="o", markersize=6)
         ax1.set_title(
-            f"stepType: {step_type} | Variable: {variable_name}\nLongitude Profile at lat={float(var_data[lat_name].values[lat_idx]):.2f}"
+            f"{var_display_name}\nLongitude Profile at lat={float(var_data[lat_name].values[lat_idx]):.2f}"
         )
         ax1.set_xlabel("Longitude")
         ax1.set_ylabel(f"{var_data.attrs.get('units', 'Value')}")
@@ -333,9 +337,7 @@ def plot_era5_variable(dataset, variable_name, time_index=0):
 
         # Plot 2: Spatial map
         im = spatial_slice.plot.pcolormesh(ax=ax2, cmap="viridis", add_colorbar=True)  # noqa: F841
-        ax2.set_title(
-            f"stepType: {step_type} | Variable: {variable_name}\nSpatial Map at {time_str}"
-        )
+        ax2.set_title(f"{var_display_name}\nSpatial Map at {time_str}")
         ax2.set_xlabel("Longitude")
         ax2.set_ylabel("Latitude")
 
@@ -344,9 +346,7 @@ def plot_era5_variable(dataset, variable_name, time_index=0):
         fig, ax = plt.subplots(1, 1, figsize=(10, 6))
         spatial_slice.plot.pcolormesh(ax=ax, cmap="viridis", add_colorbar=True)
 
-        ax.set_title(
-            f"stepType: {step_type} | Variable: {variable_name}\nLatitude Profile at {time_str}"
-        )
+        ax.set_title(f"{var_display_name}\nLatitude Profile at {time_str}")
         ax.set_xlabel("Latitude")
         ax.set_ylabel(f"{var_data.attrs.get('units', 'Value')}")
         ax.grid(True, alpha=0.3)
@@ -356,9 +356,7 @@ def plot_era5_variable(dataset, variable_name, time_index=0):
         fig, ax = plt.subplots(1, 1, figsize=(10, 6))
         spatial_slice.plot.pcolormesh(ax=ax, cmap="viridis", add_colorbar=True)
 
-        ax.set_title(
-            f"stepType: {step_type} | Variable: {variable_name}\nLongitude Profile at {time_str}"
-        )
+        ax.set_title(f"{var_display_name}\nLongitude Profile at {time_str}")
         ax.set_xlabel("Longitude")
         ax.set_ylabel(f"{var_data.attrs.get('units', 'Value')}")
         ax.grid(True, alpha=0.3)
@@ -370,13 +368,13 @@ def plot_era5_variable(dataset, variable_name, time_index=0):
         ax.text(
             0.5,
             0.5,
-            f"{variable_name}\n{value:.4f} {var_data.attrs.get('units', '')}",
+            f"{var_display_name}\n{value:.4f} {var_data.attrs.get('units', '')}",
             ha="center",
             va="center",
             fontsize=16,
             transform=ax.transAxes,
         )
-        ax.set_title(f"stepType: {step_type} | Single Point Value at {time_str}")
+        ax.set_title(f"{var_display_name} - Single Point Value at {time_str}")
         ax.axis("off")
 
     plt.tight_layout()
@@ -440,7 +438,10 @@ def plot_era5_variables_comparison(dataset, time_index=0):
         else:
             data = var_data
 
-        step_type = var_data.attrs.get("GRIB_stepType", "unknown")
+        # Get descriptive name for the variable (prefer long_name, fallback to standard_name)
+        var_display_name = var_data.attrs.get(
+            "long_name", var_data.attrs.get("standard_name", var_name)
+        )
 
         # Plot based on spatial dimensions
         if n_lat > 1 and n_lon > 1:
@@ -467,9 +468,7 @@ def plot_era5_variables_comparison(dataset, time_index=0):
             )
             ax.axis("off")
 
-        ax.set_title(
-            f"stepType: {step_type} | {var_name}", fontsize=10, fontweight="bold"
-        )
+        ax.set_title(f"{var_display_name}", fontsize=10, fontweight="bold")
 
     # Hide extra subplots
     for idx in range(n_vars, len(axes)):
@@ -501,7 +500,11 @@ def plot_cordex_variable(dataset, variable_name, time_index=0):
 
     # Get the variable data
     var_data = dataset[variable_name]
-    step_type = var_data.attrs.get("GRIB_stepType", "unknown")
+
+    # Get descriptive name for the variable (prefer long_name, fallback to standard_name)
+    var_display_name = var_data.attrs.get(
+        "long_name", var_data.attrs.get("standard_name", variable_name)
+    )
 
     # Determine coordinate names - CORDEX typically uses rlat/rlon (rotated pole)
     # but may also use lat/lon or latitude/longitude
@@ -560,7 +563,7 @@ def plot_cordex_variable(dataset, variable_name, time_index=0):
         spatial_profile = spatial_slice.isel({lat_name: lat_idx})
         spatial_profile.plot(ax=ax1, marker="o", markersize=6)
         ax1.set_title(
-            f"stepType: {step_type} | Variable: {variable_name}\n{lon_name.capitalize()} Profile at {lat_name}={float(var_data[lat_name].values[lat_idx]):.2f}"
+            f"{var_display_name}\n{lon_name.capitalize()} Profile at {lat_name}={float(var_data[lat_name].values[lat_idx]):.2f}"
         )
         ax1.set_xlabel(lon_name.capitalize())
         ax1.set_ylabel(f"{var_data.attrs.get('units', 'Value')}")
@@ -568,9 +571,7 @@ def plot_cordex_variable(dataset, variable_name, time_index=0):
 
         # Plot 2: Spatial map
         im = spatial_slice.plot.pcolormesh(ax=ax2, cmap="viridis", add_colorbar=True)  # noqa: F841
-        ax2.set_title(
-            f"stepType: {step_type} | Variable: {variable_name}\nSpatial Map at {time_str}"
-        )
+        ax2.set_title(f"{var_display_name}\nSpatial Map at {time_str}")
         ax2.set_xlabel(lon_name.capitalize())
         ax2.set_ylabel(lat_name.capitalize())
 
@@ -580,7 +581,7 @@ def plot_cordex_variable(dataset, variable_name, time_index=0):
         spatial_slice.plot.pcolormesh(ax=ax, cmap="viridis", add_colorbar=True)
 
         ax.set_title(
-            f"stepType: {step_type} | Variable: {variable_name}\n{lat_name.capitalize()} Profile at {time_str}"
+            f"{var_display_name}\n{lat_name.capitalize()} Profile at {time_str}"
         )
         ax.set_xlabel(lat_name.capitalize())
         ax.set_ylabel(f"{var_data.attrs.get('units', 'Value')}")
@@ -592,7 +593,7 @@ def plot_cordex_variable(dataset, variable_name, time_index=0):
         spatial_slice.plot.pcolormesh(ax=ax, cmap="viridis", add_colorbar=True)
 
         ax.set_title(
-            f"stepType: {step_type} | Variable: {variable_name}\n{lon_name.capitalize()} Profile at {time_str}"
+            f"{var_display_name}\n{lon_name.capitalize()} Profile at {time_str}"
         )
         ax.set_xlabel(lon_name.capitalize())
         ax.set_ylabel(f"{var_data.attrs.get('units', 'Value')}")
@@ -605,13 +606,13 @@ def plot_cordex_variable(dataset, variable_name, time_index=0):
         ax.text(
             0.5,
             0.5,
-            f"{variable_name}\n{value:.4f} {var_data.attrs.get('units', '')}",
+            f"{var_display_name}\n{value:.4f} {var_data.attrs.get('units', '')}",
             ha="center",
             va="center",
             fontsize=16,
             transform=ax.transAxes,
         )
-        ax.set_title(f"stepType: {step_type} | Single Point Value at {time_str}")
+        ax.set_title(f"{var_display_name} - Single Point Value at {time_str}")
         ax.axis("off")
 
     plt.tight_layout()
@@ -697,7 +698,10 @@ def plot_cordex_variables_comparison(dataset, time_index=0):
         else:
             data = var_data
 
-        step_type = var_data.attrs.get("GRIB_stepType", "unknown")
+        # Get descriptive name for the variable (prefer long_name, fallback to standard_name)
+        var_display_name = var_data.attrs.get(
+            "long_name", var_data.attrs.get("standard_name", var_name)
+        )
 
         # Plot based on spatial dimensions
         if n_lat > 1 and n_lon > 1:
@@ -724,9 +728,7 @@ def plot_cordex_variables_comparison(dataset, time_index=0):
             )
             ax.axis("off")
 
-        ax.set_title(
-            f"stepType: {step_type} | {var_name}", fontsize=10, fontweight="bold"
-        )
+        ax.set_title(f"{var_display_name}", fontsize=10, fontweight="bold")
 
     # Hide extra subplots
     for idx in range(n_vars, len(axes)):
