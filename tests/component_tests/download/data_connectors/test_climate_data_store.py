@@ -441,23 +441,47 @@ class TestClimateDataStore:
                 )
 
     @pytest.mark.parametrize(
-        "collection",
+        "collection,bands,date_start,date_end",
         [
-            ("derived-era5-single-levels-daily-statistics"),
-            # ("projections-cordex-domains-single-levels"),
+            (
+                "derived-era5-single-levels-daily-statistics",
+                ["fg10", "t2m", "tp", "u10", "v10"],
+                "2025-01-01",
+                "2025-01-02",
+            ),
+            (
+                "projections-cordex-domains-single-levels",
+                [
+                    "10m_wind_speed",
+                    "2m_air_temperature",
+                    "mean_precipitation_flux",
+                    "10m_u_component_of_the_wind",
+                    "10m_v_component_of_the_wind",
+                ],
+                "1950-01-01",
+                "1950-01-02",
+            ),
         ],
     )
     def test_get_data_cds(
-        self, mock_cds_client, collection, bbox, save_file_dir, get_data_clean_up
+        self,
+        mock_cds_client,
+        collection,
+        bands,
+        date_start,
+        date_end,
+        bbox,
+        save_file_dir,
+        get_data_clean_up,
     ):
         """
         Test the get_data method.
 
         Note: The mock returns a zip file with 5 NetCDF files (one per variable),
-        each containing 2 time steps (2025-01-01 and 2025-01-02).
+        each containing 2 time steps.
+        For ERA5: 2025-01-01 to 2025-01-02
+        For CORDEX: 1950-01-01 to 1950-01-02 (historical data range)
         """
-        date_start = "2025-01-01"
-        date_end = "2025-01-02"
         save_file = f"{save_file_dir}/{self.connector_type}_{collection}.nc"
         dc = DataConnector(connector_type=self.connector_type)
         data = dc.connector.get_data(
@@ -465,7 +489,7 @@ class TestClimateDataStore:
             date_start=date_start,
             date_end=date_end,
             bbox=bbox,
-            bands=self.bands,
+            bands=bands,
             save_file=save_file,
         )
         assert data is not None
@@ -488,9 +512,11 @@ class TestClimateDataStore:
         # Mock data contains 2 time steps (2025-01-01 and 2025-01-02)
         assert len(data.time) == 2
 
-        # Check that NetCDF files were created for the dates in the mock data
-        assert os.path.exists(save_file.replace(".nc", "_2025-01-01.nc")) is True
-        assert os.path.exists(save_file.replace(".nc", "_2025-01-02.nc")) is True
+        # Check that a single time-series NetCDF file was created
+        assert os.path.exists(save_file) is True
+
+        # Verify it's not split into daily files
+        assert os.path.exists(save_file.replace(".nc", "_2025-01-01.nc")) is False
 
     def test_get_data_bbox_too_small_for_era5_resolution(
         self, mock_cds_client_bbox_error, start_date, save_file_dir
@@ -659,7 +685,9 @@ class TestClimateDataStore:
 
         assert isinstance(data, xr.Dataset)
         assert "pr" in data.data_vars
-        assert (tmp_path / "output_1950-01-01.nc").exists()
+        # Check that a single time-series file was created, not daily files
+        assert (tmp_path / "output.nc").exists()
+        assert not (tmp_path / "output_1950-01-01.nc").exists()
 
         shutil.rmtree(working_dir, ignore_errors=True)
 

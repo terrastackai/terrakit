@@ -90,9 +90,9 @@ ds = dc.connector.get_data(
 assert isinstance(ds, xr.Dataset)
 assert len(ds.data_vars) == len(bands)
 assert ds.rio.crs == CRS.from_epsg(4326)
-# assert len(ds.coords["band"]) == len(bands)
 assert len(ds.time) == 1
-assert os.path.exists(save_file.replace(".nc", f"_{unique_dates[0]}.nc")) is True
+# Check that a single time-series file was created
+assert os.path.exists(save_file) is True
 assert len(glob(f"{SAVE_FILE_DIR}/*.nc")) == 1
 get_data_clean_up(SAVE_FILE_DIR)
 
@@ -109,10 +109,10 @@ da = dc.connector.get_data(
 assert isinstance(ds, xr.Dataset)
 assert len(ds.data_vars) == len(bands)
 assert ds.rio.crs == CRS.from_epsg(4326)
-# assert len(ds.coords["band"]) == len(bands)
 assert len(ds.time) == len(unique_dates)
-assert os.path.exists(save_file.replace(".nc", f"_{unique_dates[0]}.nc")) is True
-assert len(glob(f"{SAVE_FILE_DIR}/*.nc")) == len(unique_dates)
+# Check that a single time-series file was created (not split by date)
+assert os.path.exists(save_file) is True
+assert len(glob(f"{SAVE_FILE_DIR}/*.nc")) == 1
 get_data_clean_up(SAVE_FILE_DIR)
 
 
@@ -175,9 +175,9 @@ ds = dc.connector.get_data(
 assert isinstance(ds, xr.Dataset)
 assert len(ds.data_vars) == len(bands)
 assert ds.rio.crs == CRS.from_epsg(4326)
-# assert len(ds.coords["band"]) == len(bands)
 assert len(ds.time) == 1
-assert os.path.exists(save_file.replace(".nc", f"_{unique_dates[0]}.nc")) is True
+# Check that a single time-series file was created
+assert os.path.exists(save_file) is True
 assert len(glob(f"{SAVE_FILE_DIR}/*.nc")) == 1
 get_data_clean_up(SAVE_FILE_DIR)
 
@@ -195,8 +195,8 @@ da = dc.connector.get_data(
 assert isinstance(ds, xr.Dataset)
 assert len(ds.data_vars) == len(bands)
 assert ds.rio.crs == CRS.from_epsg(4326)
-# assert len(ds.coords["band"]) == len(bands)
 assert len(ds.time) == len(unique_dates)
-assert os.path.exists(save_file.replace(".nc", f"_{unique_dates[0]}.nc")) is True
-assert len(glob(f"{SAVE_FILE_DIR}/*.nc")) == len(unique_dates)
+# Check that a single time-series file was created (not split by date)
+assert os.path.exists(save_file) is True
+assert len(glob(f"{SAVE_FILE_DIR}/*.nc")) == 1
 get_data_clean_up(SAVE_FILE_DIR)

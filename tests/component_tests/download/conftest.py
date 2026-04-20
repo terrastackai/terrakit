@@ -84,7 +84,10 @@ def reset_dot_env():
 @pytest.fixture
 def get_data_clean_up():
     yield
-    files = glob(f"{SAVE_FILE_DIR}/*.tif")
+    # Clean up both .tif and .nc files
+    tif_files = glob(f"{SAVE_FILE_DIR}/*.tif")
+    nc_files = glob(f"{SAVE_FILE_DIR}/*.nc")
+    files = tif_files + nc_files
     print(f"Test clean up. Deleting {files}")
     for f in files:
         os.remove(f)
