@@ -158,6 +158,48 @@ class CDS(Connector):
         # Multiple matches - return best match based on overlap
         return self._find_best_cordex_match(bbox, matching_domains)
 
+    def _cordex_code_to_api_domain(self, domain_code: str) -> str:
+        """
+        Convert CORDEX domain code to CDS API domain name.
+
+        Args:
+            domain_code: CORDEX domain code (e.g., 'EUR-11', 'AFR-44')
+
+        Returns:
+            str: CDS API domain name (e.g., 'europe', 'africa')
+
+        Raises:
+            TerrakitValidationError: If domain code is invalid
+        """
+        # Mapping from domain code prefixes to CDS API domain names
+        domain_mapping = {
+            "AFR": "africa",
+            "ANT": "antarctic",
+            "ARC": "arctic",
+            "AUS": "australasia",
+            "CAM": "central_america",
+            "CAS": "central_asia",
+            "EAS": "east_asia",
+            "EUR": "europe",
+            "MED": "mediterranean",
+            "MNA": "middle_east_and_north_africa",
+            "NAM": "north_america",
+            "SAM": "south_america",
+            "SAS": "south_asia",
+            "SEA": "south_east_asia",
+            "WAS": "west_asia",
+        }
+
+        # Extract prefix from domain code (e.g., 'EUR' from 'EUR-11')
+        prefix = domain_code.split("-")[0] if "-" in domain_code else domain_code
+
+        if prefix not in domain_mapping:
+            raise TerrakitValidationError(
+                message=f"Unknown CORDEX domain code: {domain_code}"
+            )
+
+        return domain_mapping[prefix]
+
     def _find_best_cordex_match(self, bbox: list, domain_codes: list) -> str:
         """
         Find CORDEX domain with maximum overlap with user bbox.
@@ -190,7 +232,9 @@ class CDS(Connector):
         )
         return best_domain
 
-    def _infer_steptype(self, filename: str, variable_name: str) -> str:
+    def _infer_steptype(
+        self, filename: str, variable_name: str, collection_name: str = ""
+    ) -> str:
         """
         Infer stepType from filename or variable name.
 
@@ -199,12 +243,18 @@ class CDS(Connector):
         2. Look up variable name in VARIABLE_STEPTYPE_MAP
         3. Fall back to "unknown"
 
+        Note: stepType is only relevant for ERA5 data (derived from GRIB format).
+        For CORDEX data, stepType is not applicable and will be set to "unknown"
+        without generating a warning.
+
         Parameters
         ----------
         filename : str
             NetCDF filename
         variable_name : str
             Variable name from the dataset
+        collection_name : str, optional
+            Name of the data collection (used to determine if stepType is relevant)
 
         Returns
         -------
@@ -226,11 +276,20 @@ class CDS(Connector):
             return step_type
 
         # Method 3: Fall back to unknown
-        logger.warning(
-            f"Could not determine stepType for variable '{variable_name}' "
-            f"in file '{filename}'. Marking as 'unknown'. "
-            f"Consider adding this variable to VARIABLE_STEPTYPE_MAP."
-        )
+        # For CORDEX collections, stepType is not applicable (it's an ERA5/GRIB concept)
+        # so we don't warn about it
+        is_cordex = self._is_cordex_collection(collection_name)
+        if not is_cordex:
+            logger.warning(
+                f"Could not determine stepType for variable '{variable_name}' "
+                f"in file '{filename}'. Marking as 'unknown'. "
+                f"Consider adding this variable to VARIABLE_STEPTYPE_MAP."
+            )
+        else:
+            logger.debug(
+                f"stepType not applicable for CORDEX data. "
+                f"Setting to 'unknown' for variable '{variable_name}' in file '{filename}'."
+            )
         return "unknown"
 
     def _estimate_request_size(
@@ -508,7 +567,9 @@ class CDS(Connector):
         if self._is_cordex_collection(collection_name):
             # CORDEX collections need domain instead of bbox
             domain_code = self._get_cordex_domain_from_bbox(bbox)
-            params["domain"] = domain_code
+            # Convert domain code (e.g., 'EUR-11') to API domain name (e.g., 'europe')
+            api_domain = self._cordex_code_to_api_domain(domain_code)
+            params["domain"] = api_domain
 
             # Set default parameters for CORDEX collections
             # These can be overridden by query_params
@@ -516,6 +577,8 @@ class CDS(Connector):
             params["horizontal_resolution"] = "0_44_degree_x_0_44_degree"
             params["temporal_resolution"] = "daily_mean"
             params["ensemble_member"] = "r1i1p1"
+            params["gcm_model"] = "ichec_ec_earth"  # Default GCM model
+            params["rcm_model"] = "knmi_racmo22t"  # Default RCM model
             params["data_format"] = "netcdf"
 
             # Add start_year and end_year based on date range
@@ -849,6 +912,256 @@ class CDS(Connector):
             )
         return constraints
 
+    def _load_cordex_constraints_variables(self, collection_name: str) -> list:
+        """
+        Load CORDEX constraints_variables metadata from local file.
+
+        This file contains valid combinations of CORDEX parameters including:
+        domain, experiment, horizontal_resolution, temporal_resolution,
+        gcm_model, rcm_model, ensemble_member, variable, start_year, end_year.
+
+        Args:
+            collection_name: Name of the CORDEX collection
+
+        Returns:
+            List of valid parameter combinations
+        """
+        constraints_file = (
+            self.metadata_dir / f"{collection_name}_constraints_variables.json"
+        )
+
+        if not constraints_file.exists():
+            raise TerrakitValidationError(
+                message=f"No constraints_variables file found for collection '{collection_name}'. "
+                f"Expected: {constraints_file}"
+            )
+
+        try:
+            with open(constraints_file, "r") as f:
+                constraints: list = json.load(f)
+        except json.JSONDecodeError as e:
+            raise TerrakitValidationError(
+                message=f"Invalid JSON in constraints_variables file for '{collection_name}': {e}"
+            )
+        except Exception as e:
+            raise TerrakitValidationError(
+                message=f"Error loading constraints_variables for '{collection_name}': {e}"
+            )
+        return constraints
+
+    def _validate_cordex_constraints(
+        self,
+        collection_name: str,
+        domain: str,
+        experiment: str,
+        horizontal_resolution: str,
+        temporal_resolution: str,
+        gcm_model: str,
+        rcm_model: str,
+        ensemble_member: str,
+        variable: str,
+        start_year: Union[int, None],
+        end_year: Union[int, None],
+    ) -> None:
+        """
+        Validate CORDEX request parameters against constraints_variables file.
+
+        This performs preflight validation to check if the requested combination of
+        parameters is available in the CDS CORDEX dataset before attempting download.
+
+        Args:
+            collection_name: Name of the CORDEX collection
+            domain: CORDEX domain (e.g., 'africa', 'europe')
+            experiment: Experiment type (e.g., 'historical', 'rcp_8_5')
+            horizontal_resolution: Grid resolution (e.g., '0_44_degree_x_0_44_degree')
+            temporal_resolution: Temporal resolution (e.g., 'daily_mean', 'fixed')
+            gcm_model: Global Climate Model (e.g., 'ichec_ec_earth')
+            rcm_model: Regional Climate Model (e.g., 'knmi_racmo22t')
+            ensemble_member: Ensemble member (e.g., 'r1i1p1')
+            variable: Variable name (e.g., '2m_air_temperature')
+            start_year: Start year for data request (None for 'fixed' temporal_resolution)
+            end_year: End year for data request (None for 'fixed' temporal_resolution)
+
+        Raises:
+            TerrakitValidationError: If the combination is not available, with suggestions
+                                    for valid alternatives
+        """
+        # Load constraints_variables file
+        constraints_list = self._load_cordex_constraints_variables(collection_name)
+
+        # Find matching combinations
+        matching_combos = []
+        for combo in constraints_list:
+            # Check if all parameters match
+            if (
+                domain in combo.get("domain", [])
+                and experiment in combo.get("experiment", [])
+                and horizontal_resolution in combo.get("horizontal_resolution", [])
+                and temporal_resolution in combo.get("temporal_resolution", [])
+                and gcm_model in combo.get("gcm_model", [])
+                and rcm_model in combo.get("rcm_model", [])
+                and ensemble_member in combo.get("ensemble_member", [])
+                and variable in combo.get("variable", [])
+            ):
+                # For temporal_resolution != 'fixed', also check year range
+                if (
+                    temporal_resolution != "fixed"
+                    and start_year is not None
+                    and end_year is not None
+                ):
+                    combo_start_years = combo.get("start_year", [])
+                    combo_end_years = combo.get("end_year", [])
+
+                    # Check if requested years are within available range
+                    if combo_start_years and combo_end_years:
+                        # Convert to integers for comparison
+                        available_start = min(int(y) for y in combo_start_years)
+                        available_end = max(int(y) for y in combo_end_years)
+
+                        if start_year >= available_start and end_year <= available_end:
+                            matching_combos.append(combo)
+                else:
+                    # For 'fixed' temporal_resolution, year range doesn't apply
+                    matching_combos.append(combo)
+
+        if matching_combos:
+            # Valid combination found
+            return
+
+        # No exact match - build helpful error message with alternatives
+        error_parts = [
+            "CORDEX data not available for the requested combination:",
+            f"  Domain: {domain}",
+            f"  Experiment: {experiment}",
+            f"  Horizontal Resolution: {horizontal_resolution}",
+            f"  Temporal Resolution: {temporal_resolution}",
+            f"  GCM Model: {gcm_model}",
+            f"  RCM Model: {rcm_model}",
+            f"  Ensemble Member: {ensemble_member}",
+            f"  Variable: {variable}",
+        ]
+
+        if (
+            temporal_resolution != "fixed"
+            and start_year is not None
+            and end_year is not None
+        ):
+            error_parts.append(f"  Year Range: {start_year}-{end_year}")
+
+        # Find partial matches to suggest alternatives
+        # Try relaxing constraints one at a time to find what's available
+
+        # Find combinations matching domain, experiment, resolution, temporal_resolution
+        base_matches = [
+            combo
+            for combo in constraints_list
+            if (
+                domain in combo.get("domain", [])
+                and experiment in combo.get("experiment", [])
+                and horizontal_resolution in combo.get("horizontal_resolution", [])
+                and temporal_resolution in combo.get("temporal_resolution", [])
+            )
+        ]
+
+        if base_matches:
+            # Extract valid options for the failing parameters
+            valid_gcm_models = sorted(
+                set(gcm for combo in base_matches for gcm in combo.get("gcm_model", []))
+            )
+            valid_rcm_models = sorted(
+                set(rcm for combo in base_matches for rcm in combo.get("rcm_model", []))
+            )
+            valid_ensemble_members = sorted(
+                set(
+                    ens
+                    for combo in base_matches
+                    for ens in combo.get("ensemble_member", [])
+                )
+            )
+            valid_variables = sorted(
+                set(var for combo in base_matches for var in combo.get("variable", []))
+            )
+
+            error_parts.append(
+                "\nValid alternatives for this domain/experiment/resolution:"
+            )
+
+            if gcm_model not in valid_gcm_models:
+                error_parts.append(
+                    f"  Valid GCM Models: {', '.join(valid_gcm_models[:10])}"
+                )
+                if len(valid_gcm_models) > 10:
+                    error_parts.append(f"    ... and {len(valid_gcm_models) - 10} more")
+
+            if rcm_model not in valid_rcm_models:
+                error_parts.append(
+                    f"  Valid RCM Models: {', '.join(valid_rcm_models[:10])}"
+                )
+                if len(valid_rcm_models) > 10:
+                    error_parts.append(f"    ... and {len(valid_rcm_models) - 10} more")
+
+            if ensemble_member not in valid_ensemble_members:
+                error_parts.append(
+                    f"  Valid Ensemble Members: {', '.join(valid_ensemble_members[:10])}"
+                )
+                if len(valid_ensemble_members) > 10:
+                    error_parts.append(
+                        f"    ... and {len(valid_ensemble_members) - 10} more"
+                    )
+
+            if variable not in valid_variables:
+                error_parts.append(
+                    f"  Valid Variables: {', '.join(valid_variables[:10])}"
+                )
+                if len(valid_variables) > 10:
+                    error_parts.append(f"    ... and {len(valid_variables) - 10} more")
+
+            # Check year range if applicable
+            if (
+                temporal_resolution != "fixed"
+                and start_year is not None
+                and end_year is not None
+            ):
+                # Find combinations matching all parameters except year range
+                year_matches = [
+                    combo
+                    for combo in base_matches
+                    if (
+                        gcm_model in combo.get("gcm_model", [])
+                        and rcm_model in combo.get("rcm_model", [])
+                        and ensemble_member in combo.get("ensemble_member", [])
+                        and variable in combo.get("variable", [])
+                    )
+                ]
+
+                if year_matches:
+                    available_years = set()
+                    for combo in year_matches:
+                        start_years = combo.get("start_year", [])
+                        end_years = combo.get("end_year", [])
+                        if start_years and end_years:
+                            for sy, ey in zip(start_years, end_years):
+                                available_years.add((int(sy), int(ey)))
+
+                    if available_years:
+                        year_ranges = sorted(available_years)
+                        error_parts.append(
+                            f"  Available Year Ranges: {', '.join(f'{sy}-{ey}' for sy, ey in year_ranges[:5])}"
+                        )
+                        if len(year_ranges) > 5:
+                            error_parts.append(
+                                f"    ... and {len(year_ranges) - 5} more ranges"
+                            )
+        else:
+            error_parts.append(
+                "\nNo data available for this domain/experiment/resolution combination."
+            )
+            error_parts.append(
+                "Try different values for domain, experiment, or resolution."
+            )
+
+        raise TerrakitValidationError(message="\n".join(error_parts))
+
     def _connect_to_cds(self) -> cdsapi.Client:
         """
         Connect to climate data store.
@@ -1036,10 +1349,11 @@ class CDS(Connector):
             bands (list, optional): List of bands to retrieve. Defaults to all bands.
             query_params (dict, optional): Additional query parameters. Defaults to {}.
             data_connector_spec (dict, optional): Data connector specification. Defaults to None.
-            save_file (str, optional): Path to save the output file. If provided, individual NetCDF files
-                will be saved for each date with the naming pattern: {save_file}_{date}.nc
-                (e.g., 'output_2025-01-01.nc', 'output_2025-01-02.nc'). Each file contains all
-                requested bands for that specific date. If None, no files are saved to disk. Defaults to None.
+            save_file (str, optional): Path to save the output file as a single time-series NetCDF.
+                Climate data is saved as a continuous time series (not split by date) to facilitate
+                temporal analysis. The file will contain all requested variables across all time steps.
+                Example: 'output.nc' will save all data in one file. If None, no files are saved to disk.
+                Defaults to None.
             working_dir (str, optional): Working directory for temporary files. Defaults to '.'.
 
         Returns:
@@ -1093,6 +1407,47 @@ class CDS(Connector):
         self._validate_temporal(date_start, date_end, constraints, data_collection_name)
         self._validate_spatial(bbox, constraints, data_collection_name)
 
+        # For CORDEX collections, validate the joint combination of parameters
+        if self._is_cordex_collection(data_collection_name):
+            # Get domain from bbox
+            domain_code = self._get_cordex_domain_from_bbox(bbox)
+            api_domain = self._cordex_code_to_api_domain(domain_code)
+
+            # Extract parameters from query_params or use defaults
+            experiment = query_params.get("experiment", "historical")
+            horizontal_resolution = query_params.get(
+                "horizontal_resolution", "0_44_degree_x_0_44_degree"
+            )
+            temporal_resolution = query_params.get("temporal_resolution", "daily_mean")
+            gcm_model = query_params.get("gcm_model", "ichec_ec_earth")
+            rcm_model = query_params.get("rcm_model", "knmi_racmo22t")
+            ensemble_member = query_params.get("ensemble_member", "r1i1p1")
+
+            # Get year range from dates
+            start_date = datetime.strptime(date_start, "%Y-%m-%d")
+            end_date = datetime.strptime(date_end, "%Y-%m-%d")
+            start_year = start_date.year if temporal_resolution != "fixed" else None
+            end_year = end_date.year if temporal_resolution != "fixed" else None
+
+            # Validate each requested variable
+            variables_to_validate = (
+                bands if bands else ["2m_air_temperature"]
+            )  # Default variable
+            for variable in variables_to_validate:
+                self._validate_cordex_constraints(
+                    collection_name=data_collection_name,
+                    domain=api_domain,
+                    experiment=experiment,
+                    horizontal_resolution=horizontal_resolution,
+                    temporal_resolution=temporal_resolution,
+                    gcm_model=gcm_model,
+                    rcm_model=rcm_model,
+                    ensemble_member=ensemble_member,
+                    variable=variable,
+                    start_year=start_year,
+                    end_year=end_year,
+                )
+
         # 1. Download zip from CDS API
         zip_path = self._download_from_cds(
             data_collection_name,
@@ -1128,10 +1483,19 @@ class CDS(Connector):
         for netcdf_file in netcdf_files:
             ds = xr.open_dataset(netcdf_file)
 
-            # Determine dimension names
-            lon_name = "longitude" if "longitude" in ds.dims else "lon"
-            lat_name = "latitude" if "latitude" in ds.dims else "lat"
+            # Determine dimension names. CORDEX files may use rotated-grid dimensions
+            # (rlon/rlat) while exposing lon/lat as 2D coordinates.
             time_name = "time" if "time" in ds.dims else "valid_time"
+
+            candidate_lon_dims = ["longitude", "lon", "rlon", "x"]
+            candidate_lat_dims = ["latitude", "lat", "rlat", "y"]
+
+            lon_name = next(
+                (name for name in candidate_lon_dims if name in ds.dims), None
+            )
+            lat_name = next(
+                (name for name in candidate_lat_dims if name in ds.dims), None
+            )
 
             # Determine if this is a single-variable file or multi-variable file
             # Single-variable files don't have stepType in filename
@@ -1140,9 +1504,15 @@ class CDS(Connector):
                 for step in ["accum", "avg", "instant", "max", "min"]
             )
 
-            # Get the main data variable(s) - these are our bands
+            # Get the main data variable(s) - these are our bands.
+            # Exclude helper/bounds/grid-mapping variables that are not spatial-temporal
+            # data bands, e.g. rotated_pole (scalar) or time_bnds (time,bnds).
             data_vars = [
-                v for v in ds.data_vars if v not in [lon_name, lat_name, time_name]
+                v
+                for v in ds.data_vars
+                if time_name in ds[v].dims
+                and any(dim in ds[v].dims for dim in candidate_lon_dims)
+                and any(dim in ds[v].dims for dim in candidate_lat_dims)
             ]
 
             # Log variables found in this file
@@ -1197,7 +1567,7 @@ class CDS(Connector):
                     else:
                         # Fall back to inference method
                         step_type = self._infer_steptype(
-                            netcdf_file.name, steptype_var_name
+                            netcdf_file.name, steptype_var_name, data_collection_name
                         )
 
                     # Extract data for this specific time step using the original NetCDF variable name
@@ -1298,31 +1668,58 @@ class CDS(Connector):
         # Write CRS (EPSG:4326 for CDS data)
         merged_dataset.rio.write_crs("EPSG:4326", inplace=True)
 
-        # 6. Save individual date files as NetCDF
+        # Derive time values robustly from dataset coordinates, even if the dataset-level
+        # `time` attribute accessor is unavailable for some merged outputs.
+        dataset_time_values = None
+        if "time" in merged_dataset.coords:
+            dataset_time_values = merged_dataset.coords["time"].values
+        else:
+            for data_var_name in merged_dataset.data_vars:
+                var_da = merged_dataset[data_var_name]
+                if "time" in var_da.coords:
+                    dataset_time_values = var_da.coords["time"].values
+                    break
+
+        unique_dates = (
+            sorted(set(dataset_time_values)) if dataset_time_values is not None else []
+        )
+
+        # 6. Save as single time-series NetCDF file
+        # Climate data is best analyzed as continuous time series, not individual days
         if save_file is not None:
             # Ensure the directory exists
             save_dir = Path(save_file).parent
             save_dir.mkdir(parents=True, exist_ok=True)
 
-            # Remove file extension if it exists on save_file
-            save_file_base = str(Path(save_file).with_suffix(""))
+            # Ensure .nc extension
+            if not save_file.endswith(".nc"):
+                save_file = f"{save_file}.nc"
 
-            # Save each date separately
-            unique_dates = sorted(set(merged_dataset.time.values))
-            for date in unique_dates:
-                daily_data = merged_dataset.sel(time=date)
-                date_str = pd.Timestamp(date).strftime("%Y-%m-%d")
+            # Save entire time series as single NetCDF file
+            merged_dataset.to_netcdf(save_file)
 
-                filename = f"{save_file_base}_{date_str}.nc"
-
-                daily_data.to_netcdf(filename)
-                logger.info(f"Saved {filename}")
+            # Log summary information
+            start_date_str = (
+                pd.Timestamp(unique_dates[0]).strftime("%Y-%m-%d")
+                if unique_dates
+                else "N/A"
+            )
+            end_date_str = (
+                pd.Timestamp(unique_dates[-1]).strftime("%Y-%m-%d")
+                if unique_dates
+                else "N/A"
+            )
+            logger.info(
+                f"Saved time-series NetCDF: {save_file} "
+                f"({len(unique_dates)} time steps from {start_date_str} to {end_date_str}, "
+                f"{len(merged_dataset.data_vars)} variables)"
+            )
 
         # 7. Cleanup temporary files
         shutil.rmtree(extract_dir)
         Path(zip_path).unlink()
 
         logger.info(
-            f"Processed {len(merged_dataset.time)} time steps and {len(merged_dataset.data_vars)} variables into Dataset"
+            f"Processed {len(unique_dates)} time steps and {len(merged_dataset.data_vars)} variables into Dataset"
         )
         return merged_dataset

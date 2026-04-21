@@ -7,6 +7,39 @@ Each data connector has the following mandatory methods:
 * find_data()
 * get_data()
 
+
+## Available data connectors and collections
+The following data connectors and associated collections are available:
+
+| Connectors        | Collections |
+| ----------------- | ----------- |
+| sentinelhub       | s2_l1c, dem, s1_grd, hls_l30, s2_l2a, hls_s30 |
+| nasa_earthdata    | HLSL30_2.0, HLSS30_2.0  |
+| sentinel_aws      | sentinel-2-l2a  |
+| climate_data_store| derived-era5-single-levels-daily-statistics, projections-cordex-domains-single-levels |
+| IBMResearchSTAC | 'HLSS30', 'esa-sentinel-2A-msil1c', 'HLS_S30',, 'atmospheric-weather-era5', 'deforestation-umd', 'Radar-10min', 'tasmax-rcp85-land-cpm-uk-2.2km', 'vector-osm-power', 'ukcp18-land-cpm-uk-2.2km', 'treecovermaps-eudr', 'ch4' + more|
+| TheWeatherCompany | weathercompany-daily-forecast |
+
+
+
+
+## Try out
+Data Connectors can be used outside the TerraKit Pipeline. Here is an example using the SentinelHub data connector.
+
+```python
+from terrakit import DataConnector
+dc = DataConnector(connector_type='sentinelhub')
+dc.connector.list_collections()
+```
+
+To list available bands:
+
+```python
+dc.connector.list_bands()
+```
+
+Take a look at the [TerraKit: Easy geospatial data search and query](examples/terrakit_download.ipynb) notebook for more help getting started with TerraKit Data Connectors. For access information, [see below](#data-connector-access).
+
 ## Bounding Box Constraints
 
 **All TerraKit data connectors adhere to standard geographic bounding box constraints:**
@@ -45,18 +78,6 @@ bbox = [-0.5, 51.7, 0.3, 51.3]  # ❌ South (51.7) must be < North (51.3)
 **Note:** For regions crossing the antimeridian (180°/-180° longitude), split the query into two separate bounding boxes or use data connector-specific handling if available.
 
 
-## Available data connectors and collections
-The following data connectors and associated collections are available:
-
-| Connectors        | Collections |
-| ----------------- | ----------- |
-| sentinelhub       | s2_l1c, dem, s1_grd, hls_l30, s2_l2a, hls_s30 |
-| nasa_earthdata    | HLSL30_2.0, HLSS30_2.0  |
-| sentinel_aws      | sentinel-2-l2a  |
-| climate_data_store| derived-era5-single-levels-daily-statistics, projections-cordex-domains-single-levels |
-| IBMResearchSTAC | 'HLSS30', 'esa-sentinel-2A-msil1c', 'HLS_S30',, 'atmospheric-weather-era5', 'deforestation-umd', 'Radar-10min', 'tasmax-rcp85-land-cpm-uk-2.2km', 'vector-osm-power', 'ukcp18-land-cpm-uk-2.2km', 'treecovermaps-eudr', 'ch4' + more|
-| TheWeatherCompany | weathercompany-daily-forecast |
-
 ## Data connector access
 Each data connector has a different access requirements. For example, connecting to SentinelHub and NASA EarthData, you will need to obtain credentials from each provider. Once these have been obtained, they can be added to a `.env` file at the root directory level using the following syntax:
 
@@ -83,6 +104,22 @@ Available collections include:
  - [ERA5 post-processed daily statistics on single levels from 1940 to present](https://cds.climate.copernicus.eu/datasets/derived-era5-single-levels-daily-statistics?tab=overview)
  - [CORDEX regional climate model data on single levels](https://cds.climate.copernicus.eu/datasets/projections-cordex-domains-single-levels?tab=overview)
 
+#### CORDEX Data Validation
+
+For CORDEX collections, TerraKit performs **preflight validation** to ensure that the requested combination of parameters is available before attempting to download data. This validation checks the joint combination of:
+
+- Domain (derived from bounding box)
+- Experiment (e.g., 'historical', 'rcp_8_5')
+- Horizontal resolution (e.g., '0_44_degree_x_0_44_degree')
+- Temporal resolution (e.g., 'daily_mean', 'fixed')
+- GCM model (Global Climate Model)
+- RCM model (Regional Climate Model)
+- Ensemble member (e.g., 'r1i1p1')
+- Variable (e.g., '2m_air_temperature')
+- Year range (start_year and end_year)
+
+If an invalid combination is requested, TerraKit will raise a `TerrakitValidationError` with helpful suggestions for valid alternatives, **before** making any API calls to the Climate Data Store. This saves time and helps users discover available data combinations.
+
 ### The Weather Company
 To access The Weather Company, register for an account and requests an API Key [https://www.weathercompany.com/weather-data-apis/](https://www.weathercompany.com/weather-data-apis/). Once you have an API key, set the following environment variable:
 
@@ -104,6 +141,3 @@ CLIENT_SECRET=<client-secret>
 Please reach out the maintainers of this repo.
 
 IBMers don't need credentials to access the internal instance of the STAC service.
-
-## Try out
-Data Connectors can be used outside the TerraKit Pipeline. Take a look at the [TerraKit: Easy geospatial data search and query](examples/terrakit_download.ipynb) notebook for more help getting started with TerraKit Data Connectors.

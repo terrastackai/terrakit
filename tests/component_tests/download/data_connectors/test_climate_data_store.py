@@ -4,6 +4,10 @@
 
 import logging
 import os
+import shutil
+import zipfile
+
+import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
@@ -437,23 +441,47 @@ class TestClimateDataStore:
                 )
 
     @pytest.mark.parametrize(
-        "collection",
+        "collection,bands,date_start,date_end",
         [
-            ("derived-era5-single-levels-daily-statistics"),
-            # ("projections-cordex-domains-single-levels"),
+            (
+                "derived-era5-single-levels-daily-statistics",
+                ["fg10", "t2m", "tp", "u10", "v10"],
+                "2025-01-01",
+                "2025-01-02",
+            ),
+            (
+                "projections-cordex-domains-single-levels",
+                [
+                    "10m_wind_speed",
+                    "2m_air_temperature",
+                    "mean_precipitation_flux",
+                    "10m_u_component_of_the_wind",
+                    "10m_v_component_of_the_wind",
+                ],
+                "1950-01-01",
+                "1950-01-02",
+            ),
         ],
     )
     def test_get_data_cds(
-        self, mock_cds_client, collection, bbox, save_file_dir, get_data_clean_up
+        self,
+        mock_cds_client,
+        collection,
+        bands,
+        date_start,
+        date_end,
+        bbox,
+        save_file_dir,
+        get_data_clean_up,
     ):
         """
         Test the get_data method.
 
         Note: The mock returns a zip file with 5 NetCDF files (one per variable),
-        each containing 2 time steps (2025-01-01 and 2025-01-02).
+        each containing 2 time steps.
+        For ERA5: 2025-01-01 to 2025-01-02
+        For CORDEX: 1950-01-01 to 1950-01-02 (historical data range)
         """
-        date_start = "2025-01-01"
-        date_end = "2025-01-02"
         save_file = f"{save_file_dir}/{self.connector_type}_{collection}.nc"
         dc = DataConnector(connector_type=self.connector_type)
         data = dc.connector.get_data(
@@ -461,7 +489,7 @@ class TestClimateDataStore:
             date_start=date_start,
             date_end=date_end,
             bbox=bbox,
-            bands=self.bands,
+            bands=bands,
             save_file=save_file,
         )
         assert data is not None
@@ -484,9 +512,11 @@ class TestClimateDataStore:
         # Mock data contains 2 time steps (2025-01-01 and 2025-01-02)
         assert len(data.time) == 2
 
-        # Check that NetCDF files were created for the dates in the mock data
-        assert os.path.exists(save_file.replace(".nc", "_2025-01-01.nc")) is True
-        assert os.path.exists(save_file.replace(".nc", "_2025-01-02.nc")) is True
+        # Check that a single time-series NetCDF file was created
+        assert os.path.exists(save_file) is True
+
+        # Verify it's not split into daily files
+        assert os.path.exists(save_file.replace(".nc", "_2025-01-01.nc")) is False
 
     def test_get_data_bbox_too_small_for_era5_resolution(
         self, mock_cds_client_bbox_error, start_date, save_file_dir
@@ -515,3 +545,242 @@ class TestClimateDataStore:
                 bands=self.bands,
                 save_file=save_file,
             )
+
+    def test_get_data_cds__cordex_ignores_scalar_grid_mapping_variable(
+        self, tmp_path, monkeypatch
+    ):
+        """
+        Test CORDEX-like NetCDF processing ignores scalar grid-mapping variables such as
+        rotated_pole when extracting time-indexed band data.
+        """
+
+        time_values = pd.date_range("1950-01-01", periods=1)
+        lat_values = np.array([-1.0, 0.0])
+        lon_values = np.array([20.0, 21.0])
+
+        ds_in = xr.Dataset(
+            data_vars={
+                "pr": (("time", "lat", "lon"), np.ones((1, 2, 2))),
+                "rotated_pole": ((), 0),
+            },
+            coords={
+                "time": time_values,
+                "lat": lat_values,
+                "lon": lon_values,
+            },
+        )
+        ds_in["pr"].attrs["grid_mapping"] = "rotated_pole"
+        ds_in["pr"].attrs["GRIB_stepType"] = "avg"
+
+        source_nc = (
+            tmp_path
+            / "pr_AFR-44_ICHEC-EC-EARTH_historical_r1i1p1_KNMI-RACMO22T_v1_day_19500101-19501231.nc"
+        )
+        ds_in.to_netcdf(source_nc)
+        ds_in.close()
+
+        zip_path = tmp_path / "cordex_mock.zip"
+        with zipfile.ZipFile(zip_path, "w") as zf:
+            zf.write(source_nc, arcname=source_nc.name)
+
+        dc = DataConnector(connector_type=self.connector_type)
+
+        monkeypatch.setattr(
+            dc.connector,
+            "_download_from_cds",
+            lambda *args, **kwargs: zip_path,
+        )
+
+        working_dir = tmp_path / "working"
+        save_file = tmp_path / "output.nc"
+
+        data = dc.connector.get_data(
+            data_collection_name="projections-cordex-domains-single-levels",
+            date_start="1950-01-01",
+            date_end="1950-01-01",
+            bbox=[20, -10, 30, 0],
+            bands=["mean_precipitation_flux"],
+            query_params={
+                "experiment": "historical",
+                "gcm_model": "ichec_ec_earth",
+                "rcm_model": "knmi_racmo22t",
+                "ensemble_member": "r1i1p1",
+                "temporal_resolution": "daily_mean",
+                "horizontal_resolution": "0_44_degree_x_0_44_degree",
+            },
+            working_dir=str(working_dir),
+            save_file=str(save_file),
+        )
+
+        assert isinstance(data, xr.Dataset)
+        assert "pr" in data.data_vars
+        assert "rotated_pole" not in data.data_vars
+        assert len(data.time) == 1
+
+        shutil.rmtree(working_dir, ignore_errors=True)
+
+    def test_get_data_cds__cordex_saves_dates_without_dataset_level_time_coordinate(
+        self, tmp_path, monkeypatch
+    ):
+        """
+        Test saving daily files still works when merged Dataset has per-variable time
+        coordinates but no dataset-level `time` attribute accessor.
+        """
+
+        time_values = pd.date_range("1950-01-01", periods=1)
+        lat_values = np.array([-1.0, 0.0])
+        lon_values = np.array([20.0, 21.0])
+
+        ds_in = xr.Dataset(
+            data_vars={
+                "pr": (("time", "lat", "lon"), np.ones((1, 2, 2))),
+            },
+            coords={
+                "time": time_values,
+                "lat": lat_values,
+                "lon": lon_values,
+            },
+        )
+        ds_in["pr"].attrs["GRIB_stepType"] = "avg"
+
+        source_nc = (
+            tmp_path
+            / "pr_AFR-44_ICHEC-EC-EARTH_historical_r1i1p1_KNMI-RACMO22T_v1_day_19500101-19501231.nc"
+        )
+        ds_in.to_netcdf(source_nc)
+        ds_in.close()
+
+        zip_path = tmp_path / "cordex_mock_single_var.zip"
+        with zipfile.ZipFile(zip_path, "w") as zf:
+            zf.write(source_nc, arcname=source_nc.name)
+
+        dc = DataConnector(connector_type=self.connector_type)
+
+        monkeypatch.setattr(
+            dc.connector,
+            "_download_from_cds",
+            lambda *args, **kwargs: zip_path,
+        )
+
+        working_dir = tmp_path / "working"
+        save_file = tmp_path / "output.nc"
+
+        data = dc.connector.get_data(
+            data_collection_name="projections-cordex-domains-single-levels",
+            date_start="1950-01-01",
+            date_end="1950-01-01",
+            bbox=[20, -10, 30, 0],
+            bands=["mean_precipitation_flux"],
+            query_params={
+                "experiment": "historical",
+                "gcm_model": "ichec_ec_earth",
+                "rcm_model": "knmi_racmo22t",
+                "ensemble_member": "r1i1p1",
+                "temporal_resolution": "daily_mean",
+                "horizontal_resolution": "0_44_degree_x_0_44_degree",
+            },
+            working_dir=str(working_dir),
+            save_file=str(save_file),
+        )
+
+        assert isinstance(data, xr.Dataset)
+        assert "pr" in data.data_vars
+        # Check that a single time-series file was created, not daily files
+        assert (tmp_path / "output.nc").exists()
+        assert not (tmp_path / "output_1950-01-01.nc").exists()
+
+        shutil.rmtree(working_dir, ignore_errors=True)
+
+    def test_get_data_cds__cordex_supports_rotated_grid_spatial_dims(
+        self, tmp_path, monkeypatch
+    ):
+        """
+        Test CORDEX-like variables on rotated grids are processed when the data variable
+        uses rlat/rlon dims and exposes lat/lon as 2D coordinates.
+        """
+
+        time_values = pd.date_range("1950-01-01", periods=1)
+        rlat_values = np.array([-1.0, 0.0])
+        rlon_values = np.array([20.0, 21.0])
+
+        ds_in = xr.Dataset(
+            data_vars={
+                "pr": (("time", "rlat", "rlon"), np.ones((1, 2, 2))),
+                "tas": (("time", "rlat", "rlon"), np.full((1, 2, 2), 280.0)),
+                "sfcWind": (("time", "rlat", "rlon"), np.full((1, 2, 2), 5.0)),
+                "rotated_pole": ((), 0),
+            },
+            coords={
+                "time": time_values,
+                "rlat": rlat_values,
+                "rlon": rlon_values,
+                "lat": (("rlat", "rlon"), [[-1.0, -1.0], [0.0, 0.0]]),
+                "lon": (("rlat", "rlon"), [[20.0, 21.0], [20.0, 21.0]]),
+            },
+        )
+        ds_in["pr"].attrs["GRIB_stepType"] = "avg"
+        ds_in["tas"].attrs["GRIB_stepType"] = "instant"
+        ds_in["sfcWind"].attrs["GRIB_stepType"] = "avg"
+
+        file_specs = [
+            (
+                "pr_AFR-44_ICHEC-EC-EARTH_historical_r1i1p1_KNMI-RACMO22T_v1_day_19500101-19501231.nc",
+                ["pr", "rotated_pole"],
+            ),
+            (
+                "tas_AFR-44_ICHEC-EC-EARTH_historical_r1i1p1_KNMI-RACMO22T_v1_day_19500101-19501231.nc",
+                ["tas", "rotated_pole"],
+            ),
+            (
+                "sfcWind_AFR-44_ICHEC-EC-EARTH_historical_r1i1p1_KNMI-RACMO22T_v1_day_19500101-19501231.nc",
+                ["sfcWind", "rotated_pole"],
+            ),
+        ]
+
+        zip_path = tmp_path / "cordex_rotated_grid.zip"
+        with zipfile.ZipFile(zip_path, "w") as zf:
+            for filename, vars_to_keep in file_specs:
+                source_nc = tmp_path / filename
+                ds_in[vars_to_keep].to_netcdf(source_nc)
+                zf.write(source_nc, arcname=source_nc.name)
+
+        ds_in.close()
+
+        dc = DataConnector(connector_type=self.connector_type)
+
+        monkeypatch.setattr(
+            dc.connector,
+            "_download_from_cds",
+            lambda *args, **kwargs: zip_path,
+        )
+
+        working_dir = tmp_path / "working"
+        save_file = tmp_path / "output.nc"
+
+        data = dc.connector.get_data(
+            data_collection_name="projections-cordex-domains-single-levels",
+            date_start="1950-01-01",
+            date_end="1950-01-01",
+            bbox=[20, -10, 30, 0],
+            bands=[
+                "mean_precipitation_flux",
+                "2m_air_temperature",
+                "10m_wind_speed",
+            ],
+            query_params={
+                "experiment": "historical",
+                "gcm_model": "ichec_ec_earth",
+                "rcm_model": "knmi_racmo22t",
+                "ensemble_member": "r1i1p1",
+                "temporal_resolution": "daily_mean",
+                "horizontal_resolution": "0_44_degree_x_0_44_degree",
+            },
+            working_dir=str(working_dir),
+            save_file=str(save_file),
+        )
+
+        assert isinstance(data, xr.Dataset)
+        assert sorted(data.data_vars) == ["pr", "sfcWind", "tas"]
+        assert len(data.time) == 1
+
+        shutil.rmtree(working_dir, ignore_errors=True)

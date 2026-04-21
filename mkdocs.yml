@@ -16,6 +16,7 @@ nav:
   - Examples: 
     - examples/labels_to_data.ipynb
     - examples/terrakit_download.ipynb
+    - examples/terrakit_download_cds.ipynb
     - examples/terrakit_cli.ipynb
   - Extend TerraKit:
     - Add a New Connector: adding_connectors.md

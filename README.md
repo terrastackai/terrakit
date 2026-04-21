@@ -83,6 +83,12 @@ dc = DataConnector(connector_type='sentinelhub')
 dc.connector.list_collections()
 ```
 
+To list available bands:
+
+```python
+dc.connector.list_bands()
+```
+
 For more examples, take a look at [terrakit_download.ipynb](docs/examples/terrakit_download.ipynb).
 
 ### TerraKit CLI
