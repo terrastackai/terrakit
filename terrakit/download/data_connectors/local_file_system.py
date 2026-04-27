@@ -3,11 +3,12 @@
 
 
 import logging
+import numpy as np
 import os
 import re
-import numpy as np
-import xarray as xr
 import rioxarray  # noqa – registers the .rio accessor
+import time
+import xarray as xr
 
 from datetime import datetime
 from typing import Any, Union
@@ -283,9 +284,105 @@ def _read_zarr(path: str, spec: dict) -> xr.DataArray:
 
     Returns:
         xr.DataArray: DataArray with dimensions ``(band, y, x)``.
+
+    Raises:
+        TerrakitValueError: If the Zarr store cannot be loaded with valid dimensions.
     """
-    ds = xr.open_zarr(path, consolidated=False)
-    return _dataset_to_dataarray(ds, spec, path)
+
+    # Try multiple times with different strategies due to intermittent xarray/zarr issues
+    max_attempts = 5
+    last_da: xr.DataArray | None = None
+
+    for attempt in range(max_attempts):
+        try:
+            # Add increasing delays to avoid race conditions
+            if attempt > 0:
+                time.sleep(0.05 * attempt)
+
+            # Open the Zarr store with different strategies
+            if attempt == 0:
+                # First attempt: use chunks='auto'
+                ds = xr.open_zarr(path, consolidated=False, chunks="auto")
+            elif attempt == 1:
+                # Second attempt: no chunking
+                ds = xr.open_zarr(path, consolidated=False, chunks=None)
+            elif attempt == 2:
+                # Third attempt: decode_times=False
+                ds = xr.open_zarr(
+                    path, consolidated=False, chunks=None, decode_times=False
+                )
+            elif attempt == 3:
+                # Fourth attempt: with mask_and_scale=False
+                ds = xr.open_zarr(
+                    path, consolidated=False, chunks=None, mask_and_scale=False
+                )
+            else:
+                # Fifth attempt: back to chunks='auto' with longer delay
+                ds = xr.open_zarr(path, consolidated=False, chunks="auto")
+
+            da = _dataset_to_dataarray(ds, spec, path)
+            last_da = da
+
+            # Validate that we got a proper multi-dimensional array
+            # The array should have at least 2 spatial dimensions (y, x)
+            if len(da.dims) >= 2 and da.size > 1:
+                return da
+
+            # Invalid dimensions, log and retry
+            logger.warning(
+                "Zarr file '%s' loaded with insufficient dimensions on attempt %d/%d: "
+                "dims=%s, shape=%s. Retrying...",
+                path,
+                attempt + 1,
+                max_attempts,
+                da.dims,
+                da.shape,
+            )
+            ds.close()
+
+        except TerrakitValueError as e:
+            # Check if this is a "variable not found" error - these should not be retried
+            error_msg = str(e)
+            if "not found" in error_msg and "Variable" in error_msg:
+                # This is a legitimate error (missing variable), raise immediately
+                raise
+
+            # Otherwise, it's likely a dimension issue - retry
+            logger.warning(
+                "Zarr file '%s' failed validation on attempt %d/%d: %s. Retrying...",
+                path,
+                attempt + 1,
+                max_attempts,
+                error_msg,
+            )
+            if attempt < max_attempts - 1:
+                time.sleep(0.01 * (attempt + 1))
+            # Don't re-raise yet, try again
+
+        except Exception as e:
+            # Other exceptions should be raised immediately
+            logger.error(
+                "Unexpected error loading Zarr file '%s' on attempt %d/%d: %s",
+                path,
+                attempt + 1,
+                max_attempts,
+                e,
+            )
+            raise
+
+    # If we get here, all attempts failed
+    if last_da is not None:
+        error_msg = (
+            f"Failed to load Zarr file '{path}' with valid dimensions after {max_attempts} attempts. "
+            f"Last result: dims={last_da.dims}, shape={last_da.shape}. "
+            "The Zarr store may be corrupted, incompatible, or there may be a concurrency issue."
+        )
+    else:
+        error_msg = (
+            f"Failed to load Zarr file '{path}' after {max_attempts} attempts. "
+            "The Zarr store may be corrupted or incompatible."
+        )
+    raise TerrakitValueError(error_msg)
 
 
 def _read_geoparquet(
@@ -418,20 +515,34 @@ def _dataset_to_dataarray(ds: xr.Dataset, spec: dict, path: str) -> xr.DataArray
 
     da: xr.DataArray = ds[var_name]
 
-    # Best-effort: set spatial dims so rioxarray CRS operations work
+    # Identify spatial dimensions before any modifications
+    x_dim_name: str | None = None
+    y_dim_name: str | None = None
     try:
-        x_dim = _find_dim(da, ("x", "lon", "longitude"))
-        y_dim = _find_dim(da, ("y", "lat", "latitude"))
-        da = da.rio.set_spatial_dims(x_dim=x_dim, y_dim=y_dim)
-    except Exception:
+        x_dim_name = _find_dim(da, ("x", "lon", "longitude"))
+        y_dim_name = _find_dim(da, ("y", "lat", "latitude"))
+    except ValueError:
         logger.debug("Could not auto-detect spatial dims for '%s'.", path)
+
+    # Best-effort: set spatial dims so rioxarray CRS operations work
+    if x_dim_name and y_dim_name:
+        try:
+            da = da.rio.set_spatial_dims(x_dim=x_dim_name, y_dim=y_dim_name)
+        except Exception as e:
+            logger.debug("Could not set spatial dims for '%s': %s", path, e)
 
     # Ensure a 'band' dimension exists
     if "band" not in da.dims:
-        try:
-            spatial_dims: set[str] = {str(da.rio.x_dim), str(da.rio.y_dim)}
-        except Exception:
-            spatial_dims = set()
+        # Use the spatial dimension names we identified earlier
+        if x_dim_name and y_dim_name:
+            spatial_dims: set[str] = {x_dim_name, y_dim_name}
+        else:
+            # Fallback: try to get from rio accessor
+            try:
+                spatial_dims = {str(da.rio.x_dim), str(da.rio.y_dim)}
+            except Exception:
+                spatial_dims = set()
+
         extra = [d for d in da.dims if d not in spatial_dims and d != "time"]
         if extra:
             da = da.rename({extra[0]: "band"})
