@@ -472,7 +472,7 @@ class TestClimateDataStore:
                     "10m_v_component_of_the_wind",
                 ],
                 "1950-01-01",
-                "1950-01-02",
+                "1950-12-31",
             ),
         ],
     )
@@ -610,7 +610,7 @@ class TestClimateDataStore:
         data = dc.connector.get_data(
             data_collection_name="projections-cordex-domains-single-levels",
             date_start="1950-01-01",
-            date_end="1950-01-01",
+            date_end="1950-12-31",
             bbox=[20, -10, 30, 0],
             bands=["mean_precipitation_flux"],
             query_params={
@@ -681,7 +681,7 @@ class TestClimateDataStore:
         data = dc.connector.get_data(
             data_collection_name="projections-cordex-domains-single-levels",
             date_start="1950-01-01",
-            date_end="1950-01-01",
+            date_end="1950-12-31",
             bbox=[20, -10, 30, 0],
             bands=["mean_precipitation_flux"],
             query_params={
@@ -773,7 +773,7 @@ class TestClimateDataStore:
         data = dc.connector.get_data(
             data_collection_name="projections-cordex-domains-single-levels",
             date_start="1950-01-01",
-            date_end="1950-01-01",
+            date_end="1950-12-31",
             bbox=[20, -10, 30, 0],
             bands=[
                 "mean_precipitation_flux",
@@ -1001,6 +1001,60 @@ class TestCDSParallelDownload:
         # Verify parameter is set correctly for sequential processing
         assert query_params.get("max_workers") == 1
 
+    def test_cordex_multi_year_download_uses_single_request(
+        self, mock_cds_client, temp_dir
+    ):
+        """Test that CORDEX multi-year requests are not split into monthly chunks."""
+        dc = DataConnector(connector_type=self.connector_type)
+
+        download_calls = []
+
+        def mock_download(*args, **kwargs):
+            download_calls.append((args, kwargs))
+            zip_path = Path(temp_dir) / "mock_cordex.zip"
+            with zipfile.ZipFile(zip_path, "w") as zf:
+                ds = xr.Dataset(
+                    {
+                        "2m_air_temperature": (
+                            ["time", "rlat", "rlon"],
+                            np.array([[[20.0]], [[21.0]]]),
+                        ),
+                    },
+                    coords={
+                        "time": pd.date_range("1951-01-01", "1955-12-31", freq="D")[:2],
+                        "rlat": [0.0],
+                        "rlon": [0.0],
+                        "lat": (["rlat", "rlon"], np.array([[-5.0]])),
+                        "lon": (["rlat", "rlon"], np.array([[25.0]])),
+                    },
+                )
+                nc_path = Path(temp_dir) / "cordex.nc"
+                ds.to_netcdf(nc_path)
+                zf.write(nc_path, nc_path.name)
+                nc_path.unlink()
+            return str(zip_path)
+
+        with (
+            patch.object(dc.connector, "_download_from_cds", side_effect=mock_download),
+            patch.object(
+                dc.connector, "_validate_cordex_constraints", return_value=None
+            ),
+        ):
+            ds = dc.connector.get_data(
+                data_collection_name="projections-cordex-domains-single-levels",
+                date_start="1951-01-01",
+                date_end="1955-12-31",
+                bbox=[20, -10, 30, 0],
+                bands=["2m_air_temperature"],
+                working_dir=str(temp_dir),
+            )
+
+        assert isinstance(ds, xr.Dataset)
+        assert len(download_calls) == 1, "CORDEX should use a single CDS request"
+        args, _ = download_calls[0]
+        assert args[1] == "1951-01-01"
+        assert args[2] == "1955-12-31"
+
     def test_default_max_workers(self, mock_cds_client, bbox, temp_dir):
         """Test that default max_workers is reasonable."""
         # Default should be None or a reasonable number (e.g., 4)
@@ -1082,7 +1136,7 @@ class TestCordexValidation:
     def test_valid_cordex_combination(self, dc, valid_cordex_params):
         """Test that a valid CORDEX combination passes validation."""
         # This should not raise an exception
-        dc.connector._validate_cordex_constraints(
+        result = dc.connector._validate_cordex_constraints(
             collection_name=self.collection,
             domain=valid_cordex_params["domain"],
             experiment=valid_cordex_params["experiment"],
@@ -1095,6 +1149,8 @@ class TestCordexValidation:
             start_year=valid_cordex_params["start_year"],
             end_year=valid_cordex_params["end_year"],
         )
+        # Assert that validation passes (returns None without raising exception)
+        assert result is None
 
     def test_invalid_gcm_rcm_combination(self, dc, valid_cordex_params):
         """Test that an invalid GCM-RCM combination raises validation error."""
