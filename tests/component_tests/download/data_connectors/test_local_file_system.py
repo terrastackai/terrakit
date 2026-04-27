@@ -61,6 +61,11 @@ def _tif_to_zarr(src_tif: str, dst_zarr: str, var_name: str = "reflectance") -> 
     da = rioxarray.open_rasterio(src_tif)
     # Convert to Dataset with a single variable to ensure consistency
     ds = da.to_dataset(name=var_name)
+
+    # Remove spatial_ref if it exists (it's a scalar CRS variable, not actual data)
+    if "spatial_ref" in ds.data_vars:
+        ds = ds.drop_vars("spatial_ref")
+
     ds.to_zarr(dst_zarr, mode="w")
 
     # Ensure the Zarr store is fully written before returning
@@ -680,10 +685,9 @@ class TestReadZarr:
     @flaky(max_runs=5, min_passes=1)
     def test_explicit_variable_selection(self, tmp_path: Path):
         zarr_path = str(tmp_path / "test.zarr")
-        _tif_to_zarr(DUMMY_TIF, zarr_path)
-        ds = xr.open_zarr(zarr_path, consolidated=False)
-        first_var = list(ds.data_vars)[0]
-        da = _read_zarr(zarr_path, {"variable": first_var})
+        _tif_to_zarr(DUMMY_TIF, zarr_path, var_name="reflectance")
+        # Explicitly use the variable name we know exists
+        da = _read_zarr(zarr_path, {"variable": "reflectance"})
         assert isinstance(da, xr.DataArray)
 
     def test_missing_variable_raises(self, tmp_path: Path):
