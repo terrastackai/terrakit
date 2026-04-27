@@ -1,4 +1,4 @@
-# © Copyright IBM Corporation 2025
+# © Copyright IBM Corporation 2025-2026
 # SPDX-License-Identifier: Apache-2.0
 
 
@@ -30,7 +30,7 @@ SUPPORTED_EXTENSIONS: dict[str, str] = {
     ".tif": "geotiff",
     ".tiff": "geotiff",
     ".nc": "netcdf",
-    ".zarr": "zarr",      # may be a file *or* a directory store
+    ".zarr": "zarr",  # may be a file *or* a directory store
     ".parquet": "geoparquet",
 }
 
@@ -216,8 +216,28 @@ def _read_geotiff(path: str, spec: dict) -> xr.DataArray:
     """
     overview_level = spec.get("overview_level", None)
     open_kwargs: dict[str, Any] = {}
+
+    # Only use overview_level if the file actually has overviews
     if overview_level is not None:
-        open_kwargs["overview_level"] = int(overview_level)
+        try:
+            import rasterio
+
+            with rasterio.open(path) as src:
+                # Check if file has overviews
+                if src.overviews(1):  # Check first band for overviews
+                    open_kwargs["overview_level"] = int(overview_level)
+                else:
+                    logger.debug(
+                        "File '%s' has no overviews; ignoring overview_level parameter.",
+                        path,
+                    )
+        except Exception as exc:
+            logger.debug(
+                "Could not check for overviews in '%s': %s. Ignoring overview_level.",
+                path,
+                exc,
+            )
+
     da: xr.DataArray = rioxarray.open_rasterio(path, **open_kwargs)
     logger.debug(
         "Opened GeoTIFF '%s' (COG=%s), shape=%s.",
@@ -317,7 +337,12 @@ def _read_geoparquet(
         )
 
     if bbox is not None:
-        minx, miny, maxx, maxy = float(bbox[0]), float(bbox[1]), float(bbox[2]), float(bbox[3])
+        minx, miny, maxx, maxy = (
+            float(bbox[0]),
+            float(bbox[1]),
+            float(bbox[2]),
+            float(bbox[3]),
+        )
     else:
         minx, miny, maxx, maxy = gdf.total_bounds
 
@@ -356,7 +381,10 @@ def _read_geoparquet(
         da = da.rio.write_crs(gdf.crs.to_string())
     logger.debug(
         "Rasterized GeoParquet '%s': %d band(s), %dx%d grid.",
-        path, len(value_columns), width, height,
+        path,
+        len(value_columns),
+        width,
+        height,
     )
     return da
 
@@ -385,8 +413,7 @@ def _dataset_to_dataarray(ds: xr.Dataset, spec: dict, path: str) -> xr.DataArray
     var_name: str = spec.get("variable", data_vars[0])
     if var_name not in ds:
         raise TerrakitValueError(
-            f"Variable '{var_name}' not found in '{path}'. "
-            f"Available: {data_vars}"
+            f"Variable '{var_name}' not found in '{path}'. Available: {data_vars}"
         )
 
     da: xr.DataArray = ds[var_name]
@@ -402,7 +429,7 @@ def _dataset_to_dataarray(ds: xr.Dataset, spec: dict, path: str) -> xr.DataArray
     # Ensure a 'band' dimension exists
     if "band" not in da.dims:
         try:
-            spatial_dims: set[str] = {da.rio.x_dim, da.rio.y_dim}
+            spatial_dims: set[str] = {str(da.rio.x_dim), str(da.rio.y_dim)}
         except Exception:
             spatial_dims = set()
         extra = [d for d in da.dims if d not in spatial_dims and d != "time"]
@@ -414,11 +441,11 @@ def _dataset_to_dataarray(ds: xr.Dataset, spec: dict, path: str) -> xr.DataArray
     return da
 
 
-def _find_dim(da: xr.DataArray, candidates: tuple) -> str:
+def _find_dim(da: xr.DataArray, candidates: tuple[str, ...]) -> str:
     """Return the first candidate dimension name present in *da*."""
     for name in candidates:
         if name in da.dims:
-            return name
+            return str(name)
     raise ValueError(f"None of {candidates} found in dims {list(da.dims)}")
 
 
@@ -534,9 +561,7 @@ class LocalFileSystem(Connector):
             raise TerrakitValueError(
                 f"base_path '{base_path}' does not exist or is not a directory."
             )
-        return sorted(
-            entry.name for entry in os.scandir(base_path) if entry.is_dir()
-        )
+        return sorted(entry.name for entry in os.scandir(base_path) if entry.is_dir())
 
     def find_data(
         self,
@@ -585,13 +610,17 @@ class LocalFileSystem(Connector):
         if not results:
             logger.info(
                 "No files found for collection '%s' between %s and %s.",
-                data_collection_name, date_start, date_end,
+                data_collection_name,
+                date_start,
+                date_end,
             )
             return None, None
 
         logger.info(
             "Found %d file(s) across %d unique date(s) in collection '%s'.",
-            len(results), len(unique_dates), data_collection_name,
+            len(results),
+            len(unique_dates),
+            data_collection_name,
         )
         return unique_dates, results
 
@@ -676,6 +705,7 @@ class LocalFileSystem(Connector):
 
         if save_file:
             from ..geodata_utils import save_data_array_to_file
+
             save_data_array_to_file(stacked, save_file)
 
         return stacked
@@ -691,7 +721,7 @@ class LocalFileSystem(Connector):
             raise TerrakitValueError(
                 "data_connector_spec must be a dict containing key 'base_path'."
             )
-        base_path = data_connector_spec["base_path"]
+        base_path = str(data_connector_spec["base_path"])
         if not os.path.isdir(base_path):
             raise TerrakitValueError(
                 f"base_path '{base_path}' does not exist or is not a directory."

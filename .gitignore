@@ -115,9 +115,10 @@ dmypy.json
 *.tortilla
 *metadata.json
 *.nc
-
+*.zip
 # Test data
 test_wildfire_vector
+test_wildfire_classes_vector
 
 # Ruff
 .ruff_cache

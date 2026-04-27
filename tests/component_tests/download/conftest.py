@@ -1,4 +1,4 @@
-# © Copyright IBM Corporation 2025
+# © Copyright IBM Corporation 2025-2026
 # SPDX-License-Identifier: Apache-2.0
 
 
@@ -15,8 +15,10 @@ import xarray as xr
 
 from glob import glob
 from pathlib import Path
+from requests import HTTPError
 from sentinelhub import SentinelHubRequest
 from unittest.mock import MagicMock
+from unittest.mock import Mock
 
 
 ############################# Test Parameters ############################
@@ -57,10 +59,12 @@ def unset_evn_vars():
         os.getenv("SH_CLIENT_ID")
         and os.getenv("SH_CLIENT_SECRET")
         and os.getenv("NASA_EARTH_BEARER_TOKEN")
+        and os.getenv("CDSAPI_KEY")
     ):
         del os.environ["SH_CLIENT_ID"]
         del os.environ["SH_CLIENT_SECRET"]
         del os.environ["NASA_EARTH_BEARER_TOKEN"]
+        del os.environ["CDSAPI_KEY"]
 
 
 @pytest.fixture
@@ -68,6 +72,7 @@ def invalid_evn_vars():
     os.environ["SH_CLIENT_ID"] = "<invalid>"
     os.environ["SH_CLIENT_SECRET"] = "<invalid>"
     os.environ["NASA_EARTH_BEARER_TOKEN"] = "<invalid>"
+    os.environ["CDSAPI_KEY"] = "<invalid>"
 
 
 @pytest.fixture
@@ -79,7 +84,10 @@ def reset_dot_env():
 @pytest.fixture
 def get_data_clean_up():
     yield
-    files = glob(f"{SAVE_FILE_DIR}/*.tif")
+    # Clean up both .tif and .nc files
+    tif_files = glob(f"{SAVE_FILE_DIR}/*.tif")
+    nc_files = glob(f"{SAVE_FILE_DIR}/*.nc")
+    files = tif_files + nc_files
     print(f"Test clean up. Deleting {files}")
     for f in files:
         os.remove(f)
@@ -101,6 +109,30 @@ def download_data_setup():
         shutil.copy(shp_file, DEFAULT_WORKING_DIR)
     shp_files = glob(
         "./tests/resources/component_test_data/download/terrakit_curated_dataset_labels*"
+    )
+    for shp_file in shp_files:
+        shutil.copy(shp_file, DEFAULT_WORKING_DIR)
+
+
+@pytest.fixture
+def download_data_setup_classes():
+    """Setup fixture for multi-class label tests using pre-generated shapefiles."""
+    print("Starting multi-class label test...")
+    # Ensure dir does not exist before starting
+    if os.path.exists(DEFAULT_WORKING_DIR):
+        print(f"{DEFAULT_WORKING_DIR} being deleted before starting the test...")
+        shutil.rmtree(DEFAULT_WORKING_DIR)
+    print(f"Creating {DEFAULT_WORKING_DIR}..")
+    Path(DEFAULT_WORKING_DIR).mkdir(parents=True, exist_ok=True)
+
+    # Copy pre-generated class label shapefiles
+    shp_files = glob(
+        "./tests/resources/component_test_data/download/terrakit_curated_dataset_classes_all_bbox*"
+    )
+    for shp_file in shp_files:
+        shutil.copy(shp_file, DEFAULT_WORKING_DIR)
+    shp_files = glob(
+        "./tests/resources/component_test_data/download/terrakit_curated_dataset_classes_labels*"
     )
     for shp_file in shp_files:
         shutil.copy(shp_file, DEFAULT_WORKING_DIR)
@@ -362,3 +394,143 @@ def mock_aws_get_data(mocker, mock_aws_find_items):
 
 
 ###################################################################################################
+
+
+############################# CLIMATE DATA STORE helper functions and fixtures ############################
+@pytest.fixture
+def mock_cds_client(monkeypatch):
+    """
+    Mock CDS API client to copy test zip file instead of downloading from CDS.
+
+    This fixture patches cdsapi.Client to return a mock that copies
+    ./tests/resources/climate_data_store/era5_daily_statistics_test_data.zip to the requested output path.
+
+    # The following request was used to generate the original test zip file:
+    # request = {
+    #     "variable": [
+    #         "10m_u_component_of_wind",
+    #         "10m_v_component_of_wind",
+    #         "2m_temperature",
+    #         "total_precipitation",
+    #         "10m_wind_gust_since_previous_post_processing",
+    #     ],
+    #     "product_type": "reanalysis",
+    #     "year": "2025",
+    #     "month": ["01"],
+    #     "day": ["01", "02"],
+    #     "time_zone": "utc+00:00",
+    #     "area": [90, -180, -90, 180],
+    #     "daily_statistic": "daily_mean",
+    #     "frequency": "6_hourly",
+    #     "format": "netcdf",
+    # }
+    # cds = cdsapi.Client()
+    # downloaded_filename = cds.retrieve(data_collection_name, request).download()
+
+    # This data is now replaced by synthetic test data, the script for generating the test zip file can be found in ./tests/resources/scripts.
+
+    Usage:
+        def test_cds_download(mock_cds_client):
+            # CDS API calls will use the mock
+            dc = DataConnector(connector_type="climate_data_store")
+            data = dc.connector.get_data(...)
+    """
+    # Path to test zip file
+    TEST_ZIP = Path(
+        "./tests/resources/climate_data_store/era5_daily_statistics_test_data.zip"
+    )
+
+    # Create mock client
+    mock_client = MagicMock()
+
+    def mock_retrieve(collection_name, request_params, output_path):
+        """Copy test zip to output_path instead of downloading."""
+        if not TEST_ZIP.exists():
+            raise FileNotFoundError(
+                f"Test data not found: {TEST_ZIP}\n"
+                "Please ensure ./tests/resources/scripts/generate_cds_test_data.py exists."
+            )
+
+        # Ensure output directory exists
+        output_file = Path(output_path)
+        output_file.parent.mkdir(parents=True, exist_ok=True)
+
+        # Copy test zip to requested location
+        shutil.copy(TEST_ZIP, output_file)
+
+        return str(output_file)
+
+    # Assign mock retrieve method
+    mock_client.retrieve = mock_retrieve
+
+    # Mock the cdsapi.Client class to return our mock
+    def mock_cdsapi_client(*args, **kwargs):
+        return mock_client
+
+    # Patch cdsapi.Client
+    monkeypatch.setattr("cdsapi.Client", mock_cdsapi_client)
+
+    return mock_client
+
+
+@pytest.fixture
+def mock_cds_client_bbox_error(monkeypatch):
+    """
+    Mock CDS API client that simulates Meteorological Archival and Retrieval System (MARS) error for bbox too small.
+
+    This fixture simulates the actual error returned by MARS when the bounding box
+    is smaller than the grid resolution (0.25° for ERA5).
+
+    Usage:
+        def test_bbox_too_small(mock_cds_client_bbox_error):
+            # CDS API calls will raise HTTPError simulating MARS bbox error
+            dc = DataConnector(connector_type="climate_data_store")
+            with pytest.raises(TerrakitValidationError):
+                data = dc.connector.get_data(...)
+    """
+    # Create mock client
+    mock_client = MagicMock()
+
+    def mock_retrieve_bbox_error(collection_name, request_params, output_path):
+        """Simulate Meteorological Archival and Retrieval System (MARS) error for bbox too small."""
+        # Simulate the actual MARS error response
+        response = Mock()
+        response.status_code = 400
+        response.reason = "Bad Request"
+        response.url = (
+            "https://cds.climate.copernicus.eu/api/retrieve/v1/jobs/test-job-id/results"
+        )
+
+        area = request_params.get("area", [])
+        response.text = json.dumps(
+            {
+                "error": {
+                    "message": "The job has failed\nMARS has returned an error, please check your selection.\n"
+                    f"Request submitted to the MARS server:\n[{{'area': {area}}}]\n"
+                    "Full error message:\n"
+                    "mars - ERROR - Exception: Assertion failed: Area: non-empty area crop/mask (to at least one point)"
+                }
+            }
+        )
+
+        error_msg = (
+            f"400 Client Error: Bad Request for url: {response.url}\n"
+            "The job has failed\n"
+            "MARS has returned an error, please check your selection.\n"
+            f"Request submitted to the MARS server:\n[{{'area': {area}}}]\n"
+            "Full error message:\n"
+            "mars - ERROR - Exception: Assertion failed: Area: non-empty area crop/mask (to at least one point)"
+        )
+        raise HTTPError(error_msg, response=response)
+
+    # Assign mock retrieve method
+    mock_client.retrieve = mock_retrieve_bbox_error
+
+    # Mock the cdsapi.Client class to return our mock
+    def mock_cdsapi_client(*args, **kwargs):
+        return mock_client
+
+    # Patch cdsapi.Client
+    monkeypatch.setattr("cdsapi.Client", mock_cdsapi_client)
+
+    return mock_client

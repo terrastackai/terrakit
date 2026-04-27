@@ -1,0 +1,35 @@
+{
+    "dataset_name": "terrakit_curated_dataset_classes",
+    "creation_date": "2026-02-03T21:52:08.211638+00:00",
+    "dataset_version": "1.0",
+    "description": "A geospatial dataset curated using TerraKit.",
+    "package": "terrakit v0.1.0",
+    "lineage": [
+        {
+            "step_id": "labels",
+            "activity": "Process label files to bound box and label shp files",
+            "method": "terrakit.transform.labels.process_labels",
+            "working_dir": "./tmp_class_output",
+            "parameters": {
+                "labels_folder": "tmp_class_labels",
+                "active": true,
+                "label_type": "vector",
+                "datetime_info": "filename"
+            },
+            "input_files": [
+                "EMSR801_AOI01_DEL_MONIT02_CLASS_1_observedEventA_v1_2025-04-23.json",
+                "EMSR801_AOI01_DEL_MONIT02_CLASS_0_observedEventA_v1_2025-04-23.json"
+            ],
+            "output_label_dates": [
+                "2025-04-23"
+            ],
+            "output_files": [
+                "terrakit_curated_dataset_classes_all_bboxes.shp",
+                "terrakit_curated_dataset_classes_labels.shp"
+            ],
+            "timestamp": "2026-02-03T21:52:08.211781+00:00",
+            "step_order": 0
+        }
+    ],
+    "last_update": "2026-02-03T21:52:08.211781+00:00"
+}

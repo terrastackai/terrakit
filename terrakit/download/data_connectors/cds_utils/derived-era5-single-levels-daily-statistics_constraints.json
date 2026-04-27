@@ -1,0 +1,158 @@
+{
+  "type": "Collection",
+  "id": "derived-era5-single-levels-daily-statistics",
+  "stac_version": "1.1.0",
+  "title": "ERA5 post-processed daily statistics on single levels from 1940 to present",
+  "description": "ERA5 is the fifth generation ECMWF reanalysis for the global climate and weather for the past 8 decades.\nData is available from 1940 onwards.\nERA5 replaces the ERA-Interim reanalysis.\nReanalysis combines model data with observations from across the world into a globally complete and consistent dataset using the laws of physics. This principle, called data assimilation, is based on the method used by numerical weather prediction centres, where every so many hours (12 hours at ECMWF) a previous forecast is combined with newly available observations in an optimal way to produce a new best estimate of the state of the atmosphere, called analysis, from which an updated, improved forecast is issued. Reanalysis works in the same way, but at reduced resolution to allow for the provision of a dataset spanning back several decades. Reanalysis does not have the constraint of issuing timely forecasts, so there is more time to collect observations, and when going further back in time, to allow for the ingestion of improved versions of the original observations, which all benefit the quality of the reanalysis product.\nThis catalogue entry provides post-processed ERA5 hourly single-level data aggregated to daily time steps. In addition to the data selection options found on the hourly page, the following options can be selected for the daily statistic calculation:\n\nThe daily aggregation statistic (daily mean, daily max, daily min, daily sum*)\nThe sub-daily frequency sampling of the original data (1 hour, 3 hours, 6 hours)\nThe option to shift to any local time zone in UTC (no shift means the statistic is computed from UTC+00:00)\n\n*The daily sum is only available for the accumulated variables (see ERA5 documentation for more details).\nUsers should be aware that the daily aggregation is calculated during the retrieval process and is not part of a permanently archived dataset. For more details on how the daily statistics are calculated, including demonstrative code, please see the documentation.\nFor more details on the hourly data used to calculate the daily statistics, please refer to the ERA5 hourly single-level data catalogue entry and the documentation found therein.",
+  "summaries": {},
+  "providers": [
+    {
+      "name": "ECMWF"
+    }
+  ],
+  "keywords": [
+    "Product type: Reanalysis",
+    "Temporal coverage: Past",
+    "Spatial coverage: Global",
+    "Variable domain: Atmosphere (surface)",
+    "Variable domain: Atmosphere (upper air)",
+    "Provider: Copernicus C3S"
+  ],
+  "license": "CC-BY-4.0",
+  "extent": {
+    "spatial": {
+      "bbox": [
+        [
+          0.0,
+          -89.0,
+          360.0,
+          89.0
+        ]
+      ]
+    },
+    "temporal": {
+      "interval": [
+        [
+          "1940-01-01T00:00:00+00:00",
+          "2026-02-04T00:00:00+00:00"
+        ]
+      ]
+    }
+  },
+  "links": [
+    {
+      "rel": "self",
+      "type": "application/json",
+      "href": "https://cds.climate.copernicus.eu/api/catalogue/v1/collections/derived-era5-single-levels-daily-statistics"
+    },
+    {
+      "rel": "parent",
+      "type": "application/json",
+      "href": "https://cds.climate.copernicus.eu/api/catalogue/v1/"
+    },
+    {
+      "rel": "root",
+      "type": "application/json",
+      "href": "https://cds.climate.copernicus.eu/api/catalogue/v1/"
+    },
+    {
+      "rel": "license",
+      "href": "https://spdx.org/licenses/CC-BY-4.0",
+      "title": "CC-BY licence",
+      "rev": 1,
+      "id": "cc-by"
+    },
+    {
+      "rel": "form",
+      "href": "https://object-store.os-api.cci2.ecmwf.int:443/cci2-prod-catalogue/resources/derived-era5-single-levels-daily-statistics/form_ac2e65bb4fdcb8de00c9df3abdf3c6871e4826bd9667a00ea3a22e12fe1d4411.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "constraints",
+      "href": "https://object-store.os-api.cci2.ecmwf.int:443/cci2-prod-catalogue/resources/derived-era5-single-levels-daily-statistics/constraints_a0b1ad068fce54320fa1350cc56b8692d66b395cf066d0c8bbf1579816e074b8.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "retrieve",
+      "href": "https://cds.climate.copernicus.eu/api/retrieve/v1/processes/derived-era5-single-levels-daily-statistics",
+      "type": "application/json"
+    },
+    {
+      "rel": "costing_api",
+      "href": "https://cds.climate.copernicus.eu/api/retrieve/v1/processes/derived-era5-single-levels-daily-statistics/costing",
+      "type": "application/json"
+    },
+    {
+      "rel": "layout",
+      "href": "https://object-store.os-api.cci2.ecmwf.int:443/cci2-prod-catalogue/resources/derived-era5-single-levels-daily-statistics/layout_49b6cd183b8a61bbe6984fa1b1a059a0450dd15d8d169d8120c641be7af2197c.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "related",
+      "href": "https://cds.climate.copernicus.eu/api/catalogue/v1/collections/derived-era5-pressure-levels-daily-statistics",
+      "title": "ERA5 post-processed daily statistics on pressure levels from 1940 to present"
+    },
+    {
+      "rel": "related",
+      "href": "https://cds.climate.copernicus.eu/api/catalogue/v1/collections/reanalysis-era5-single-levels-timeseries",
+      "title": "ERA5 hourly time-series data on single levels from 1940 to present"
+    },
+    {
+      "rel": "related",
+      "href": "https://cds.climate.copernicus.eu/api/catalogue/v1/collections/reanalysis-era5-pressure-levels-monthly-means",
+      "title": "ERA5 monthly averaged data on pressure levels from 1940 to present"
+    },
+    {
+      "rel": "related",
+      "href": "https://cds.climate.copernicus.eu/api/catalogue/v1/collections/reanalysis-era5-single-levels",
+      "title": "ERA5 hourly data on single levels from 1940 to present"
+    },
+    {
+      "rel": "related",
+      "href": "https://cds.climate.copernicus.eu/api/catalogue/v1/collections/reanalysis-era5-complete",
+      "title": "Complete ERA5 global atmospheric reanalysis"
+    },
+    {
+      "rel": "related",
+      "href": "https://cds.climate.copernicus.eu/api/catalogue/v1/collections/reanalysis-era5-pressure-levels",
+      "title": "ERA5 hourly data on pressure levels from 1940 to present"
+    },
+    {
+      "rel": "related",
+      "href": "https://cds.climate.copernicus.eu/api/catalogue/v1/collections/reanalysis-era5-single-levels-monthly-means",
+      "title": "ERA5 monthly averaged data on single levels from 1940 to present"
+    },
+    {
+      "rel": "related",
+      "href": "https://cds.climate.copernicus.eu/api/catalogue/v1/collections/sis-european-risk-extreme-precipitation-indicators",
+      "title": "Extreme precipitation risk indicators for Europe and European cities from 1950 to 2019"
+    },
+    {
+      "rel": "related",
+      "href": "https://cds.climate.copernicus.eu/api/catalogue/v1/collections/derived-utci-historical",
+      "title": "Thermal comfort indices derived from ERA5 reanalysis"
+    },
+    {
+      "rel": "messages",
+      "href": "https://cds.climate.copernicus.eu/api/catalogue/v1/collections/derived-era5-single-levels-daily-statistics/messages",
+      "title": "All active messages on ERA5 post-processed daily statistics on single levels from 1940 to present"
+    }
+  ],
+  "assets": {
+    "thumbnail": {
+      "href": "https://object-store.os-api.cci2.ecmwf.int:443/cci2-prod-catalogue/resources/derived-era5-single-levels-daily-statistics/overview_593e6a72773f0dd1e6b665ff4fe2e184f1cd7b175c143e28caa61c569fe82dd3.png",
+      "type": "image/jpg",
+      "roles": [
+        "thumbnail"
+      ]
+    }
+  },
+  "published": "2024-10-14T00:00:00Z",
+  "updated": "2026-02-10T00:00:00Z",
+  "sci:doi": "10.24381/cds.4991cf48",
+  "cads:disabled_reason": null,
+  "cads:sanity_check": {
+    "status": "unknown",
+    "timestamp": null
+  }
+}

@@ -2,25 +2,31 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+import json
 import os
+
+from huggingface_hub import hf_hub_download
 from pathlib import Path
 from zipfile import ZipFile
-from huggingface_hub import hf_hub_download
-
 
 from terrakit.general_utils.rest import get
-from terrakit.general_utils.exceptions import TerrakitBaseException
+from terrakit.general_utils.exceptions import TerrakitBaseException, TerrakitValueError
 
 # Define a list of example labels used for demonstration and test purposes.
 EXAMPLE_LABEL_FILES = [
     "EMSR801_AOI01_DEL_MONIT02_observedEventA_v1_2025-04-23.json",
-    "EMSR748_AOI01_DEL_MONIT05_observedEventA_v1_2024-08-30.json",
+    "EMSR748_AOI01_DEL_MONIT05_observedEventA_v1_2024-08-26.json",
 ]
 
 
 EXAMPLE_RASTER_LABEL_FILES = [
     "subsetted_512x512_HLS.S30.T10SEH.2018245.v1.4.mask.tif",
     "subsetted_512x512_HLS.S30.T10SGD.2021306.v1.4.mask.tif",
+]
+
+EXAMPLE_CLASS_LABEL_FILES = [
+    "EMSR801_AOI01_DEL_MONIT02_CLASS_0_observedEventA_v1_2025-04-23.json",
+    "EMSR801_AOI01_DEL_MONIT02_CLASS_1_observedEventA_v1_2025-04-23.json",
 ]
 
 
@@ -197,6 +203,61 @@ def rapid_mapping_geojson_downloader(
             )
         print(".\n..\n...\n>>> Downloaded completed successfully <<<")
     return f"{dest}/{geojson_file_with_date}"
+
+
+def rapid_mapping_class_split(downloaded_file: str):
+    """
+    Splits files downloaded from rapid_mapping_geojson_downloader into separate CLASS files based on features
+
+    Parameters:
+        downloaded_file (str): Path to downloaded file
+
+    Returns:
+        list: path to split class files
+    """
+    class_file_list = []
+    try:
+        with open(downloaded_file, "r") as f:
+            data = json.load(f)
+    except FileNotFoundError:
+        raise TerrakitBaseException(f"Error: {downloaded_file} not found.")
+    except PermissionError:
+        raise TerrakitBaseException(
+            f"Error: Check permission to rename {downloaded_file}."
+        )
+    except OSError as e:
+        raise TerrakitBaseException(f"An error occurred reading {downloaded_file}: {e}")
+
+    if "features" not in data:
+        raise TerrakitValueError("No features found in downloaded file.")
+    else:
+        # Create CLASS_ file for each class
+        for class_number in range(0, len(data["features"])):
+            class_data = data.copy()
+            class_data["features"] = [
+                data["features"][class_number]
+            ]  # Larger area feature
+            class_file = downloaded_file.replace(
+                "_observedEventA_v1_", f"_CLASS_{class_number}_observedEventA_v1_"
+            )
+            try:
+                with open(class_file, "w") as f:
+                    json.dump(class_data, f)
+            except Exception:
+                raise TerrakitBaseException(
+                    f"Error writing class label file: {class_file}"
+                )
+
+            print(
+                f"Created multi-class file CLASS_{class_number}: {Path(class_file).name}"
+            )
+
+            class_file_list.append(class_file)
+
+        # Remove the original combined file
+        os.remove(downloaded_file)
+
+    return class_file_list
 
 
 def hugging_face_file_downloader(

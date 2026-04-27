@@ -1,4 +1,4 @@
-# © Copyright IBM Corporation 2025
+# © Copyright IBM Corporation 2025-2026
 # SPDX-License-Identifier: Apache-2.0
 
 
@@ -10,7 +10,6 @@ import pytest
 import xarray as xr
 
 from pathlib import Path
-from rasterio.crs import CRS
 
 from terrakit import DataConnector
 from terrakit.download.data_connectors.local_file_system import (
@@ -52,8 +51,11 @@ def _tif_to_zarr(src_tif: str, dst_zarr: str, var_name: str = "reflectance") -> 
     """Convert *src_tif* to a Zarr directory store at *dst_zarr*."""
     import rioxarray  # noqa
 
-    da = xr.open_dataset(src_tif, engine="rasterio")
-    da.to_zarr(dst_zarr, mode="w")
+    # Open as DataArray to ensure consistent band dimensions
+    da = rioxarray.open_rasterio(src_tif)
+    # Convert to Dataset with a single variable to ensure consistency
+    ds = da.to_dataset(name=var_name)
+    ds.to_zarr(dst_zarr, mode="w")
 
 
 def _make_geoparquet(dst_parquet: str, bbox: list, n_points: int = 20) -> None:
@@ -254,9 +256,7 @@ class TestScanCollectionDir:
 
     def test_mixed_formats_all_indexed(self, multi_format_data_dir: Path):
         collection_dir = str(multi_format_data_dir / "mixed")
-        _, results = _scan_collection_dir(
-            collection_dir, "2024-03-01", "2024-03-31"
-        )
+        _, results = _scan_collection_dir(collection_dir, "2024-03-01", "2024-03-31")
         formats = {r["format"] for r in results}
         assert formats == {"geotiff", "netcdf", "zarr", "geoparquet"}
 
@@ -492,7 +492,9 @@ class TestLocalFileSystemGetData:
             save_file=out_file,
         )
         assert isinstance(da, xr.DataArray)
-        assert os.path.isfile(out_file)
+        # save_data_array_to_file appends date to filename
+        expected_file = str(tmp_path / "output_2024-01-05.tif")
+        assert os.path.isfile(expected_file)
 
     def test_band_names_applied_when_count_matches(
         self, local_data_dir: Path, data_connector_spec: dict
@@ -646,6 +648,7 @@ class TestReadNetcdf:
         nc_path = str(tmp_path / "test.nc")
         _tif_to_netcdf(DUMMY_TIF, nc_path)
         from terrakit.general_utils.exceptions import TerrakitValueError
+
         with pytest.raises(TerrakitValueError, match="not found"):
             _read_netcdf(nc_path, {"variable": "__nonexistent_var__"})
 
