@@ -12,6 +12,7 @@ import rasterio
 import rioxarray
 import time
 import xarray as xr
+import zarr
 
 from flaky import flaky
 from pathlib import Path
@@ -61,6 +62,12 @@ def _tif_to_zarr(src_tif: str, dst_zarr: str, var_name: str = "reflectance") -> 
     # Convert to Dataset with a single variable to ensure consistency
     ds = da.to_dataset(name=var_name)
     ds.to_zarr(dst_zarr, mode="w")
+
+    # Ensure the Zarr store is fully written before returning
+    # This prevents race conditions when the store is read immediately after creation
+    zarr.consolidate_metadata(dst_zarr)
+    # Add a small delay to ensure filesystem sync
+    time.sleep(0.01)
 
 
 def _make_geoparquet(dst_parquet: str, bbox: list, n_points: int = 20) -> None:
