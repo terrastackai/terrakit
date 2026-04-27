@@ -104,6 +104,52 @@ Available collections include:
  - [ERA5 post-processed daily statistics on single levels from 1940 to present](https://cds.climate.copernicus.eu/datasets/derived-era5-single-levels-daily-statistics?tab=overview)
  - [CORDEX regional climate model data on single levels](https://cds.climate.copernicus.eu/datasets/projections-cordex-domains-single-levels?tab=overview)
 
+#### Parallel Downloads for Multi-Year Requests
+
+The Climate Data Store connector automatically splits multi-month/multi-year requests into monthly chunks to handle CDS API size limits. By default, these chunks are downloaded in parallel using 4 workers, significantly speeding up large data requests.
+
+You can control the parallelization using the `max_workers` parameter in `query_params`:
+
+```python
+from terrakit import DataConnector
+
+dc = DataConnector(connector_type="climate_data_store")
+
+# Default parallel download (4 workers)
+data = dc.connector.get_data(
+    data_collection_name="derived-era5-single-levels-daily-statistics",
+    date_start="2020-01-01",
+    date_end="2023-12-31",
+    bbox=[-10, 40, 5, 50],
+    bands=["2m_temperature", "total_precipitation"]
+)
+
+# Faster download with more workers (8 workers)
+data = dc.connector.get_data(
+    data_collection_name="derived-era5-single-levels-daily-statistics",
+    date_start="2020-01-01",
+    date_end="2023-12-31",
+    bbox=[-10, 40, 5, 50],
+    bands=["2m_temperature", "total_precipitation"],
+    query_params={"max_workers": 8}
+)
+
+# Sequential download (1 worker) - useful for debugging or rate limit issues
+data = dc.connector.get_data(
+    data_collection_name="derived-era5-single-levels-daily-statistics",
+    date_start="2020-01-01",
+    date_end="2023-12-31",
+    bbox=[-10, 40, 5, 50],
+    bands=["2m_temperature", "total_precipitation"],
+    query_params={"max_workers": 1}
+)
+```
+
+**Performance Tips:**
+- Default (4 workers): Good balance for most use cases
+- Higher values (8-10 workers): Faster for multi-year requests, but may hit API rate limits
+- Lower values (1-2 workers): Use if experiencing rate limit issues or for debugging
+
 #### CORDEX Data Validation
 
 For CORDEX collections, TerraKit performs **preflight validation** to ensure that the requested combination of parameters is available before attempting to download data. This validation checks the joint combination of:

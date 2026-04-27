@@ -13,6 +13,8 @@ import requests
 import shutil
 import xarray as xr
 import zipfile
+from calendar import monthrange
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 from pathlib import Path
 from shapely.geometry import box
@@ -130,6 +132,40 @@ class CDS(Connector):
     def _is_cordex_collection(self, collection_name: str) -> bool:
         """Check if collection is a CORDEX dataset."""
         return "cordex" in collection_name.lower()
+
+    def _download_and_extract_month(
+        self,
+        month_info: tuple[int, str, str],
+        total_months: int,
+        data_collection_name: str,
+        bbox: list[Any],
+        bands: list[Any],
+        query_params: Dict[str, Any],
+        working_dir: str,
+        extract_dir: Path,
+    ) -> tuple[int, str, str]:
+        """Download and extract a single month's data."""
+        idx, month_start, month_end = month_info
+        logger.info(
+            f"Downloading chunk {idx}/{total_months}: {month_start} to {month_end}"
+        )
+
+        zip_path = self._download_from_cds(
+            data_collection_name,
+            month_start,
+            month_end,
+            bbox,
+            bands,
+            query_params,
+            working_dir,
+        )
+
+        with zipfile.ZipFile(zip_path, "r") as zip_ref:
+            zip_ref.extractall(extract_dir)
+
+        Path(zip_path).unlink()
+
+        return idx, month_start, month_end
 
     def _get_cordex_domain_from_bbox(self, bbox: list) -> str:
         """
@@ -609,6 +645,8 @@ class CDS(Connector):
             params["time_zone"] = "utc+00:00"
 
         # Add temporal parameters
+        # Note: Multi-year requests are split at a higher level (in get_data) to avoid
+        # invalid date combinations from Cartesian products
         params["year"] = self._get_years_list(date_start, date_end)
         params["month"] = self._get_months_list(date_start, date_end)
         params["day"] = self._get_days_list(date_start, date_end)
@@ -645,11 +683,20 @@ class CDS(Connector):
         current = start
         while current <= end:
             months.add(f"{current.month:02d}")
-            # Move to next month
+            # Move to the same day in the next month when possible, otherwise clamp to
+            # the month's last valid day (e.g. Jan 31 -> Feb 28/29).
             if current.month == 12:
-                current = current.replace(year=current.year + 1, month=1)
+                next_year = current.year + 1
+                next_month = 1
             else:
-                current = current.replace(month=current.month + 1)
+                next_year = current.year
+                next_month = current.month + 1
+
+            current = current.replace(
+                year=next_year,
+                month=next_month,
+                day=min(current.day, monthrange(next_year, next_month)[1]),
+            )
 
         return sorted(list(months))
 
@@ -1348,6 +1395,11 @@ class CDS(Connector):
             bbox (list, optional): Bounding box defining the area of interest. Defaults to None.
             bands (list, optional): List of bands to retrieve. Defaults to all bands.
             query_params (dict, optional): Additional query parameters. Defaults to {}.
+                Supported parameters:
+                - max_workers (int): Number of parallel workers for downloading monthly chunks.
+                  Default is 4. Set to 1 for sequential downloads. Higher values (e.g., 8-10)
+                  can speed up multi-year requests but may hit API rate limits.
+                - Other collection-specific parameters (e.g., daily_statistic, frequency, time_zone)
             data_connector_spec (dict, optional): Data connector specification. Defaults to None.
             save_file (str, optional): Path to save the output file as a single time-series NetCDF.
                 Climate data is saved as a continuous time series (not split by date) to facilitate
@@ -1374,11 +1426,16 @@ class CDS(Connector):
 
                 temp = data_array.sel(band='2m_temperature')
 
+            Multi-year requests are automatically split into monthly chunks and downloaded in
+            parallel (default 4 workers) to handle CDS API size limits and improve performance.
+
         Example:
             ```python
             import terrakit
             data_connector = "climate_data_store"
             dc = terrakit.DataConnector(connector_type=data_connector)
+
+            # Basic usage with default parallel download (4 workers)
             data = dc.connector.get_data(
                 data_collection_name="derived-era5-single-levels-daily-statistics",
                 date_start="2025-01-01",
@@ -1389,9 +1446,21 @@ class CDS(Connector):
                     "daily_statistic": "daily_minimum",
                     "frequency": "1hr",
                     "time_zone": "utc+03:00"
-                    }
-                )
-                save_file="./derived-era5-single-levels-daily-statistics",
+                }
+            )
+
+            # Multi-year download with custom parallelization
+            data = dc.connector.get_data(
+                data_collection_name="derived-era5-single-levels-daily-statistics",
+                date_start="2020-01-01",
+                date_end="2023-12-31",
+                bbox=[-1.32, 51.06, -1.30, 51.08],
+                bands=["2m_temperature", "total_precipitation"],
+                query_params={
+                    "max_workers": 8  # Use 8 parallel workers for faster download
+                },
+                save_file="./era5_multi_year.nc"
+            )
 
             # Access variables
             temperature = data['2m_temperature']
@@ -1406,6 +1475,11 @@ class CDS(Connector):
         constraints = self._load_constraints(data_collection_name)
         self._validate_temporal(date_start, date_end, constraints, data_collection_name)
         self._validate_spatial(bbox, constraints, data_collection_name)
+
+        if bbox is None:
+            raise TerrakitValidationError(message="bbox is required for CDS downloads")
+        if bands is None:
+            bands = []
 
         # For CORDEX collections, validate the joint combination of parameters
         if self._is_cordex_collection(data_collection_name):
@@ -1448,28 +1522,121 @@ class CDS(Connector):
                     end_year=end_year,
                 )
 
-        # 1. Download zip from CDS API
-        zip_path = self._download_from_cds(
-            data_collection_name,
-            date_start,
-            date_end,
-            bbox,
-            bands,
-            query_params,
-            working_dir,
-        )
+        # 1. Split requests into monthly chunks to handle CDS API size limits
+        # The CDS API has two constraints:
+        # a) Separate year/month/day parameters create a Cartesian product, causing invalid
+        #    date combinations across year boundaries (e.g., 2025-12-31 when requesting 2024-12-31 to 2025-01-02)
+        # b) Large requests (e.g., full year) exceed cost limits with error "Your request is too large"
+        # Solution: Split by month to avoid both issues
+        start_dt = datetime.strptime(date_start, "%Y-%m-%d")
+        end_dt = datetime.strptime(date_end, "%Y-%m-%d")
 
-        # 2. Extract NetCDF from zip
+        # Generate list of (year, month) tuples for each month in the range
+        month_ranges = []
+        current = start_dt
+        while current <= end_dt:
+            # Determine start and end dates for this month
+            month_start = current if current == start_dt else current.replace(day=1)
+
+            # Calculate last day of current month
+            if current.month == 12:
+                next_month = current.replace(year=current.year + 1, month=1, day=1)
+            else:
+                next_month = current.replace(month=current.month + 1, day=1)
+            last_day_of_month = (next_month - timedelta(days=1)).day
+
+            # Month end is either the last day of month or the overall end date
+            month_end_day = min(
+                last_day_of_month,
+                end_dt.day
+                if current.year == end_dt.year and current.month == end_dt.month
+                else last_day_of_month,
+            )
+            month_end = current.replace(day=month_end_day)
+            if month_end > end_dt:
+                month_end = end_dt
+
+            month_ranges.append(
+                (month_start.strftime("%Y-%m-%d"), month_end.strftime("%Y-%m-%d"))
+            )
+
+            # Move to next month
+            current = next_month
+
         extract_dir = Path(working_dir) / "temp_netcdf"
         extract_dir.mkdir(parents=True, exist_ok=True)
 
-        with zipfile.ZipFile(zip_path, "r") as zip_ref:
-            zip_ref.extractall(extract_dir)
+        # Get max_workers from query_params, default to 4 for parallel downloads
+        max_workers = query_params.get("max_workers", 4)
 
-        # 3. Find NetCDF file(s) and extract stepType from filenames
+        logger.info(
+            f"Splitting request into {len(month_ranges)} monthly chunk(s) to handle CDS API limits"
+        )
+
+        # 2. Download monthly chunks in parallel
+        # Prepare month info tuples with index
+        month_info_list = [
+            (idx, month_start, month_end)
+            for idx, (month_start, month_end) in enumerate(month_ranges, 1)
+        ]
+
+        # Download in parallel using ThreadPoolExecutor
+        if max_workers == 1:
+            # Sequential download for max_workers=1
+            logger.info("Using sequential download (max_workers=1)")
+            for month_info in month_info_list:
+                self._download_and_extract_month(
+                    month_info=month_info,
+                    total_months=len(month_ranges),
+                    data_collection_name=data_collection_name,
+                    bbox=bbox,
+                    bands=bands,
+                    query_params=query_params,
+                    working_dir=working_dir,
+                    extract_dir=extract_dir,
+                )
+        else:
+            # Parallel download
+            logger.info(f"Using parallel download with {max_workers} workers")
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                # Submit all download tasks
+                future_to_month = {
+                    executor.submit(
+                        self._download_and_extract_month,
+                        month_info,
+                        len(month_ranges),
+                        data_collection_name,
+                        bbox,
+                        bands,
+                        query_params,
+                        working_dir,
+                        extract_dir,
+                    ): month_info
+                    for month_info in month_info_list
+                }
+
+                # Wait for all downloads to complete and handle any errors
+                for future in as_completed(future_to_month):
+                    month_info = future_to_month[future]
+                    try:
+                        idx, month_start_str, month_end_str = future.result()
+                        logger.info(
+                            f"Completed chunk {idx}/{len(month_ranges)}: {month_start_str} to {month_end_str}"
+                        )
+                    except Exception as exc:
+                        logger.error(
+                            f"Chunk {month_info[0]} generated an exception: {exc}"
+                        )
+                        raise
+
+        # 3. Find all NetCDF file(s) from all months
         netcdf_files = list(extract_dir.glob("*.nc"))
         if not netcdf_files:
-            raise TerrakitValueError(f"No NetCDF files found in {zip_path}")
+            raise TerrakitValueError(f"No NetCDF files found in {extract_dir}")
+
+        logger.info(
+            f"Found {len(netcdf_files)} NetCDF files across {len(month_ranges)} month(s)"
+        )
 
         # 4. Load NetCDF and process into Dataset with stepType preservation
         # CDS may return multiple NetCDF files (one per stepType)
@@ -1717,7 +1884,7 @@ class CDS(Connector):
 
         # 7. Cleanup temporary files
         shutil.rmtree(extract_dir)
-        Path(zip_path).unlink()
+        # Note: Individual zip files are already cleaned up in the download loop
 
         logger.info(
             f"Processed {len(unique_dates)} time steps and {len(merged_dataset.data_vars)} variables into Dataset"
