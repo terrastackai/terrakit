@@ -623,6 +623,10 @@ class CDS(Connector):
             params["start_year"] = [str(start_date.year)]
             params["end_year"] = [str(end_date.year)]
 
+            # CORDEX collections use start_year/end_year only
+            # The API does not support month/day filtering - it returns all data for the year range
+            # Temporal filtering will be done after download if needed
+
         else:
             # ERA5 and other collections use bbox directly
             # CDS API expects area as [North, West, South, East]
@@ -644,12 +648,12 @@ class CDS(Connector):
             params["frequency"] = "6_hourly"
             params["time_zone"] = "utc+00:00"
 
-        # Add temporal parameters
-        # Note: Multi-year requests are split at a higher level (in get_data) to avoid
-        # invalid date combinations from Cartesian products
-        params["year"] = self._get_years_list(date_start, date_end)
-        params["month"] = self._get_months_list(date_start, date_end)
-        params["day"] = self._get_days_list(date_start, date_end)
+            # Add temporal parameters for ERA5 collections
+            # Note: Multi-year requests are split at a higher level (in get_data) to avoid
+            # invalid date combinations from Cartesian products
+            params["year"] = self._get_years_list(date_start, date_end)
+            params["month"] = self._get_months_list(date_start, date_end)
+            params["day"] = self._get_days_list(date_start, date_end)
 
         # Add variables/bands
         if bands:
@@ -664,7 +668,12 @@ class CDS(Connector):
         # - frequency: "1hr", "3hr", "6hr", "day", "mon", "sem", "fx"
         # - product_type: override default "reanalysis"
         # - time_zone: override default "utc+00:00"
-        params.update(query_params)
+        # Filter out internal parameters that should not be sent to CDS API
+        internal_params = {"max_workers"}
+        filtered_query_params = {
+            k: v for k, v in query_params.items() if k not in internal_params
+        }
+        params.update(filtered_query_params)
 
         return params
 
@@ -996,6 +1005,43 @@ class CDS(Connector):
             )
         return constraints
 
+    def _is_fixed_block_constraint(self, combo: dict) -> bool:
+        """
+        Determine if a constraint represents a fixed block vs flexible range.
+
+        A fixed block is when start_year and end_year arrays have matching lengths
+        and represent specific ranges that must be requested EXACTLY as defined (e.g.,
+        start_year: ["1950"], end_year: ["1955"] means you must request exactly 1950-1955,
+        not subsets like 1951-1953).
+
+        A flexible range is when the arrays represent a continuous range where any
+        subset is valid (e.g., start_year: ["1950", "1951", ...], end_year: ["2005"]).
+
+        Args:
+            combo: A constraint combination dictionary
+
+        Returns:
+            True if this is a fixed block, False if it's a flexible range
+        """
+        start_years = combo.get("start_year", [])
+        end_years = combo.get("end_year", [])
+
+        # No year constraints means it's not a fixed block
+        if not start_years or not end_years:
+            return False
+
+        # If arrays have matching lengths > 1, it's likely fixed blocks
+        # Each pair represents a specific range that must be requested together
+        if len(start_years) == len(end_years) and len(start_years) > 1:
+            return True
+
+        # Single pair could be either, but we treat it as a fixed block
+        # to be more restrictive (safer approach)
+        if len(start_years) == 1 and len(end_years) == 1:
+            return True
+
+        return False
+
     def _validate_cordex_constraints(
         self,
         collection_name: str,
@@ -1015,6 +1061,12 @@ class CDS(Connector):
 
         This performs preflight validation to check if the requested combination of
         parameters is available in the CDS CORDEX dataset before attempting download.
+
+        The validation distinguishes between:
+        - Fixed blocks: Specific year ranges that must be requested exactly as defined
+          (e.g., 1950-1955, 1956-1960 as separate blocks)
+        - Flexible ranges: Continuous ranges where any subset is valid
+          (e.g., any years between 1950-2005)
 
         Args:
             collection_name: Name of the CORDEX collection
@@ -1061,12 +1113,33 @@ class CDS(Connector):
 
                     # Check if requested years are within available range
                     if combo_start_years and combo_end_years:
-                        # Convert to integers for comparison
-                        available_start = min(int(y) for y in combo_start_years)
-                        available_end = max(int(y) for y in combo_end_years)
+                        # Determine if this is a fixed block or flexible range
+                        is_fixed_block = self._is_fixed_block_constraint(combo)
 
-                        if start_year >= available_start and end_year <= available_end:
-                            matching_combos.append(combo)
+                        if is_fixed_block:
+                            # For fixed blocks, the requested range must match exactly
+                            # one of the defined blocks (no subsets allowed)
+                            valid_block_found = False
+                            for sy, ey in zip(combo_start_years, combo_end_years):
+                                block_start = int(sy)
+                                block_end = int(ey)
+                                # Request must match the block exactly
+                                if start_year == block_start and end_year == block_end:
+                                    valid_block_found = True
+                                    break
+
+                            if valid_block_found:
+                                matching_combos.append(combo)
+                        else:
+                            # For flexible ranges, any subset within min/max is valid
+                            available_start = min(int(y) for y in combo_start_years)
+                            available_end = max(int(y) for y in combo_end_years)
+
+                            if (
+                                start_year >= available_start
+                                and end_year <= available_end
+                            ):
+                                matching_combos.append(combo)
                 else:
                     # For 'fixed' temporal_resolution, year range doesn't apply
                     matching_combos.append(combo)
@@ -1183,18 +1256,31 @@ class CDS(Connector):
 
                 if year_matches:
                     available_years = set()
+                    has_fixed_blocks = False
+
                     for combo in year_matches:
                         start_years = combo.get("start_year", [])
                         end_years = combo.get("end_year", [])
                         if start_years and end_years:
+                            # Check if this combo represents fixed blocks
+                            if self._is_fixed_block_constraint(combo):
+                                has_fixed_blocks = True
+
                             for sy, ey in zip(start_years, end_years):
                                 available_years.add((int(sy), int(ey)))
 
                     if available_years:
                         year_ranges = sorted(available_years)
-                        error_parts.append(
-                            f"  Available Year Ranges: {', '.join(f'{sy}-{ey}' for sy, ey in year_ranges[:5])}"
-                        )
+
+                        if has_fixed_blocks:
+                            error_parts.append(
+                                f"  Available Year Blocks (must request exact ranges): {', '.join(f'{sy}-{ey}' for sy, ey in year_ranges[:5])}"
+                            )
+                        else:
+                            error_parts.append(
+                                f"  Available Year Ranges: {', '.join(f'{sy}-{ey}' for sy, ey in year_ranges[:5])}"
+                            )
+
                         if len(year_ranges) > 5:
                             error_parts.append(
                                 f"    ... and {len(year_ranges) - 5} more ranges"

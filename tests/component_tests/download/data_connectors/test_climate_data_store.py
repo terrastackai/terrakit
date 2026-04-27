@@ -1050,3 +1050,396 @@ class TestCDSParallelDownload:
                     bands=["2m_temperature"],
                     working_dir=str(temp_dir),
                 )
+
+
+class TestCordexValidation:
+    """Test CORDEX preflight validation using constraints_variables file."""
+
+    connector_type = "climate_data_store"
+    collection = "projections-cordex-domains-single-levels"
+
+    @pytest.fixture
+    def dc(self):
+        """Create a DataConnector instance."""
+        return DataConnector(connector_type=self.connector_type)
+
+    @pytest.fixture
+    def valid_cordex_params(self):
+        """Valid CORDEX parameters that should pass validation."""
+        return {
+            "domain": "africa",
+            "experiment": "historical",
+            "horizontal_resolution": "0_44_degree_x_0_44_degree",
+            "temporal_resolution": "daily_mean",
+            "gcm_model": "ichec_ec_earth",
+            "rcm_model": "knmi_racmo22t",
+            "ensemble_member": "r1i1p1",
+            "variable": "2m_air_temperature",
+            "start_year": 1950,
+            "end_year": 1950,
+        }
+
+    def test_valid_cordex_combination(self, dc, valid_cordex_params):
+        """Test that a valid CORDEX combination passes validation."""
+        # This should not raise an exception
+        dc.connector._validate_cordex_constraints(
+            collection_name=self.collection,
+            domain=valid_cordex_params["domain"],
+            experiment=valid_cordex_params["experiment"],
+            horizontal_resolution=valid_cordex_params["horizontal_resolution"],
+            temporal_resolution=valid_cordex_params["temporal_resolution"],
+            gcm_model=valid_cordex_params["gcm_model"],
+            rcm_model=valid_cordex_params["rcm_model"],
+            ensemble_member=valid_cordex_params["ensemble_member"],
+            variable=valid_cordex_params["variable"],
+            start_year=valid_cordex_params["start_year"],
+            end_year=valid_cordex_params["end_year"],
+        )
+
+    def test_invalid_gcm_rcm_combination(self, dc, valid_cordex_params):
+        """Test that an invalid GCM-RCM combination raises validation error."""
+        # ichec_ec_earth + mpi_csc_remo2009 is not a valid combination for africa
+        with pytest.raises(TerrakitValidationError) as exc_info:
+            dc.connector._validate_cordex_constraints(
+                collection_name=self.collection,
+                domain=valid_cordex_params["domain"],
+                experiment=valid_cordex_params["experiment"],
+                horizontal_resolution=valid_cordex_params["horizontal_resolution"],
+                temporal_resolution=valid_cordex_params["temporal_resolution"],
+                gcm_model="ichec_ec_earth",
+                rcm_model="mpi_csc_remo2009",  # Invalid combination
+                ensemble_member=valid_cordex_params["ensemble_member"],
+                variable=valid_cordex_params["variable"],
+                start_year=valid_cordex_params["start_year"],
+                end_year=valid_cordex_params["end_year"],
+            )
+
+        error_msg = str(exc_info.value)
+        assert "not available" in error_msg.lower()
+        assert "valid alternatives" in error_msg.lower()
+
+    def test_invalid_variable_for_combination(self, dc, valid_cordex_params):
+        """Test that an invalid variable for a specific combination raises error."""
+        # 2m_relative_humidity is not available for all combinations
+        with pytest.raises(TerrakitValidationError) as exc_info:
+            dc.connector._validate_cordex_constraints(
+                collection_name=self.collection,
+                domain=valid_cordex_params["domain"],
+                experiment=valid_cordex_params["experiment"],
+                horizontal_resolution=valid_cordex_params["horizontal_resolution"],
+                temporal_resolution=valid_cordex_params["temporal_resolution"],
+                gcm_model="cnrm_cerfacs_cm5",
+                rcm_model="clmcom_clm_cclm4_8_17",
+                ensemble_member="r1i1p1",
+                variable="2m_relative_humidity",  # Not available for this combo
+                start_year=1950,
+                end_year=1950,
+            )
+
+        error_msg = str(exc_info.value)
+        assert "not available" in error_msg.lower()
+        assert "valid" in error_msg.lower()
+
+    def test_invalid_year_range(self, dc, valid_cordex_params):
+        """Test that an invalid year range raises validation error."""
+        with pytest.raises(TerrakitValidationError) as exc_info:
+            dc.connector._validate_cordex_constraints(
+                collection_name=self.collection,
+                domain=valid_cordex_params["domain"],
+                experiment=valid_cordex_params["experiment"],
+                horizontal_resolution=valid_cordex_params["horizontal_resolution"],
+                temporal_resolution=valid_cordex_params["temporal_resolution"],
+                gcm_model=valid_cordex_params["gcm_model"],
+                rcm_model=valid_cordex_params["rcm_model"],
+                ensemble_member=valid_cordex_params["ensemble_member"],
+                variable=valid_cordex_params["variable"],
+                start_year=1940,  # Too early
+                end_year=1950,
+            )
+
+        error_msg = str(exc_info.value)
+        assert "year range" in error_msg.lower()
+        assert "not available" in error_msg.lower()
+
+    def test_invalid_experiment_for_domain(self, dc, valid_cordex_params):
+        """Test that an invalid experiment for a domain raises error."""
+        with pytest.raises(TerrakitValidationError) as exc_info:
+            dc.connector._validate_cordex_constraints(
+                collection_name=self.collection,
+                domain=valid_cordex_params["domain"],
+                experiment="rcp_2_6",  # May not be available for all combinations
+                horizontal_resolution=valid_cordex_params["horizontal_resolution"],
+                temporal_resolution=valid_cordex_params["temporal_resolution"],
+                gcm_model="cnrm_cerfacs_cm5",
+                rcm_model="clmcom_clm_cclm4_8_17",
+                ensemble_member="r1i1p1",
+                variable=valid_cordex_params["variable"],
+                start_year=2006,
+                end_year=2010,
+            )
+
+        error_msg = str(exc_info.value)
+        assert "not available" in error_msg.lower()
+
+    def test_invalid_ensemble_member(self, dc, valid_cordex_params):
+        """Test that an invalid ensemble member raises validation error."""
+        with pytest.raises(TerrakitValidationError) as exc_info:
+            dc.connector._validate_cordex_constraints(
+                collection_name=self.collection,
+                domain=valid_cordex_params["domain"],
+                experiment=valid_cordex_params["experiment"],
+                horizontal_resolution=valid_cordex_params["horizontal_resolution"],
+                temporal_resolution=valid_cordex_params["temporal_resolution"],
+                gcm_model=valid_cordex_params["gcm_model"],
+                rcm_model=valid_cordex_params["rcm_model"],
+                ensemble_member="r99i99p99",  # Invalid
+                variable=valid_cordex_params["variable"],
+                start_year=valid_cordex_params["start_year"],
+                end_year=valid_cordex_params["end_year"],
+            )
+
+        error_msg = str(exc_info.value)
+        assert "not available" in error_msg.lower()
+
+    def test_error_message_includes_valid_alternatives(self, dc, valid_cordex_params):
+        """Test that error messages include valid alternatives."""
+        with pytest.raises(TerrakitValidationError) as exc_info:
+            dc.connector._validate_cordex_constraints(
+                collection_name=self.collection,
+                domain=valid_cordex_params["domain"],
+                experiment=valid_cordex_params["experiment"],
+                horizontal_resolution=valid_cordex_params["horizontal_resolution"],
+                temporal_resolution=valid_cordex_params["temporal_resolution"],
+                gcm_model="invalid_gcm",
+                rcm_model=valid_cordex_params["rcm_model"],
+                ensemble_member=valid_cordex_params["ensemble_member"],
+                variable=valid_cordex_params["variable"],
+                start_year=valid_cordex_params["start_year"],
+                end_year=valid_cordex_params["end_year"],
+            )
+
+        error_msg = str(exc_info.value)
+        # Should suggest valid GCM models
+        assert "valid" in error_msg.lower()
+        assert "gcm" in error_msg.lower() or "model" in error_msg.lower()
+
+    def test_validation_with_multiple_variables(self, dc, valid_cordex_params):
+        """Test validation with multiple variables."""
+        # Test with a list of variables
+        variables = ["2m_air_temperature", "mean_precipitation_flux"]
+
+        # Should validate each variable
+        for var in variables:
+            dc.connector._validate_cordex_constraints(
+                collection_name=self.collection,
+                domain=valid_cordex_params["domain"],
+                experiment=valid_cordex_params["experiment"],
+                horizontal_resolution=valid_cordex_params["horizontal_resolution"],
+                temporal_resolution=valid_cordex_params["temporal_resolution"],
+                gcm_model=valid_cordex_params["gcm_model"],
+                rcm_model=valid_cordex_params["rcm_model"],
+                ensemble_member=valid_cordex_params["ensemble_member"],
+                variable=var,
+                start_year=valid_cordex_params["start_year"],
+                end_year=valid_cordex_params["end_year"],
+            )
+
+    def test_validation_called_before_download(self, dc, valid_cordex_params, bbox):
+        """Test that validation is called before attempting download."""
+        # This test verifies integration - validation should happen in get_data
+        # before calling client.retrieve
+
+        with pytest.raises(TerrakitValidationError):
+            dc.connector.get_data(
+                data_collection_name=self.collection,
+                date_start="1950-01-01",
+                date_end="1950-01-31",
+                bbox=bbox,
+                bands=["2m_air_temperature"],
+                query_params={
+                    "gcm_model": "invalid_model",  # This should fail validation
+                    "rcm_model": "knmi_racmo22t",
+                    "experiment": "historical",
+                },
+            )
+
+    def test_fixed_temporal_resolution_no_year_validation(self, dc):
+        """Test that fixed temporal resolution doesn't validate year ranges."""
+        # For temporal_resolution='fixed', start_year and end_year are not in constraints
+        dc.connector._validate_cordex_constraints(
+            collection_name=self.collection,
+            domain="africa",
+            experiment="evaluation",
+            horizontal_resolution="0_44_degree_x_0_44_degree",
+            temporal_resolution="fixed",
+            gcm_model="era_interim",
+            rcm_model="clmcom_clm_cclm4_8_17",
+            ensemble_member="r0i0p0",
+            variable="land_area_fraction",
+            start_year=None,  # Not applicable for fixed
+            end_year=None,
+        )
+
+    def test_fixed_block_validation_exact_match(self, dc):
+        """Test that fixed blocks require exact year range matches."""
+        # From constraints file, line 23: africa+historical+ichec_ec_earth+clmcom_clm_cclm4_8_17
+        # has start_year: ["1949"], end_year: ["1950"] - a fixed block
+
+        # This should pass - requesting the exact block
+        dc.connector._validate_cordex_constraints(
+            collection_name=self.collection,
+            domain="africa",
+            experiment="historical",
+            horizontal_resolution="0_44_degree_x_0_44_degree",
+            temporal_resolution="daily_mean",
+            gcm_model="ichec_ec_earth",
+            rcm_model="clmcom_clm_cclm4_8_17",
+            ensemble_member="r12i1p1",
+            variable="2m_air_temperature",
+            start_year=1949,
+            end_year=1950,
+        )
+
+    def test_fixed_block_validation_subset_fails(self, dc):
+        """Test that requesting a subset within a fixed block fails."""
+        # From constraints file, line 35: africa+historical+ichec_ec_earth+clmcom_clm_cclm4_8_17
+        # has start_year: ["1951"], end_year: ["1955"] - a 5-year fixed block
+
+        # This should FAIL - requesting only a subset (1952-1954) of the block (1951-1955)
+        with pytest.raises(TerrakitValidationError) as exc_info:
+            dc.connector._validate_cordex_constraints(
+                collection_name=self.collection,
+                domain="africa",
+                experiment="historical",
+                horizontal_resolution="0_44_degree_x_0_44_degree",
+                temporal_resolution="daily_mean",
+                gcm_model="ichec_ec_earth",
+                rcm_model="clmcom_clm_cclm4_8_17",
+                ensemble_member="r12i1p1",
+                variable="2m_air_temperature",
+                start_year=1952,
+                end_year=1954,
+            )
+
+        error_msg = str(exc_info.value)
+        assert "not available" in error_msg.lower()
+        # Should mention that exact blocks are required
+        assert "block" in error_msg.lower() or "exact" in error_msg.lower()
+
+    def test_fixed_block_validation_single_year_fails(self, dc):
+        """Test that requesting a single year from a multi-year fixed block fails."""
+        # From constraints file, line 35: africa+historical+ichec_ec_earth+knmi_racmo22t
+        # has start_year: ["1951"], end_year: ["1955"] - must request full 1951-1955
+
+        # This should FAIL - requesting only 1951 from the 1951-1955 block
+        with pytest.raises(TerrakitValidationError) as exc_info:
+            dc.connector._validate_cordex_constraints(
+                collection_name=self.collection,
+                domain="africa",
+                experiment="historical",
+                horizontal_resolution="0_44_degree_x_0_44_degree",
+                temporal_resolution="daily_mean",
+                gcm_model="ichec_ec_earth",
+                rcm_model="knmi_racmo22t",
+                ensemble_member="r1i1p1",
+                variable="2m_air_temperature",
+                start_year=1951,
+                end_year=1951,
+            )
+
+        error_msg = str(exc_info.value)
+        assert "not available" in error_msg.lower()
+
+    def test_fixed_block_validation_spanning_blocks_fails(self, dc):
+        """Test that requesting across multiple fixed blocks fails."""
+        # From constraints file: africa+historical+ichec_ec_earth+clmcom_clm_cclm4_8_17
+        # has multiple blocks: ["1949"], ["1950"] and ["1951"], ["1955"]
+        # Requesting 1949-1951 spans two blocks and should fail
+
+        with pytest.raises(TerrakitValidationError) as exc_info:
+            dc.connector._validate_cordex_constraints(
+                collection_name=self.collection,
+                domain="africa",
+                experiment="historical",
+                horizontal_resolution="0_44_degree_x_0_44_degree",
+                temporal_resolution="daily_mean",
+                gcm_model="ichec_ec_earth",
+                rcm_model="clmcom_clm_cclm4_8_17",
+                ensemble_member="r12i1p1",
+                variable="2m_air_temperature",
+                start_year=1949,
+                end_year=1951,
+            )
+
+        error_msg = str(exc_info.value)
+        assert "not available" in error_msg.lower()
+        # Should mention available blocks
+        assert "year" in error_msg.lower()
+
+    def test_fixed_block_validation_outside_blocks_fails(self, dc):
+        """Test that requesting years outside all fixed blocks fails."""
+        # From constraints file: africa+historical+ichec_ec_earth+clmcom_clm_cclm4_8_17
+        # has blocks starting from 1949
+        # Requesting 1940-1945 is outside all blocks
+
+        with pytest.raises(TerrakitValidationError) as exc_info:
+            dc.connector._validate_cordex_constraints(
+                collection_name=self.collection,
+                domain="africa",
+                experiment="historical",
+                horizontal_resolution="0_44_degree_x_0_44_degree",
+                temporal_resolution="daily_mean",
+                gcm_model="ichec_ec_earth",
+                rcm_model="clmcom_clm_cclm4_8_17",
+                ensemble_member="r12i1p1",
+                variable="2m_air_temperature",
+                start_year=1940,
+                end_year=1945,
+            )
+
+        error_msg = str(exc_info.value)
+        assert "not available" in error_msg.lower()
+
+    def test_is_fixed_block_constraint_detection(self, dc):
+        """Test the helper method that detects fixed blocks."""
+        # Test fixed block with single pair
+        fixed_single = {"start_year": ["1950"], "end_year": ["1955"]}
+        assert dc.connector._is_fixed_block_constraint(fixed_single) is True
+
+        # Test fixed block with multiple pairs
+        fixed_multiple = {
+            "start_year": ["1950", "1956", "1961"],
+            "end_year": ["1955", "1960", "1965"],
+        }
+        assert dc.connector._is_fixed_block_constraint(fixed_multiple) is True
+
+        # Test no year constraints
+        no_years = {"domain": ["africa"]}
+        assert dc.connector._is_fixed_block_constraint(no_years) is False
+
+        # Test mismatched lengths (flexible range pattern)
+        flexible = {"start_year": ["1950"], "end_year": ["2005", "2010"]}
+        assert dc.connector._is_fixed_block_constraint(flexible) is False
+
+    def test_fixed_block_error_message_clarity(self, dc):
+        """Test that error messages clearly indicate fixed blocks."""
+        # Request an invalid year range for a fixed block constraint
+        with pytest.raises(TerrakitValidationError) as exc_info:
+            dc.connector._validate_cordex_constraints(
+                collection_name=self.collection,
+                domain="africa",
+                experiment="historical",
+                horizontal_resolution="0_44_degree_x_0_44_degree",
+                temporal_resolution="daily_mean",
+                gcm_model="ichec_ec_earth",
+                rcm_model="clmcom_clm_cclm4_8_17",
+                ensemble_member="r12i1p1",
+                variable="2m_air_temperature",
+                start_year=1948,  # Before any available block
+                end_year=1949,
+            )
+
+        error_msg = str(exc_info.value)
+        # Should mention blocks or ranges
+        assert "year" in error_msg.lower()
+        assert "available" in error_msg.lower()
