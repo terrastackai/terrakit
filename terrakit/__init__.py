@@ -23,6 +23,7 @@ import os
 from .download.data_connectors.sentinelhub import SentinelHub  # noqa
 from .download.data_connectors.nasa_earthdata import NASA_EarthData  # noqa
 from .download.data_connectors.sentinel_aws import Sentinel_AWS  # noqa
+from .download.data_connectors.local_file_system import LocalFileSystem  # noqa
 from .download.data_connectors.climate_data_store import CDS  # noqa
 from .terrakit import DataConnector  # noqa
 from .download.download_data import download_data  # noqa

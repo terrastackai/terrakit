@@ -8,6 +8,7 @@ import logging
 from pydantic import ValidationError
 
 from .download.connector import Connector
+from .download.data_connectors.local_file_system import LocalFileSystem
 from .download.data_connectors.nasa_earthdata import NASA_EarthData
 from .download.data_connectors.sentinel_aws import Sentinel_AWS
 from .download.data_connectors.ibmresearch_stac import IBMResearchSTAC
@@ -55,6 +56,8 @@ class DataConnectorFactory:
             return IBMResearchSTAC()
         elif connector_type.connector_type == "TheWeatherCompany":
             return TheWeatherCompany()
+        elif connector_type.connector_type == "local_file_system":
+            return LocalFileSystem()
         elif connector_type.connector_type == "climate_data_store":
             return CDS()
         # -----> Include new connectors here < ------
