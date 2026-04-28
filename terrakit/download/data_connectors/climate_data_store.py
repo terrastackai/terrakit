@@ -14,7 +14,7 @@ import shutil
 import xarray as xr
 import zipfile
 from calendar import monthrange
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 from pathlib import Path
 from shapely.geometry import box
@@ -164,8 +164,136 @@ class CDS(Connector):
             zip_ref.extractall(extract_dir)
 
         Path(zip_path).unlink()
-
         return idx, month_start, month_end
+
+    def _get_cordex_year_blocks(
+        self,
+        collection_name: str,
+        domain: str,
+        experiment: str,
+        horizontal_resolution: str,
+        temporal_resolution: str,
+        gcm_model: str,
+        rcm_model: str,
+        ensemble_member: str,
+        variable: str,
+        start_year: int,
+        end_year: int,
+    ) -> list:
+        """
+        Get the year blocks for a CORDEX request based on constraints.
+
+        For CORDEX data with fixed blocks, this returns the list of year blocks
+        that cover the requested time range. For flexible ranges, it returns
+        the full requested range as a single block.
+
+        Args:
+            collection_name: Name of the CORDEX collection
+            domain: CORDEX domain
+            experiment: Experiment type
+            horizontal_resolution: Grid resolution
+            temporal_resolution: Temporal resolution
+            gcm_model: Global Climate Model
+            rcm_model: Regional Climate Model
+            ensemble_member: Ensemble member
+            variable: Variable name
+            start_year: Start year for data request
+            end_year: End year for data request
+
+        Returns:
+            List of tuples (block_start_year, block_end_year) representing year blocks
+        """
+        # Load constraints_variables file
+        constraints_list = self._load_cordex_constraints_variables(collection_name)
+
+        # Collect all matching year blocks across all constraint entries
+        # The constraints file may have separate entries for each year block
+        all_year_blocks = []
+
+        for combo in constraints_list:
+            if (
+                domain in combo.get("domain", [])
+                and experiment in combo.get("experiment", [])
+                and horizontal_resolution in combo.get("horizontal_resolution", [])
+                and temporal_resolution in combo.get("temporal_resolution", [])
+                and gcm_model in combo.get("gcm_model", [])
+                and rcm_model in combo.get("rcm_model", [])
+                and ensemble_member in combo.get("ensemble_member", [])
+                and variable in combo.get("variable", [])
+            ):
+                combo_start_years = combo.get("start_year", [])
+                combo_end_years = combo.get("end_year", [])
+
+                if combo_start_years and combo_end_years:
+                    # Add all year blocks from this combo
+                    for sy, ey in zip(combo_start_years, combo_end_years):
+                        block_start = int(sy)
+                        block_end = int(ey)
+                        # Include block if it overlaps with requested range
+                        if block_start <= end_year and block_end >= start_year:
+                            all_year_blocks.append((block_start, block_end))
+
+        if all_year_blocks:
+            # Remove duplicates and sort
+            unique_blocks = sorted(set(all_year_blocks))
+            return unique_blocks
+
+        # If no matching combination found, return the requested range as a single block
+        # (validation will catch any issues)
+        return [(start_year, end_year)]
+
+    def _download_and_extract_cordex_block(
+        self,
+        block_info: tuple[int, int, int],
+        total_blocks: int,
+        data_collection_name: str,
+        bbox: list[Any],
+        bands: list[Any],
+        query_params: Dict[str, Any],
+        working_dir: str,
+        extract_dir: Path,
+    ) -> tuple[int, int, int]:
+        """
+        Download and extract a single CORDEX year block.
+
+        Args:
+            block_info: Tuple of (index, block_start_year, block_end_year)
+            total_blocks: Total number of blocks being downloaded
+            data_collection_name: Name of the data collection
+            bbox: Bounding box
+            bands: List of bands
+            query_params: Query parameters
+            working_dir: Working directory
+            extract_dir: Directory to extract files to
+
+        Returns:
+            Tuple of (index, block_start_year, block_end_year)
+        """
+        idx, block_start_year, block_end_year = block_info
+
+        # Convert year block to date strings
+        block_start_str = f"{block_start_year}-01-01"
+        block_end_str = f"{block_end_year}-12-31"
+
+        logger.info(
+            f"Downloading CORDEX block {idx}/{total_blocks}: {block_start_year}-{block_end_year}"
+        )
+
+        zip_path = self._download_from_cds(
+            data_collection_name,
+            block_start_str,
+            block_end_str,
+            bbox,
+            bands,
+            query_params,
+            working_dir,
+        )
+
+        with zipfile.ZipFile(zip_path, "r") as zip_ref:
+            zip_ref.extractall(extract_dir)
+
+        Path(zip_path).unlink()
+        return idx, block_start_year, block_end_year
 
     def _get_cordex_domain_from_bbox(self, bbox: list) -> str:
         """
@@ -1099,6 +1227,8 @@ class CDS(Connector):
 
         # Find matching combinations
         matching_combos = []
+        all_matching_blocks = []  # Collect all year blocks across all matching combos
+
         for combo in constraints_list:
             # Check if all parameters match
             if (
@@ -1122,36 +1252,58 @@ class CDS(Connector):
 
                     # Check if requested years are within available range
                     if combo_start_years and combo_end_years:
-                        # Determine if this is a fixed block or flexible range
-                        is_fixed_block = self._is_fixed_block_constraint(combo)
+                        # Collect all year blocks from this combo
+                        for sy, ey in zip(combo_start_years, combo_end_years):
+                            block_start = int(sy)
+                            block_end = int(ey)
+                            all_matching_blocks.append((block_start, block_end))
 
-                        if is_fixed_block:
-                            # For fixed blocks, the requested range must match exactly
-                            # one of the defined blocks (no subsets allowed)
-                            valid_block_found = False
-                            for sy, ey in zip(combo_start_years, combo_end_years):
-                                block_start = int(sy)
-                                block_end = int(ey)
-                                # Request must match the block exactly at year level
-                                if start_year == block_start and end_year == block_end:
-                                    valid_block_found = True
-                                    break
-
-                            if valid_block_found:
-                                matching_combos.append(combo)
-                        else:
-                            # For flexible ranges, any subset within min/max is valid
-                            available_start = min(int(y) for y in combo_start_years)
-                            available_end = max(int(y) for y in combo_end_years)
-
-                            if (
-                                start_year >= available_start
-                                and end_year <= available_end
-                            ):
-                                matching_combos.append(combo)
+                        matching_combos.append(combo)
                 else:
                     # For 'fixed' temporal_resolution, year range doesn't apply
                     matching_combos.append(combo)
+
+        # Now validate if the collected blocks can cover the requested range
+        if matching_combos and all_matching_blocks:
+            # Remove duplicates and sort
+            unique_blocks = sorted(set(all_matching_blocks))
+
+            # Check if any matching combo is a fixed block constraint
+            is_fixed_block = any(
+                self._is_fixed_block_constraint(combo) for combo in matching_combos
+            )
+
+            if is_fixed_block:
+                # For fixed blocks, the requested range must EXACTLY match one of the blocks
+                exact_match = (start_year, end_year) in unique_blocks
+                if not exact_match:
+                    # No exact match - clear matching_combos to trigger error
+                    matching_combos = []
+            else:
+                # For flexible ranges, check if blocks can cover the requested range
+                # Find blocks that overlap with requested range
+                if start_year is not None and end_year is not None:
+                    overlapping_blocks = [
+                        (bs, be)
+                        for bs, be in unique_blocks
+                        if bs <= end_year and be >= start_year
+                    ]
+
+                    if overlapping_blocks:
+                        # Check if overlapping blocks cover the entire requested range
+                        min_block_start = min(bs for bs, be in overlapping_blocks)
+                        max_block_end = max(be for bs, be in overlapping_blocks)
+
+                        # Requested range must be within the coverage of available blocks
+                        if min_block_start <= start_year and max_block_end >= end_year:
+                            # Valid - blocks can cover the requested range
+                            pass
+                        else:
+                            # Blocks don't cover the full range - clear matching_combos to trigger error
+                            matching_combos = []
+                    else:
+                        # No overlapping blocks - clear matching_combos to trigger error
+                        matching_combos = []
 
         if matching_combos:
             # Valid combination found at year level
@@ -1536,7 +1688,7 @@ class CDS(Connector):
         # TODO: filter by cloud cover
         return unique_dates, results
 
-    def get_data(
+    def get_data(  # type: ignore[override]
         self,
         data_collection_name,
         date_start,
@@ -1694,24 +1846,129 @@ class CDS(Connector):
         extract_dir.mkdir(parents=True, exist_ok=True)
 
         if self._is_cordex_collection(data_collection_name):
-            logger.info(
-                "CORDEX requests must be submitted as a single CDS request; monthly chunking disabled"
+            # Get year blocks for CORDEX based on constraints
+            start_date = datetime.strptime(date_start, "%Y-%m-%d")
+            end_date = datetime.strptime(date_end, "%Y-%m-%d")
+            start_year = start_date.year
+            end_year = end_date.year
+
+            # Get domain from bbox
+            domain_code = self._get_cordex_domain_from_bbox(bbox)
+            api_domain = self._cordex_code_to_api_domain(domain_code)
+
+            # Extract parameters from query_params
+            experiment = query_params.get("experiment", "historical")
+            horizontal_resolution = query_params.get(
+                "horizontal_resolution", "0_44_degree_x_0_44_degree"
             )
-            zip_path = self._download_from_cds(
-                data_collection_name,
-                date_start,
-                date_end,
-                bbox,
-                bands,
-                query_params,
-                working_dir,
+            temporal_resolution = query_params.get("temporal_resolution", "daily_mean")
+            gcm_model = query_params.get("gcm_model", "ichec_ec_earth")
+            rcm_model = query_params.get("rcm_model", "knmi_racmo22t")
+            ensemble_member = query_params.get("ensemble_member", "r1i1p1")
+
+            # Get the first variable to determine year blocks (all variables should have same blocks)
+            first_variable = bands[0] if bands else "2m_air_temperature"
+
+            # Get year blocks based on constraints
+            year_blocks = self._get_cordex_year_blocks(
+                collection_name=data_collection_name,
+                domain=api_domain,
+                experiment=experiment,
+                horizontal_resolution=horizontal_resolution,
+                temporal_resolution=temporal_resolution,
+                gcm_model=gcm_model,
+                rcm_model=rcm_model,
+                ensemble_member=ensemble_member,
+                variable=first_variable,
+                start_year=start_year,
+                end_year=end_year,
             )
 
-            with zipfile.ZipFile(zip_path, "r") as zip_ref:
-                zip_ref.extractall(extract_dir)
+            # Check if we need to split into multiple blocks
+            if len(year_blocks) > 1:
+                # Multiple year blocks - download in parallel
+                max_workers = query_params.get("max_workers", 4)
 
-            Path(zip_path).unlink()
-            month_ranges = [(date_start, date_end)]
+                logger.info(
+                    f"Splitting CORDEX request into {len(year_blocks)} year block(s) for parallel download"
+                )
+
+                # Prepare block info tuples with index
+                block_info_list = [
+                    (idx, block_start, block_end)
+                    for idx, (block_start, block_end) in enumerate(year_blocks, 1)
+                ]
+
+                # Download in parallel using ThreadPoolExecutor
+                if max_workers == 1:
+                    # Sequential download for max_workers=1
+                    logger.info("Using sequential download (max_workers=1)")
+                    for block_info in block_info_list:
+                        self._download_and_extract_cordex_block(
+                            block_info=block_info,
+                            total_blocks=len(year_blocks),
+                            data_collection_name=data_collection_name,
+                            bbox=bbox,
+                            bands=bands,
+                            query_params=query_params,
+                            working_dir=working_dir,
+                            extract_dir=extract_dir,
+                        )
+                else:
+                    # Parallel download
+                    logger.info(f"Using parallel download with {max_workers} workers")
+                    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                        # Submit all download tasks
+                        future_to_block = {
+                            executor.submit(
+                                self._download_and_extract_cordex_block,
+                                block_info,
+                                len(year_blocks),
+                                data_collection_name,
+                                bbox,
+                                bands,
+                                query_params,
+                                working_dir,
+                                extract_dir,
+                            ): block_info
+                            for block_info in block_info_list
+                        }
+
+                        # Wait for all downloads to complete and handle any errors
+                        for future in as_completed(future_to_block):
+                            block_info = future_to_block[future]
+                            try:
+                                idx, block_start, block_end = future.result()
+                                logger.info(
+                                    f"Completed block {idx}/{len(year_blocks)}: {block_start}-{block_end}"
+                                )
+                            except Exception as exc:
+                                logger.error(
+                                    f"Block {block_info[0]} generated an exception: {exc}"
+                                )
+                                raise
+
+                month_ranges = [(date_start, date_end)]
+            else:
+                # Single year block - download as before
+                logger.info(
+                    "CORDEX request covers a single year block; downloading as one request"
+                )
+                zip_path = self._download_from_cds(
+                    data_collection_name,
+                    date_start,
+                    date_end,
+                    bbox,
+                    bands,
+                    query_params,
+                    working_dir,
+                )
+
+                with zipfile.ZipFile(zip_path, "r") as zip_ref:
+                    zip_ref.extractall(extract_dir)
+
+                Path(zip_path).unlink()
+                month_ranges = [(date_start, date_end)]
         else:
             # 1. Split requests into monthly chunks to handle CDS API size limits
             # The CDS API has two constraints:
@@ -1763,7 +2020,7 @@ class CDS(Connector):
 
             # 2. Download monthly chunks in parallel
             # Prepare month info tuples with index
-            month_info_list = [
+            month_info_list: list[tuple[int, str, str]] = [
                 (idx, month_start, month_end)
                 for idx, (month_start, month_end) in enumerate(month_ranges, 1)
             ]
@@ -1788,7 +2045,9 @@ class CDS(Connector):
                 logger.info(f"Using parallel download with {max_workers} workers")
                 with ThreadPoolExecutor(max_workers=max_workers) as executor:
                     # Submit all download tasks
-                    future_to_month = {
+                    future_to_month: dict[
+                        Future[tuple[int, str, str]], tuple[int, str, str]
+                    ] = {
                         executor.submit(
                             self._download_and_extract_month,
                             month_info,
@@ -1804,8 +2063,8 @@ class CDS(Connector):
                     }
 
                     # Wait for all downloads to complete and handle any errors
-                    for future in as_completed(future_to_month):
-                        month_info = future_to_month[future]
+                    for future in as_completed(future_to_month):  # type: ignore[assignment]
+                        month_info = future_to_month[future]  # type: ignore[index]
                         try:
                             idx, month_start_str, month_end_str = future.result()
                             logger.info(
@@ -1905,10 +2164,12 @@ class CDS(Connector):
 
                 # Store each variable for this date with its stepType
                 for var_name in data_vars:
+                    # Ensure var_name is a string
+                    var_name_str = str(var_name)
                     # Determine which variable name to use for stepType inference and data access
                     # For stepType inference: use extracted name if available, otherwise use original
-                    steptype_var_name = (
-                        extracted_var_name if extracted_var_name else var_name
+                    steptype_var_name: str = (
+                        extracted_var_name if extracted_var_name else var_name_str
                     )
                     # For data access: always use the original variable name from the NetCDF
                     data_access_var_name = var_name
@@ -1934,8 +2195,8 @@ class CDS(Connector):
 
                     # Store in dict with stepType using the appropriate variable name
                     # Use extracted name if available for consistency in output, otherwise use original
-                    output_var_name = (
-                        extracted_var_name if extracted_var_name else var_name
+                    output_var_name: str = (
+                        extracted_var_name if extracted_var_name else var_name_str
                     )
                     date_data_dict[date_str][output_var_name] = (da_var, step_type)
 

@@ -23,6 +23,11 @@ from terrakit.general_utils.exceptions import (
     TerrakitValueError,
 )
 
+from tests.component_tests.download.conftest import (
+    MockCORDEXMultiDecadeDownloader,
+    MockBlockGetter,
+)
+
 
 class TestClimateDataStore:
     connector_type = "climate_data_store"
@@ -1499,3 +1504,88 @@ class TestCordexValidation:
         # Should mention blocks or ranges
         assert "year" in error_msg.lower()
         assert "available" in error_msg.lower()
+
+    def test_cordex_multi_block_download(self, mock_cds_client, tmp_path):
+        """Test that CORDEX multi-block requests download all blocks correctly."""
+        dc = DataConnector(connector_type=self.connector_type)
+
+        # Create temp directory for test
+        temp_dir = tmp_path / "test_cordex_multi_block"
+        temp_dir.mkdir()
+
+        download_calls = []
+
+        mock_downloader = MockCORDEXMultiDecadeDownloader(temp_dir, download_calls)
+        mock_block_getter = MockBlockGetter()
+
+        with (
+            patch.object(
+                dc.connector, "_download_from_cds", side_effect=mock_downloader
+            ),
+            patch.object(
+                dc.connector, "_validate_cordex_constraints", return_value=None
+            ),
+            patch.object(
+                dc.connector, "_get_cordex_year_blocks", side_effect=mock_block_getter
+            ),
+        ):
+            ds = dc.connector.get_data(
+                data_collection_name="projections-cordex-domains-single-levels",
+                date_start="1950-01-01",
+                date_end="1960-12-31",
+                bbox=[20, -10, 30, 0],
+                bands=["2m_air_temperature"],
+                working_dir=str(temp_dir),
+            )
+
+        # Verify that multiple blocks were downloaded
+        assert isinstance(ds, xr.Dataset)
+        assert len(download_calls) == 2, "Should download 2 separate blocks"
+
+        # Verify the correct date ranges were requested
+        first_call_args, _ = download_calls[0]
+        assert first_call_args[1] == "1950-01-01"
+        assert first_call_args[2] == "1955-12-31"
+
+        second_call_args, _ = download_calls[1]
+        assert second_call_args[1] == "1956-01-01"
+        assert second_call_args[2] == "1960-12-31"
+
+        # Verify the dataset contains data from both blocks
+        assert ds is not None
+        # The variable name may be transformed by the connector
+        assert len(ds.data_vars) > 0, "Dataset should contain at least one variable"
+        # Verify we have data from both time periods
+        assert len(ds.time) == 4, "Should have 4 time steps (2 from each block)"
+
+    def test_out_of_block_range_error_message(self, dc):
+        """Test that requesting years outside available blocks returns helpful error."""
+        # Request years that are completely outside any available block
+        # Using a combination that has specific year blocks defined
+        with pytest.raises(TerrakitValidationError) as exc_info:
+            dc.connector._validate_cordex_constraints(
+                collection_name=self.collection,
+                domain="africa",
+                experiment="historical",
+                horizontal_resolution="0_44_degree_x_0_44_degree",
+                temporal_resolution="daily_mean",
+                gcm_model="ichec_ec_earth",
+                rcm_model="clmcom_clm_cclm4_8_17",
+                ensemble_member="r12i1p1",
+                variable="2m_air_temperature",
+                start_year=1900,  # Way before any available data
+                end_year=1910,
+            )
+
+        error_msg = str(exc_info.value)
+
+        # Verify error message is helpful
+        assert "not available" in error_msg.lower() or "cordex" in error_msg.lower()
+        assert "1900" in error_msg or "year" in error_msg.lower()
+
+        # Should provide information about what's available
+        assert (
+            "domain" in error_msg.lower()
+            or "experiment" in error_msg.lower()
+            or "valid" in error_msg.lower()
+        )
