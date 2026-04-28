@@ -795,10 +795,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#bounding-box-constraints" class="md-nav__link">
+  <a href="#available-data-connectors-and-collections" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Bounding Box Constraints
+        Available data connectors and collections
       
     </span>
   </a>
@@ -806,10 +806,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#available-data-connectors-and-collections" class="md-nav__link">
+  <a href="#try-out" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Available data connectors and collections
+        Try out
       
     </span>
   </a>
@@ -900,13 +900,119 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#try-out" class="md-nav__link">
+  <a href="#bounding-box-constraints" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Try out
+        Bounding Box Constraints
       
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#climate-data-store-data-connectors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Climate Data Store Data Connectors
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Climate Data Store Data Connectors">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#parallel-downloads-for-multi-year-requests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parallel Downloads for Multi-Year Requests
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Parallel Downloads for Multi-Year Requests">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#era5-multi-year-downloads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ERA5 Multi-Year Downloads
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cordex-multi-year-downloads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CORDEX Multi-Year Downloads
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#performance-tips" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance Tips
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cds-request-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CDS Request Validation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CDS Request Validation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cordex-data-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CORDEX Data Validation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#era5-data-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ERA5 Data Validation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1075,6 +1181,34 @@
     
   
     TerraKit: Easy geospatial data search and query
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/terrakit_download_cds/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TerraKit: Climate Data Store search and query
   
 
     
@@ -1932,37 +2066,6 @@
 <li>find_data()</li>
 <li>get_data()</li>
 </ul>
-<h2 id="bounding-box-constraints">Bounding Box Constraints</h2>
-<p><strong>All TerraKit data connectors adhere to standard geographic bounding box constraints:</strong></p>
-<p>Bounding boxes must be specified in the format: <code>bbox = [West, South, East, North] = [min_lon, min_lat, max_lon, max_lat]</code></p>
-<p>The following constraints are enforced:</p>
-<ul>
-<li><strong>Longitude (West/East)</strong>: <code>-180 &lt;= west &lt; east &lt;= 180</code></li>
-<li><strong>Latitude (South/North)</strong>: <code>-90 &lt;= south &lt; north &lt;= 90</code></li>
-</ul>
-<p>These constraints ensure:</p>
-<ul>
-<li>Valid geographic coordinates within Earth's coordinate system</li>
-<li>Proper ordering (minimum &lt; maximum for both longitude and latitude)</li>
-<li>Consistency across all data connectors regardless of the underlying data source</li>
-</ul>
-<p><strong>Example of a valid bounding box:</strong>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Valid: London area</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">bbox</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">51.3</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">51.7</span><span class="p">]</span>  <span class="c1"># [West, South, East, North]</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># Valid: Global extent</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">bbox</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mi">180</span><span class="p">,</span> <span class="o">-</span><span class="mi">90</span><span class="p">,</span> <span class="mi">180</span><span class="p">,</span> <span class="mi">90</span><span class="p">]</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="c1"># Invalid: West &gt;= East</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">bbox</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">51.3</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">51.7</span><span class="p">]</span>  <span class="c1"># ❌ West (0.3) must be &lt; East (-0.5)</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="c1"># Invalid: Longitude out of range</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="n">bbox</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mi">200</span><span class="p">,</span> <span class="mf">51.3</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">51.7</span><span class="p">]</span>  <span class="c1"># ❌ West (-200) outside valid range [-180, 180]</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="c1"># Invalid: South &gt;= North</span>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="n">bbox</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">51.7</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">51.3</span><span class="p">]</span>  <span class="c1"># ❌ South (51.7) must be &lt; North (51.3)</span>
-</span></code></pre></div></p>
-<p><strong>Note:</strong> For regions crossing the antimeridian (180°/-180° longitude), split the query into two separate bounding boxes or use data connector-specific handling if available.</p>
 <h2 id="available-data-connectors-and-collections">Available data connectors and collections</h2>
 <p>The following data connectors and associated collections are available:</p>
 <table>
@@ -1999,12 +2102,22 @@
 </tr>
 </tbody>
 </table>
+<h2 id="try-out">Try out</h2>
+<p>Data Connectors can be used outside the TerraKit Pipeline. Here is an example using the SentinelHub data connector.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">terrakit</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataConnector</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">dc</span> <span class="o">=</span> <span class="n">DataConnector</span><span class="p">(</span><span class="n">connector_type</span><span class="o">=</span><span class="s1">&#39;sentinelhub&#39;</span><span class="p">)</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">dc</span><span class="o">.</span><span class="n">connector</span><span class="o">.</span><span class="n">list_collections</span><span class="p">()</span>
+</span></code></pre></div>
+<p>To list available bands:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">dc</span><span class="o">.</span><span class="n">connector</span><span class="o">.</span><span class="n">list_bands</span><span class="p">()</span>
+</span></code></pre></div>
+<p>Take a look at the <a href="../examples/terrakit_download/">TerraKit: Easy geospatial data search and query</a> notebook for more help getting started with TerraKit Data Connectors. For access information, <a href="#data-connector-access">see below</a>.</p>
 <h2 id="data-connector-access">Data connector access</h2>
 <p>Each data connector has a different access requirements. For example, connecting to SentinelHub and NASA EarthData, you will need to obtain credentials from each provider. Once these have been obtained, they can be added to a <code>.env</code> file at the root directory level using the following syntax:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>SH_CLIENT_ID=&quot;&lt;SentinelHub Client ID&gt;&quot;
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>SH_CLIENT_SECRET=&quot;&lt;SentinelHub Client Secret&gt;&quot;
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>NASA_EARTH_BEARER_TOKEN=&quot;&lt;NASA EarthData Bearer Token&gt;&quot;
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>CDSAPI_KEY=&quot;&lt;Climate Data Store API Key&gt;&quot;
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>SH_CLIENT_ID=&quot;&lt;SentinelHub Client ID&gt;&quot;
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>SH_CLIENT_SECRET=&quot;&lt;SentinelHub Client Secret&gt;&quot;
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>NASA_EARTH_BEARER_TOKEN=&quot;&lt;NASA EarthData Bearer Token&gt;&quot;
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>CDSAPI_KEY=&quot;&lt;Climate Data Store API Key&gt;&quot;
 </span></code></pre></div>
 <h3 id="nasa-earthdata">NASA Earthdata</h3>
 <p>To access NASA Earthdata, register for an Earthdata Login profile and requests a bearer token. <a href="https://urs.earthdata.nasa.gov/profile">https://urs.earthdata.nasa.gov/profile</a></p>
@@ -2019,20 +2132,184 @@
  - <a href="https://cds.climate.copernicus.eu/datasets/projections-cordex-domains-single-levels?tab=overview">CORDEX regional climate model data on single levels</a></p>
 <h3 id="the-weather-company">The Weather Company</h3>
 <p>To access The Weather Company, register for an account and requests an API Key <a href="https://www.weathercompany.com/weather-data-apis/">https://www.weathercompany.com/weather-data-apis/</a>. Once you have an API key, set the following environment variable:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>THE_WEATHER_COMPANY_API_KEY=&quot;&lt;The Weather Company API key&gt;&quot;
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>THE_WEATHER_COMPANY_API_KEY=&quot;&lt;The Weather Company API key&gt;&quot;
 </span></code></pre></div>
 <h3 id="ibm-research-stac">IBM Research STAC</h3>
 <p>Access IBM Research STAC is currently restricted to IBMers and partners. If you're elegible, you need to register for an IBM AppID account and set the following environment variables:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>APPID_ISSUER=&lt;issuer&gt;
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>APPID_USERNAME=&lt;user-email&gt;
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>APPID_PASSWORD=&lt;user-password&gt;
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>CLIENT_ID=&lt;client-id&gt;
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>CLIENT_SECRET=&lt;client-secret&gt;
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>APPID_ISSUER=&lt;issuer&gt;
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>APPID_USERNAME=&lt;user-email&gt;
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>APPID_PASSWORD=&lt;user-password&gt;
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>CLIENT_ID=&lt;client-id&gt;
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>CLIENT_SECRET=&lt;client-secret&gt;
 </span></code></pre></div>
 <p>Please reach out the maintainers of this repo.</p>
 <p>IBMers don't need credentials to access the internal instance of the STAC service.</p>
-<h2 id="try-out">Try out</h2>
-<p>Data Connectors can be used outside the TerraKit Pipeline. Take a look at the <a href="../examples/terrakit_download/">TerraKit: Easy geospatial data search and query</a> notebook for more help getting started with TerraKit Data Connectors.</p>
+<h2 id="bounding-box-constraints">Bounding Box Constraints</h2>
+<p><strong>All TerraKit data connectors adhere to standard geographic bounding box constraints:</strong></p>
+<p>Bounding boxes must be specified in the format: <code>bbox = [West, South, East, North] = [min_lon, min_lat, max_lon, max_lat]</code></p>
+<p>The following constraints are enforced:</p>
+<ul>
+<li><strong>Longitude (West/East)</strong>: <code>-180 &lt;= west &lt; east &lt;= 180</code></li>
+<li><strong>Latitude (South/North)</strong>: <code>-90 &lt;= south &lt; north &lt;= 90</code></li>
+</ul>
+<p>These constraints ensure:</p>
+<ul>
+<li>Valid geographic coordinates within Earth's coordinate system</li>
+<li>Proper ordering (minimum &lt; maximum for both longitude and latitude)</li>
+<li>Consistency across all data connectors regardless of the underlying data source</li>
+</ul>
+<p><strong>Example of a valid bounding box:</strong>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Valid: London area</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">bbox</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">51.3</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">51.7</span><span class="p">]</span>  <span class="c1"># [West, South, East, North]</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="c1"># Valid: Global extent</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="n">bbox</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mi">180</span><span class="p">,</span> <span class="o">-</span><span class="mi">90</span><span class="p">,</span> <span class="mi">180</span><span class="p">,</span> <span class="mi">90</span><span class="p">]</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="c1"># Invalid: West &gt;= East</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="n">bbox</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">51.3</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">51.7</span><span class="p">]</span>  <span class="c1"># ❌ West (0.3) must be &lt; East (-0.5)</span>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="c1"># Invalid: Longitude out of range</span>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="n">bbox</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mi">200</span><span class="p">,</span> <span class="mf">51.3</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">51.7</span><span class="p">]</span>  <span class="c1"># ❌ West (-200) outside valid range [-180, 180]</span>
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>
+</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="c1"># Invalid: South &gt;= North</span>
+</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="n">bbox</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">51.7</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">51.3</span><span class="p">]</span>  <span class="c1"># ❌ South (51.7) must be &lt; North (51.3)</span>
+</span></code></pre></div></p>
+<p><strong>Note:</strong> For regions crossing the antimeridian (180°/-180° longitude), split the query into two separate bounding boxes or use data connector-specific handling if available.</p>
+<h2 id="climate-data-store-data-connectors">Climate Data Store Data Connectors</h2>
+<h3 id="parallel-downloads-for-multi-year-requests">Parallel Downloads for Multi-Year Requests</h3>
+<p>The Climate Data Store connector automatically handles large multi-year requests by splitting them into smaller chunks and downloading them in parallel. The splitting strategy differs between ERA5 and CORDEX datasets:</p>
+<h4 id="era5-multi-year-downloads">ERA5 Multi-Year Downloads</h4>
+<p>For ERA5 datasets (e.g., <code>derived-era5-single-levels-daily-statistics</code>), TerraKit automatically splits requests into <strong>monthly chunks</strong> to handle CDS API constraints:</p>
+<ol>
+<li><strong>Why monthly chunks?</strong> The CDS API has two key limitations:</li>
+<li>Separate year/month/day parameters create a Cartesian product, causing invalid date combinations across year boundaries</li>
+<li>
+<p>Large requests (e.g., full year) exceed cost limits with error "Your request is too large"</p>
+</li>
+<li>
+<p><strong>Parallel processing:</strong> By default, monthly chunks are downloaded in parallel using 4 workers, significantly speeding up large data requests.</p>
+</li>
+</ol>
+<p><strong>Example:</strong>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">terrakit</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataConnector</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">dc</span> <span class="o">=</span> <span class="n">DataConnector</span><span class="p">(</span><span class="n">connector_type</span><span class="o">=</span><span class="s2">&quot;climate_data_store&quot;</span><span class="p">)</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="c1"># Default parallel download (4 workers)</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="c1"># Request spanning 4 years will be split into 48 monthly chunks</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="n">data</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">connector</span><span class="o">.</span><span class="n">get_data</span><span class="p">(</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>    <span class="n">data_collection_name</span><span class="o">=</span><span class="s2">&quot;derived-era5-single-levels-daily-statistics&quot;</span><span class="p">,</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>    <span class="n">date_start</span><span class="o">=</span><span class="s2">&quot;2020-01-01&quot;</span><span class="p">,</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>    <span class="n">date_end</span><span class="o">=</span><span class="s2">&quot;2023-12-31&quot;</span><span class="p">,</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>    <span class="n">bbox</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">50</span><span class="p">],</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>    <span class="n">bands</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;2m_temperature&quot;</span><span class="p">,</span> <span class="s2">&quot;total_precipitation&quot;</span><span class="p">]</span>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="p">)</span>
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="c1"># Faster download with more workers (8 workers)</span>
+</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="n">data</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">connector</span><span class="o">.</span><span class="n">get_data</span><span class="p">(</span>
+</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a>    <span class="n">data_collection_name</span><span class="o">=</span><span class="s2">&quot;derived-era5-single-levels-daily-statistics&quot;</span><span class="p">,</span>
+</span><span id="__span-6-18"><a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a>    <span class="n">date_start</span><span class="o">=</span><span class="s2">&quot;2020-01-01&quot;</span><span class="p">,</span>
+</span><span id="__span-6-19"><a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a>    <span class="n">date_end</span><span class="o">=</span><span class="s2">&quot;2023-12-31&quot;</span><span class="p">,</span>
+</span><span id="__span-6-20"><a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a>    <span class="n">bbox</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">50</span><span class="p">],</span>
+</span><span id="__span-6-21"><a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a>    <span class="n">bands</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;2m_temperature&quot;</span><span class="p">,</span> <span class="s2">&quot;total_precipitation&quot;</span><span class="p">],</span>
+</span><span id="__span-6-22"><a id="__codelineno-6-22" name="__codelineno-6-22" href="#__codelineno-6-22"></a>    <span class="n">query_params</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;max_workers&quot;</span><span class="p">:</span> <span class="mi">8</span><span class="p">}</span>
+</span><span id="__span-6-23"><a id="__codelineno-6-23" name="__codelineno-6-23" href="#__codelineno-6-23"></a><span class="p">)</span>
+</span><span id="__span-6-24"><a id="__codelineno-6-24" name="__codelineno-6-24" href="#__codelineno-6-24"></a>
+</span><span id="__span-6-25"><a id="__codelineno-6-25" name="__codelineno-6-25" href="#__codelineno-6-25"></a><span class="c1"># Sequential download (1 worker) - useful for debugging or rate limit issues</span>
+</span><span id="__span-6-26"><a id="__codelineno-6-26" name="__codelineno-6-26" href="#__codelineno-6-26"></a><span class="n">data</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">connector</span><span class="o">.</span><span class="n">get_data</span><span class="p">(</span>
+</span><span id="__span-6-27"><a id="__codelineno-6-27" name="__codelineno-6-27" href="#__codelineno-6-27"></a>    <span class="n">data_collection_name</span><span class="o">=</span><span class="s2">&quot;derived-era5-single-levels-daily-statistics&quot;</span><span class="p">,</span>
+</span><span id="__span-6-28"><a id="__codelineno-6-28" name="__codelineno-6-28" href="#__codelineno-6-28"></a>    <span class="n">date_start</span><span class="o">=</span><span class="s2">&quot;2020-01-01&quot;</span><span class="p">,</span>
+</span><span id="__span-6-29"><a id="__codelineno-6-29" name="__codelineno-6-29" href="#__codelineno-6-29"></a>    <span class="n">date_end</span><span class="o">=</span><span class="s2">&quot;2023-12-31&quot;</span><span class="p">,</span>
+</span><span id="__span-6-30"><a id="__codelineno-6-30" name="__codelineno-6-30" href="#__codelineno-6-30"></a>    <span class="n">bbox</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">50</span><span class="p">],</span>
+</span><span id="__span-6-31"><a id="__codelineno-6-31" name="__codelineno-6-31" href="#__codelineno-6-31"></a>    <span class="n">bands</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;2m_temperature&quot;</span><span class="p">,</span> <span class="s2">&quot;total_precipitation&quot;</span><span class="p">],</span>
+</span><span id="__span-6-32"><a id="__codelineno-6-32" name="__codelineno-6-32" href="#__codelineno-6-32"></a>    <span class="n">query_params</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;max_workers&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
+</span><span id="__span-6-33"><a id="__codelineno-6-33" name="__codelineno-6-33" href="#__codelineno-6-33"></a><span class="p">)</span>
+</span></code></pre></div></p>
+<h4 id="cordex-multi-year-downloads">CORDEX Multi-Year Downloads</h4>
+<p>For CORDEX datasets (e.g., <code>projections-cordex-domains-single-levels</code>), TerraKit uses a different approach based on <strong>year blocks</strong> defined by the CDS constraints:</p>
+<ol>
+<li><strong>Fixed vs. Flexible blocks:</strong> CORDEX data is organized into year blocks that can be either:</li>
+<li><strong>Fixed blocks:</strong> Specific year ranges that must be requested exactly as defined (e.g., 1950-1955, 1956-1960 as separate blocks). You cannot request partial years from a fixed block.</li>
+<li>
+<p><strong>Flexible ranges:</strong> Continuous ranges where any subset is valid (e.g., any years between 1950-2005)</p>
+</li>
+<li>
+<p><strong>Automatic block detection:</strong> TerraKit automatically detects which year blocks are needed to cover your requested date range and downloads them in parallel.</p>
+</li>
+<li>
+<p><strong>Validation:</strong> Before downloading, TerraKit validates that your requested combination of parameters (domain, experiment, models, variables, year range) is available in the CDS dataset.</p>
+</li>
+</ol>
+<p><strong>Example:</strong>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">terrakit</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataConnector</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">dc</span> <span class="o">=</span> <span class="n">DataConnector</span><span class="p">(</span><span class="n">connector_type</span><span class="o">=</span><span class="s2">&quot;climate_data_store&quot;</span><span class="p">)</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="c1"># CORDEX download with automatic year block splitting</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="c1"># If the request spans multiple year blocks, they will be downloaded in parallel</span>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="n">data</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">connector</span><span class="o">.</span><span class="n">get_data</span><span class="p">(</span>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>    <span class="n">data_collection_name</span><span class="o">=</span><span class="s2">&quot;projections-cordex-domains-single-levels&quot;</span><span class="p">,</span>
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>    <span class="n">date_start</span><span class="o">=</span><span class="s2">&quot;1950-01-01&quot;</span><span class="p">,</span>
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>    <span class="n">date_end</span><span class="o">=</span><span class="s2">&quot;1960-12-31&quot;</span><span class="p">,</span>
+</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>    <span class="n">bbox</span><span class="o">=</span><span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">45</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">55</span><span class="p">],</span>  <span class="c1"># Europe region</span>
+</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>    <span class="n">bands</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;2m_air_temperature&quot;</span><span class="p">],</span>
+</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>    <span class="n">query_params</span><span class="o">=</span><span class="p">{</span>
+</span><span id="__span-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a>        <span class="s2">&quot;experiment&quot;</span><span class="p">:</span> <span class="s2">&quot;historical&quot;</span><span class="p">,</span>
+</span><span id="__span-7-15"><a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a>        <span class="s2">&quot;horizontal_resolution&quot;</span><span class="p">:</span> <span class="s2">&quot;0_44_degree_x_0_44_degree&quot;</span><span class="p">,</span>
+</span><span id="__span-7-16"><a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a>        <span class="s2">&quot;temporal_resolution&quot;</span><span class="p">:</span> <span class="s2">&quot;daily_mean&quot;</span><span class="p">,</span>
+</span><span id="__span-7-17"><a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a>        <span class="s2">&quot;gcm_model&quot;</span><span class="p">:</span> <span class="s2">&quot;ichec_ec_earth&quot;</span><span class="p">,</span>
+</span><span id="__span-7-18"><a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a>        <span class="s2">&quot;rcm_model&quot;</span><span class="p">:</span> <span class="s2">&quot;knmi_racmo22t&quot;</span><span class="p">,</span>
+</span><span id="__span-7-19"><a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a>        <span class="s2">&quot;ensemble_member&quot;</span><span class="p">:</span> <span class="s2">&quot;r1i1p1&quot;</span><span class="p">,</span>
+</span><span id="__span-7-20"><a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a>        <span class="s2">&quot;max_workers&quot;</span><span class="p">:</span> <span class="mi">4</span>  <span class="c1"># Parallel download of year blocks</span>
+</span><span id="__span-7-21"><a id="__codelineno-7-21" name="__codelineno-7-21" href="#__codelineno-7-21"></a>    <span class="p">}</span>
+</span><span id="__span-7-22"><a id="__codelineno-7-22" name="__codelineno-7-22" href="#__codelineno-7-22"></a><span class="p">)</span>
+</span></code></pre></div></p>
+<p><strong>Important notes for CORDEX:</strong>
+- For fixed blocks, you must request the entire time period. Partial year requests (e.g., requesting 3 days from a year-long block) will raise a validation error.
+- The CDS API returns the entire block regardless of the date range specified, so TerraKit enforces requesting complete blocks to avoid confusion.
+- TerraKit performs preflight validation to check if your parameter combination is available before attempting download.</p>
+<h4 id="performance-tips">Performance Tips</h4>
+<p><strong>For both ERA5 and CORDEX:</strong>
+- <strong>Default (4 workers):</strong> Good balance for most use cases
+- <strong>Higher values (8-10 workers):</strong> Faster for multi-year requests, but may hit API rate limits
+- <strong>Lower values (1-2 workers):</strong> Use if experiencing rate limit issues or for debugging
+- <strong>Sequential (1 worker):</strong> Useful for debugging or when you want to see each chunk download individually</p>
+<h3 id="cds-request-validation">CDS Request Validation</h3>
+<h4 id="cordex-data-validation">CORDEX Data Validation</h4>
+<p>For CORDEX collections, TerraKit performs <strong>preflight validation</strong> to ensure that the requested combination of parameters is available before attempting to download data. This validation checks the joint combination of:</p>
+<ul>
+<li>Domain (derived from bounding box)</li>
+<li>Experiment (e.g., 'historical', 'rcp_8_5')</li>
+<li>Horizontal resolution (e.g., '0_44_degree_x_0_44_degree')</li>
+<li>Temporal resolution (e.g., 'daily_mean', 'fixed')</li>
+<li>GCM model (Global Climate Model)</li>
+<li>RCM model (Regional Climate Model)</li>
+<li>Ensemble member (e.g., 'r1i1p1')</li>
+<li>Variable (e.g., '2m_air_temperature')</li>
+<li>Year range (start_year and end_year)</li>
+</ul>
+<p>If an invalid combination is requested, TerraKit will raise a <code>TerrakitValidationError</code> with helpful suggestions for valid alternatives, <strong>before</strong> making any API calls to the Climate Data Store. This saves time and helps users discover available data combinations.</p>
+<h4 id="era5-data-validation">ERA5 Data Validation</h4>
+<p>For ERA5 collections (e.g., <code>derived-era5-single-levels-daily-statistics</code>), TerraKit performs <strong>preflight validation</strong> to ensure that the requested parameters are valid before attempting to download data. This validation includes:</p>
+<p><strong>Temporal Validation:</strong>
+- Verifies that <code>date_start</code> and <code>date_end</code> are in the correct format (<code>YYYY-MM-DD</code>)
+- Ensures <code>date_start</code> is before or equal to <code>date_end</code>
+- Checks that the requested date range falls within the collection's available temporal extent (e.g., 1940-01-01 to present for ERA5)
+- Raises a <code>TerrakitValidationError</code> if dates are outside the allowed range</p>
+<p><strong>Spatial Validation:</strong>
+- Validates the bounding box format and coordinates
+- Ensures the bounding box meets the minimum size requirement for ERA5's 0.25° grid resolution
+- Automatically expands bounding boxes smaller than 0.25° × 0.25° to meet the minimum resolution, preserving the center point
+- Logs a warning when automatic expansion occurs, showing the original and adjusted dimensions</p>
+<p><strong>Example validation errors:</strong>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># Date outside allowed range</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">TerrakitValidationError</span><span class="p">:</span> <span class="s2">&quot;Start date 1939-01-01 is before allowed start date 1940-01-01&quot;</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="c1"># Bounding box too small (will be auto-expanded with warning)</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="c1"># Original: [10.0, 20.0, 10.1, 20.1] (0.1° × 0.1°)</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="c1"># Expanded: [9.925, 19.925, 10.175, 20.175] (0.25° × 0.25°)</span>
+</span></code></pre></div></p>
+<p>These validations occur <strong>before</strong> any API calls to the Climate Data Store, saving time and providing immediate feedback on parameter issues.</p>
 
 
 
@@ -2055,7 +2332,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="April 20, 2026 08:51:45 UTC">April 20, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="April 28, 2026 14:25:01 UTC">April 28, 2026</span>
   </span>
 
     

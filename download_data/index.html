@@ -725,6 +725,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#set-no-data-set_no_data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Set No Data: set_no_data
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1086,6 +1097,34 @@
     
   
     TerraKit: Easy geospatial data search and query
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/terrakit_download_cds/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TerraKit: Climate Data Store search and query
   
 
     
@@ -2055,6 +2094,19 @@ To specify multiple data sources with the CLI with the following config:</p>
 <p>The shapefile <code>{dataset_name}_labels.shp</code> must contain a <code>datetime</code> field and <code>geometry</code> field.</p>
 <h3 id="keep-files-keep_files">Keep files: <code>keep_files</code></h3>
 <p>Flag to preserve shapefiles in the working directory once they have been used by the download data step. Downloaded files will not be removed. Set to <code>True</code> to ensure shapefiles remain in place.</p>
+<h3 id="set-no-data-set_no_data">Set No Data: <code>set_no_data</code></h3>
+<p>Controls how label rasterization handles the background (no-data) pixels. When set to <code>True</code>, background pixels are assigned a no-data value (-1), allowing label class 0 to be used for actual labels. When set to <code>False</code> (default), background pixels are assigned value 0, which means label classes must start from 1 to avoid conflicts.</p>
+<p><strong>Important:</strong> If your labels use class 0 and <code>set_no_data=False</code>, TerraKit will raise a <code>TerrakitValueError</code> because class 0 would conflict with the background class. In this case, you must either:
+- Set <code>set_no_data=True</code> to use -1 for background pixels, or
+- Ensure your label classes start from 1 instead of 0</p>
+<p>Example with multi-class labels using class 0:
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">queried_data</span> <span class="o">=</span> <span class="n">download_data</span><span class="p">(</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>    <span class="n">data_sources</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;download&quot;</span><span class="p">][</span><span class="s2">&quot;data_sources&quot;</span><span class="p">],</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    <span class="n">date_allowance</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;download&quot;</span><span class="p">][</span><span class="s2">&quot;date_allowance&quot;</span><span class="p">],</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>    <span class="n">set_no_data</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># Required when using class 0</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    <span class="n">transform</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;download&quot;</span><span class="p">][</span><span class="s2">&quot;transform&quot;</span><span class="p">],</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="p">)</span>
+</span></code></pre></div></p>
 <h2 id="data-connectors">Data Connectors</h2>
 <p>Data connectors are classes which enable a user to search for data and query data from a particular data source using a common set of functions. Check out the <a href="#data-connectors">TerraKit Data Connectors</a> section for more information.</p>
 <h2 id="try-out">Try out</h2>

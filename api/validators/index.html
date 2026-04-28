@@ -925,6 +925,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../examples/terrakit_download_cds/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TerraKit: Climate Data Store search and query
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../examples/terrakit_cli/" class="md-nav__link">
         
   
@@ -4176,7 +4204,8 @@ or
 <span class="normal"><a href="#__codelineno-0-29">29</a></span>
 <span class="normal"><a href="#__codelineno-0-30">30</a></span>
 <span class="normal"><a href="#__codelineno-0-31">31</a></span>
-<span class="normal"><a href="#__codelineno-0-32">32</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">ConnectorType</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="normal"><a href="#__codelineno-0-32">32</a></span>
+<span class="normal"><a href="#__codelineno-0-33">33</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">ConnectorType</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11"></a><span class="sd">    Attributes:</span>
 </span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12"></a><span class="sd">        connector_type (Literal): The type of connector to be use to download data.</span>
@@ -4197,9 +4226,10 @@ or
 </span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27"></a>        <span class="s2">&quot;sentinel_aws&quot;</span><span class="p">,</span>
 </span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28"></a>        <span class="s2">&quot;IBMResearchSTAC&quot;</span><span class="p">,</span>
 </span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29"></a>        <span class="s2">&quot;TheWeatherCompany&quot;</span><span class="p">,</span>
-</span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30"></a>        <span class="s2">&quot;climate_data_store&quot;</span><span class="p">,</span>
-</span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31"></a>    <span class="p">]</span>
-</span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;The type of connector to be use to download data. nasa_earthdata, sentinelhub, sentinel_aws, IBMResearchSTAC or TheWeatherCompany&quot;&quot;&quot;</span>
+</span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30"></a>        <span class="s2">&quot;local_file_system&quot;</span><span class="p">,</span>
+</span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31"></a>        <span class="s2">&quot;climate_data_store&quot;</span><span class="p">,</span>
+</span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32"></a>    <span class="p">]</span>
+</span><span id="__span-0-33"><a id="__codelineno-0-33" name="__codelineno-0-33"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;The type of connector to be use to download data. nasa_earthdata, sentinelhub, sentinel_aws, IBMResearchSTAC or TheWeatherCompany&quot;&quot;&quot;</span>
 </span></code></pre></div></td></tr></table></div>
               </details>
 
@@ -4218,7 +4248,7 @@ or
 
 
 <h4 id="terrakit.validate.data_connector.ConnectorType.connector_type" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">connector_type</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;nasa_earthdata&#39;</span><span class="p">,</span> <span class="s1">&#39;sentinelhub&#39;</span><span class="p">,</span> <span class="s1">&#39;sentinel_aws&#39;</span><span class="p">,</span> <span class="s1">&#39;IBMResearchSTAC&#39;</span><span class="p">,</span> <span class="s1">&#39;TheWeatherCompany&#39;</span><span class="p">,</span> <span class="s1">&#39;climate_data_store&#39;</span><span class="p">]</span></code>
+            <code class="highlight language-python"><span class="n">connector_type</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;nasa_earthdata&#39;</span><span class="p">,</span> <span class="s1">&#39;sentinelhub&#39;</span><span class="p">,</span> <span class="s1">&#39;sentinel_aws&#39;</span><span class="p">,</span> <span class="s1">&#39;IBMResearchSTAC&#39;</span><span class="p">,</span> <span class="s1">&#39;TheWeatherCompany&#39;</span><span class="p">,</span> <span class="s1">&#39;local_file_system&#39;</span><span class="p">,</span> <span class="s1">&#39;climate_data_store&#39;</span><span class="p">]</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
