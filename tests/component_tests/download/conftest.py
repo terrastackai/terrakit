@@ -6,12 +6,14 @@ import dotenv
 import json
 import numpy as np
 import os
+import pandas as pd
 import pystac
 import pytest
 import rioxarray
 import shutil
 import stackstac
 import xarray as xr
+import zipfile
 
 from glob import glob
 from pathlib import Path
@@ -534,3 +536,56 @@ def mock_cds_client_bbox_error(monkeypatch):
     monkeypatch.setattr("cdsapi.Client", mock_cdsapi_client)
 
     return mock_client
+
+
+class MockCORDEXMultiDecadeDownloader:
+    """Helper class to track CORDEX multi-block download calls and create test data."""
+
+    def __init__(self, temp_dir, download_calls):
+        self.temp_dir = temp_dir
+        self.download_calls = download_calls
+
+    def __call__(self, *args, **kwargs):
+        """Mock download that tracks calls and creates appropriate test data."""
+        self.download_calls.append((args, kwargs))
+
+        # Extract date range from args
+        date_start = args[1]
+        date_end = args[2]
+
+        # Create a unique zip file for this block
+        zip_path = Path(self.temp_dir) / f"mock_cordex_{date_start}_{date_end}.zip"
+        with zipfile.ZipFile(zip_path, "w") as zf:
+            # Create dataset with data for the requested block
+            start_year = int(date_start.split("-")[0])
+            end_year = int(date_end.split("-")[0])
+
+            # Create a small dataset representing this block
+            ds = xr.Dataset(
+                {
+                    "2m_air_temperature": (
+                        ["time", "rlat", "rlon"],
+                        np.random.rand(2, 2, 2) * 10 + 15,  # Random temps 15-25°C
+                    ),
+                },
+                coords={
+                    "time": pd.date_range(date_start, date_end, freq="D")[:2],
+                    "rlat": [0.0, 0.5],
+                    "rlon": [0.0, 0.5],
+                    "lat": (["rlat", "rlon"], np.array([[-5.0, -4.5], [-4.5, -4.0]])),
+                    "lon": (["rlat", "rlon"], np.array([[25.0, 25.5], [25.5, 26.0]])),
+                },
+            )
+            nc_path = Path(self.temp_dir) / f"cordex_{start_year}_{end_year}.nc"
+            ds.to_netcdf(nc_path)
+            zf.write(nc_path, nc_path.name)
+            nc_path.unlink()
+        return str(zip_path)
+
+
+class MockBlockGetter:
+    """Helper class to return multiple year blocks for CORDEX testing."""
+
+    def __call__(self, *args, **kwargs):
+        """Return multiple year blocks to simulate multi-block data."""
+        return [(1950, 1955), (1956, 1960)]

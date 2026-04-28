@@ -106,16 +106,26 @@ Available collections include:
 
 #### Parallel Downloads for Multi-Year Requests
 
-The Climate Data Store connector automatically splits multi-month/multi-year requests into monthly chunks to handle CDS API size limits. By default, these chunks are downloaded in parallel using 4 workers, significantly speeding up large data requests.
+The Climate Data Store connector automatically handles large multi-year requests by splitting them into smaller chunks and downloading them in parallel. The splitting strategy differs between ERA5 and CORDEX datasets:
 
-You can control the parallelization using the `max_workers` parameter in `query_params`:
+##### ERA5 Multi-Year Downloads
 
+For ERA5 datasets (e.g., `derived-era5-single-levels-daily-statistics`), TerraKit automatically splits requests into **monthly chunks** to handle CDS API constraints:
+
+1. **Why monthly chunks?** The CDS API has two key limitations:
+   - Separate year/month/day parameters create a Cartesian product, causing invalid date combinations across year boundaries
+   - Large requests (e.g., full year) exceed cost limits with error "Your request is too large"
+
+2. **Parallel processing:** By default, monthly chunks are downloaded in parallel using 4 workers, significantly speeding up large data requests.
+
+**Example:**
 ```python
 from terrakit import DataConnector
 
 dc = DataConnector(connector_type="climate_data_store")
 
 # Default parallel download (4 workers)
+# Request spanning 4 years will be split into 48 monthly chunks
 data = dc.connector.get_data(
     data_collection_name="derived-era5-single-levels-daily-statistics",
     date_start="2020-01-01",
@@ -145,10 +155,56 @@ data = dc.connector.get_data(
 )
 ```
 
-**Performance Tips:**
-- Default (4 workers): Good balance for most use cases
-- Higher values (8-10 workers): Faster for multi-year requests, but may hit API rate limits
-- Lower values (1-2 workers): Use if experiencing rate limit issues or for debugging
+##### CORDEX Multi-Year Downloads
+
+For CORDEX datasets (e.g., `projections-cordex-domains-single-levels`), TerraKit uses a different approach based on **year blocks** defined by the CDS constraints:
+
+1. **Fixed vs. Flexible blocks:** CORDEX data is organized into year blocks that can be either:
+   - **Fixed blocks:** Specific year ranges that must be requested exactly as defined (e.g., 1950-1955, 1956-1960 as separate blocks). You cannot request partial years from a fixed block.
+   - **Flexible ranges:** Continuous ranges where any subset is valid (e.g., any years between 1950-2005)
+
+2. **Automatic block detection:** TerraKit automatically detects which year blocks are needed to cover your requested date range and downloads them in parallel.
+
+3. **Validation:** Before downloading, TerraKit validates that your requested combination of parameters (domain, experiment, models, variables, year range) is available in the CDS dataset.
+
+**Example:**
+```python
+from terrakit import DataConnector
+
+dc = DataConnector(connector_type="climate_data_store")
+
+# CORDEX download with automatic year block splitting
+# If the request spans multiple year blocks, they will be downloaded in parallel
+data = dc.connector.get_data(
+    data_collection_name="projections-cordex-domains-single-levels",
+    date_start="1950-01-01",
+    date_end="1960-12-31",
+    bbox=[5, 45, 15, 55],  # Europe region
+    bands=["2m_air_temperature"],
+    query_params={
+        "experiment": "historical",
+        "horizontal_resolution": "0_44_degree_x_0_44_degree",
+        "temporal_resolution": "daily_mean",
+        "gcm_model": "ichec_ec_earth",
+        "rcm_model": "knmi_racmo22t",
+        "ensemble_member": "r1i1p1",
+        "max_workers": 4  # Parallel download of year blocks
+    }
+)
+```
+
+**Important notes for CORDEX:**
+- For fixed blocks, you must request the entire time period. Partial year requests (e.g., requesting 3 days from a year-long block) will raise a validation error.
+- The CDS API returns the entire block regardless of the date range specified, so TerraKit enforces requesting complete blocks to avoid confusion.
+- TerraKit performs preflight validation to check if your parameter combination is available before attempting download.
+
+##### Performance Tips
+
+**For both ERA5 and CORDEX:**
+- **Default (4 workers):** Good balance for most use cases
+- **Higher values (8-10 workers):** Faster for multi-year requests, but may hit API rate limits
+- **Lower values (1-2 workers):** Use if experiencing rate limit issues or for debugging
+- **Sequential (1 worker):** Useful for debugging or when you want to see each chunk download individually
 
 #### CORDEX Data Validation
 
