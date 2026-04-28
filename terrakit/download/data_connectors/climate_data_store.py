@@ -623,6 +623,10 @@ class CDS(Connector):
             params["start_year"] = [str(start_date.year)]
             params["end_year"] = [str(end_date.year)]
 
+            # CORDEX collections use start_year/end_year only
+            # The API does not support month/day filtering - it returns all data for the year range
+            # Temporal filtering will be done after download if needed
+
         else:
             # ERA5 and other collections use bbox directly
             # CDS API expects area as [North, West, South, East]
@@ -644,12 +648,12 @@ class CDS(Connector):
             params["frequency"] = "6_hourly"
             params["time_zone"] = "utc+00:00"
 
-        # Add temporal parameters
-        # Note: Multi-year requests are split at a higher level (in get_data) to avoid
-        # invalid date combinations from Cartesian products
-        params["year"] = self._get_years_list(date_start, date_end)
-        params["month"] = self._get_months_list(date_start, date_end)
-        params["day"] = self._get_days_list(date_start, date_end)
+            # Add temporal parameters for ERA5 collections
+            # Note: Multi-year requests are split at a higher level (in get_data) to avoid
+            # invalid date combinations from Cartesian products
+            params["year"] = self._get_years_list(date_start, date_end)
+            params["month"] = self._get_months_list(date_start, date_end)
+            params["day"] = self._get_days_list(date_start, date_end)
 
         # Add variables/bands
         if bands:
@@ -664,7 +668,12 @@ class CDS(Connector):
         # - frequency: "1hr", "3hr", "6hr", "day", "mon", "sem", "fx"
         # - product_type: override default "reanalysis"
         # - time_zone: override default "utc+00:00"
-        params.update(query_params)
+        # Filter out internal parameters that should not be sent to CDS API
+        internal_params = {"max_workers"}
+        filtered_query_params = {
+            k: v for k, v in query_params.items() if k not in internal_params
+        }
+        params.update(filtered_query_params)
 
         return params
 
@@ -996,6 +1005,43 @@ class CDS(Connector):
             )
         return constraints
 
+    def _is_fixed_block_constraint(self, combo: dict) -> bool:
+        """
+        Determine if a constraint represents a fixed block vs flexible range.
+
+        A fixed block is when start_year and end_year arrays have matching lengths
+        and represent specific ranges that must be requested EXACTLY as defined (e.g.,
+        start_year: ["1950"], end_year: ["1955"] means you must request exactly 1950-1955,
+        not subsets like 1951-1953).
+
+        A flexible range is when the arrays represent a continuous range where any
+        subset is valid (e.g., start_year: ["1950", "1951", ...], end_year: ["2005"]).
+
+        Args:
+            combo: A constraint combination dictionary
+
+        Returns:
+            True if this is a fixed block, False if it's a flexible range
+        """
+        start_years = combo.get("start_year", [])
+        end_years = combo.get("end_year", [])
+
+        # No year constraints means it's not a fixed block
+        if not start_years or not end_years:
+            return False
+
+        # If arrays have matching lengths > 1, it's likely fixed blocks
+        # Each pair represents a specific range that must be requested together
+        if len(start_years) == len(end_years) and len(start_years) > 1:
+            return True
+
+        # Single pair could be either, but we treat it as a fixed block
+        # to be more restrictive (safer approach)
+        if len(start_years) == 1 and len(end_years) == 1:
+            return True
+
+        return False
+
     def _validate_cordex_constraints(
         self,
         collection_name: str,
@@ -1009,12 +1055,24 @@ class CDS(Connector):
         variable: str,
         start_year: Union[int, None],
         end_year: Union[int, None],
+        date_start: Union[str, None] = None,
+        date_end: Union[str, None] = None,
     ) -> None:
         """
         Validate CORDEX request parameters against constraints_variables file.
 
         This performs preflight validation to check if the requested combination of
         parameters is available in the CDS CORDEX dataset before attempting download.
+
+        The validation distinguishes between:
+        - Fixed blocks: Specific year ranges that must be requested exactly as defined
+          (e.g., 1950-1955, 1956-1960 as separate blocks)
+        - Flexible ranges: Continuous ranges where any subset is valid
+          (e.g., any years between 1950-2005)
+
+        For fixed blocks, the entire time period must be requested. Partial year requests
+        (e.g., requesting 3 days from a year-long block) are not allowed as the CDS API
+        will return the entire block regardless.
 
         Args:
             collection_name: Name of the CORDEX collection
@@ -1028,10 +1086,13 @@ class CDS(Connector):
             variable: Variable name (e.g., '2m_air_temperature')
             start_year: Start year for data request (None for 'fixed' temporal_resolution)
             end_year: End year for data request (None for 'fixed' temporal_resolution)
+            date_start: Start date in 'YYYY-MM-DD' format (optional, for partial year validation)
+            date_end: End date in 'YYYY-MM-DD' format (optional, for partial year validation)
 
         Raises:
             TerrakitValidationError: If the combination is not available, with suggestions
-                                    for valid alternatives
+                                    for valid alternatives, or if a partial year is requested
+                                    for a fixed block
         """
         # Load constraints_variables file
         constraints_list = self._load_cordex_constraints_variables(collection_name)
@@ -1061,18 +1122,110 @@ class CDS(Connector):
 
                     # Check if requested years are within available range
                     if combo_start_years and combo_end_years:
-                        # Convert to integers for comparison
-                        available_start = min(int(y) for y in combo_start_years)
-                        available_end = max(int(y) for y in combo_end_years)
+                        # Determine if this is a fixed block or flexible range
+                        is_fixed_block = self._is_fixed_block_constraint(combo)
 
-                        if start_year >= available_start and end_year <= available_end:
-                            matching_combos.append(combo)
+                        if is_fixed_block:
+                            # For fixed blocks, the requested range must match exactly
+                            # one of the defined blocks (no subsets allowed)
+                            valid_block_found = False
+                            for sy, ey in zip(combo_start_years, combo_end_years):
+                                block_start = int(sy)
+                                block_end = int(ey)
+                                # Request must match the block exactly at year level
+                                if start_year == block_start and end_year == block_end:
+                                    valid_block_found = True
+                                    break
+
+                            if valid_block_found:
+                                matching_combos.append(combo)
+                        else:
+                            # For flexible ranges, any subset within min/max is valid
+                            available_start = min(int(y) for y in combo_start_years)
+                            available_end = max(int(y) for y in combo_end_years)
+
+                            if (
+                                start_year >= available_start
+                                and end_year <= available_end
+                            ):
+                                matching_combos.append(combo)
                 else:
                     # For 'fixed' temporal_resolution, year range doesn't apply
                     matching_combos.append(combo)
 
         if matching_combos:
-            # Valid combination found
+            # Valid combination found at year level
+            # For fixed blocks, check if user is requesting a partial year
+            if (
+                date_start is not None
+                and date_end is not None
+                and start_year is not None
+                and end_year is not None
+            ):
+                # Check if any matching combo is a fixed block
+                for combo in matching_combos:
+                    if self._is_fixed_block_constraint(combo):
+                        # This is a fixed block - check if requesting partial year
+                        start_dt = datetime.strptime(date_start, "%Y-%m-%d")
+                        end_dt = datetime.strptime(date_end, "%Y-%m-%d")
+
+                        # Check if the request spans the entire year(s) in the block
+                        # For single year blocks (start_year == end_year)
+                        if start_year == end_year:
+                            # Must request from Jan 1 to Dec 31 of that year
+                            year_start = datetime(start_year, 1, 1)
+                            year_end = datetime(start_year, 12, 31)
+
+                            if start_dt != year_start or end_dt != year_end:
+                                # Partial year request detected
+                                combo_start_years = combo.get("start_year", [])
+                                combo_end_years = combo.get("end_year", [])
+
+                                # Find the matching block
+                                block_ranges = []
+                                for sy, ey in zip(combo_start_years, combo_end_years):
+                                    if int(sy) == start_year and int(ey) == end_year:
+                                        block_ranges.append(f"{sy}-01-01 to {ey}-12-31")
+
+                                error_msg = [
+                                    "CORDEX fixed block constraint detected for this combination.",
+                                    f"You requested: {date_start} to {date_end}",
+                                    "",
+                                    "For CORDEX data with fixed time blocks, you must request the ENTIRE time period.",
+                                    "The CDS API will return the full block regardless of the date range specified.",
+                                    "",
+                                    f"Required date range for this block: {year_start.strftime('%Y-%m-%d')} to {year_end.strftime('%Y-%m-%d')}",
+                                    "",
+                                    "Please update your request to:",
+                                    f"  date_start = '{year_start.strftime('%Y-%m-%d')}'",
+                                    f"  date_end = '{year_end.strftime('%Y-%m-%d')}'",
+                                ]
+                                raise TerrakitValidationError(
+                                    message="\n".join(error_msg)
+                                )
+                        else:
+                            # Multi-year block - must request from Jan 1 of start_year to Dec 31 of end_year
+                            block_start_dt = datetime(start_year, 1, 1)
+                            block_end_dt = datetime(end_year, 12, 31)
+
+                            if start_dt != block_start_dt or end_dt != block_end_dt:
+                                error_msg = [
+                                    "CORDEX fixed block constraint detected for this combination.",
+                                    f"You requested: {date_start} to {date_end}",
+                                    "",
+                                    "For CORDEX data with fixed time blocks, you must request the ENTIRE time period.",
+                                    "The CDS API will return the full block regardless of the date range specified.",
+                                    "",
+                                    f"Required date range for this block: {block_start_dt.strftime('%Y-%m-%d')} to {block_end_dt.strftime('%Y-%m-%d')}",
+                                    "",
+                                    "Please update your request to:",
+                                    f"  date_start = '{block_start_dt.strftime('%Y-%m-%d')}'",
+                                    f"  date_end = '{block_end_dt.strftime('%Y-%m-%d')}'",
+                                ]
+                                raise TerrakitValidationError(
+                                    message="\n".join(error_msg)
+                                )
+            # All validations passed
             return
 
         # No exact match - build helpful error message with alternatives
@@ -1183,18 +1336,31 @@ class CDS(Connector):
 
                 if year_matches:
                     available_years = set()
+                    has_fixed_blocks = False
+
                     for combo in year_matches:
                         start_years = combo.get("start_year", [])
                         end_years = combo.get("end_year", [])
                         if start_years and end_years:
+                            # Check if this combo represents fixed blocks
+                            if self._is_fixed_block_constraint(combo):
+                                has_fixed_blocks = True
+
                             for sy, ey in zip(start_years, end_years):
                                 available_years.add((int(sy), int(ey)))
 
                     if available_years:
                         year_ranges = sorted(available_years)
-                        error_parts.append(
-                            f"  Available Year Ranges: {', '.join(f'{sy}-{ey}' for sy, ey in year_ranges[:5])}"
-                        )
+
+                        if has_fixed_blocks:
+                            error_parts.append(
+                                f"  Available Year Blocks (must request exact ranges): {', '.join(f'{sy}-{ey}' for sy, ey in year_ranges[:5])}"
+                            )
+                        else:
+                            error_parts.append(
+                                f"  Available Year Ranges: {', '.join(f'{sy}-{ey}' for sy, ey in year_ranges[:5])}"
+                            )
+
                         if len(year_ranges) > 5:
                             error_parts.append(
                                 f"    ... and {len(year_ranges) - 5} more ranges"
@@ -1520,114 +1686,136 @@ class CDS(Connector):
                     variable=variable,
                     start_year=start_year,
                     end_year=end_year,
+                    date_start=date_start,
+                    date_end=date_end,
                 )
-
-        # 1. Split requests into monthly chunks to handle CDS API size limits
-        # The CDS API has two constraints:
-        # a) Separate year/month/day parameters create a Cartesian product, causing invalid
-        #    date combinations across year boundaries (e.g., 2025-12-31 when requesting 2024-12-31 to 2025-01-02)
-        # b) Large requests (e.g., full year) exceed cost limits with error "Your request is too large"
-        # Solution: Split by month to avoid both issues
-        start_dt = datetime.strptime(date_start, "%Y-%m-%d")
-        end_dt = datetime.strptime(date_end, "%Y-%m-%d")
-
-        # Generate list of (year, month) tuples for each month in the range
-        month_ranges = []
-        current = start_dt
-        while current <= end_dt:
-            # Determine start and end dates for this month
-            month_start = current if current == start_dt else current.replace(day=1)
-
-            # Calculate last day of current month
-            if current.month == 12:
-                next_month = current.replace(year=current.year + 1, month=1, day=1)
-            else:
-                next_month = current.replace(month=current.month + 1, day=1)
-            last_day_of_month = (next_month - timedelta(days=1)).day
-
-            # Month end is either the last day of month or the overall end date
-            month_end_day = min(
-                last_day_of_month,
-                end_dt.day
-                if current.year == end_dt.year and current.month == end_dt.month
-                else last_day_of_month,
-            )
-            month_end = current.replace(day=month_end_day)
-            if month_end > end_dt:
-                month_end = end_dt
-
-            month_ranges.append(
-                (month_start.strftime("%Y-%m-%d"), month_end.strftime("%Y-%m-%d"))
-            )
-
-            # Move to next month
-            current = next_month
 
         extract_dir = Path(working_dir) / "temp_netcdf"
         extract_dir.mkdir(parents=True, exist_ok=True)
 
-        # Get max_workers from query_params, default to 4 for parallel downloads
-        max_workers = query_params.get("max_workers", 4)
+        if self._is_cordex_collection(data_collection_name):
+            logger.info(
+                "CORDEX requests must be submitted as a single CDS request; monthly chunking disabled"
+            )
+            zip_path = self._download_from_cds(
+                data_collection_name,
+                date_start,
+                date_end,
+                bbox,
+                bands,
+                query_params,
+                working_dir,
+            )
 
-        logger.info(
-            f"Splitting request into {len(month_ranges)} monthly chunk(s) to handle CDS API limits"
-        )
+            with zipfile.ZipFile(zip_path, "r") as zip_ref:
+                zip_ref.extractall(extract_dir)
 
-        # 2. Download monthly chunks in parallel
-        # Prepare month info tuples with index
-        month_info_list = [
-            (idx, month_start, month_end)
-            for idx, (month_start, month_end) in enumerate(month_ranges, 1)
-        ]
-
-        # Download in parallel using ThreadPoolExecutor
-        if max_workers == 1:
-            # Sequential download for max_workers=1
-            logger.info("Using sequential download (max_workers=1)")
-            for month_info in month_info_list:
-                self._download_and_extract_month(
-                    month_info=month_info,
-                    total_months=len(month_ranges),
-                    data_collection_name=data_collection_name,
-                    bbox=bbox,
-                    bands=bands,
-                    query_params=query_params,
-                    working_dir=working_dir,
-                    extract_dir=extract_dir,
-                )
+            Path(zip_path).unlink()
+            month_ranges = [(date_start, date_end)]
         else:
-            # Parallel download
-            logger.info(f"Using parallel download with {max_workers} workers")
-            with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                # Submit all download tasks
-                future_to_month = {
-                    executor.submit(
-                        self._download_and_extract_month,
-                        month_info,
-                        len(month_ranges),
-                        data_collection_name,
-                        bbox,
-                        bands,
-                        query_params,
-                        working_dir,
-                        extract_dir,
-                    ): month_info
-                    for month_info in month_info_list
-                }
+            # 1. Split requests into monthly chunks to handle CDS API size limits
+            # The CDS API has two constraints:
+            # a) Separate year/month/day parameters create a Cartesian product, causing invalid
+            #    date combinations across year boundaries (e.g., 2025-12-31 when requesting 2024-12-31 to 2025-01-02)
+            # b) Large requests (e.g., full year) exceed cost limits with error "Your request is too large"
+            # Solution: Split by month to avoid both issues
+            start_dt = datetime.strptime(date_start, "%Y-%m-%d")
+            end_dt = datetime.strptime(date_end, "%Y-%m-%d")
 
-                # Wait for all downloads to complete and handle any errors
-                for future in as_completed(future_to_month):
-                    month_info = future_to_month[future]
-                    try:
-                        idx, month_start_str, month_end_str = future.result()
-                        logger.info(
-                            f"Completed chunk {idx}/{len(month_ranges)}: {month_start_str} to {month_end_str}"
-                        )
-                    except Exception as exc:
-                        logger.error(
-                            f"Chunk {month_info[0]} generated an exception: {exc}"
-                        )
-                        raise
+            # Generate list of (year, month) tuples for each month in the range
+            month_ranges = []
+            current = start_dt
+            while current <= end_dt:
+                # Determine start and end dates for this month
+                month_start = current if current == start_dt else current.replace(day=1)
+
+                # Calculate last day of current month
+                if current.month == 12:
+                    next_month = current.replace(year=current.year + 1, month=1, day=1)
+                else:
+                    next_month = current.replace(month=current.month + 1, day=1)
+                last_day_of_month = (next_month - timedelta(days=1)).day
+
+                # Month end is either the last day of month or the overall end date
+                month_end_day = min(
+                    last_day_of_month,
+                    end_dt.day
+                    if current.year == end_dt.year and current.month == end_dt.month
+                    else last_day_of_month,
+                )
+                month_end = current.replace(day=month_end_day)
+                if month_end > end_dt:
+                    month_end = end_dt
+
+                month_ranges.append(
+                    (month_start.strftime("%Y-%m-%d"), month_end.strftime("%Y-%m-%d"))
+                )
+
+                # Move to next month
+                current = next_month
+
+            # Get max_workers from query_params, default to 4 for parallel downloads
+            max_workers = query_params.get("max_workers", 4)
+
+            logger.info(
+                f"Splitting request into {len(month_ranges)} monthly chunk(s) to handle CDS API limits"
+            )
+
+            # 2. Download monthly chunks in parallel
+            # Prepare month info tuples with index
+            month_info_list = [
+                (idx, month_start, month_end)
+                for idx, (month_start, month_end) in enumerate(month_ranges, 1)
+            ]
+
+            # Download in parallel using ThreadPoolExecutor
+            if max_workers == 1:
+                # Sequential download for max_workers=1
+                logger.info("Using sequential download (max_workers=1)")
+                for month_info in month_info_list:
+                    self._download_and_extract_month(
+                        month_info=month_info,
+                        total_months=len(month_ranges),
+                        data_collection_name=data_collection_name,
+                        bbox=bbox,
+                        bands=bands,
+                        query_params=query_params,
+                        working_dir=working_dir,
+                        extract_dir=extract_dir,
+                    )
+            else:
+                # Parallel download
+                logger.info(f"Using parallel download with {max_workers} workers")
+                with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                    # Submit all download tasks
+                    future_to_month = {
+                        executor.submit(
+                            self._download_and_extract_month,
+                            month_info,
+                            len(month_ranges),
+                            data_collection_name,
+                            bbox,
+                            bands,
+                            query_params,
+                            working_dir,
+                            extract_dir,
+                        ): month_info
+                        for month_info in month_info_list
+                    }
+
+                    # Wait for all downloads to complete and handle any errors
+                    for future in as_completed(future_to_month):
+                        month_info = future_to_month[future]
+                        try:
+                            idx, month_start_str, month_end_str = future.result()
+                            logger.info(
+                                f"Completed chunk {idx}/{len(month_ranges)}: {month_start_str} to {month_end_str}"
+                            )
+                        except Exception as exc:
+                            logger.error(
+                                f"Chunk {month_info[0]} generated an exception: {exc}"
+                            )
+                            raise
 
         # 3. Find all NetCDF file(s) from all months
         netcdf_files = list(extract_dir.glob("*.nc"))
