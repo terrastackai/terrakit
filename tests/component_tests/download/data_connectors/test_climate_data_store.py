@@ -804,6 +804,40 @@ class TestClimateDataStore:
         shutil.rmtree(working_dir, ignore_errors=True)
 
 
+class TestCDSCordexConstraintValidation:
+    """Test CORDEX constraint validation error messaging."""
+
+    def test_validate_cordex_constraints_shows_full_gcm_model_list(self):
+        cds = CDS()
+
+        with pytest.raises(TerrakitValidationError) as exc_info:
+            cds._validate_cordex_constraints(
+                collection_name="projections-cordex-domains-single-levels",
+                domain="africa",
+                experiment="historical",
+                horizontal_resolution="0_44_degree_x_0_44_degree",
+                temporal_resolution="daily_mean",
+                gcm_model="not_a_valid_model",
+                rcm_model="smhi_rca4",
+                ensemble_member="r1i1p1",
+                variable="10m_wind_speed",
+                start_year=1950,
+                end_year=1950,
+            )
+
+        message = str(exc_info.value)
+        assert "Valid GCM Models:" in message
+        assert "... and" not in message
+        assert "cccma_canesm2" in message
+        assert "cnrm_cerfacs_cm5" in message
+        assert "ichec_ec_earth" in message
+        assert "miroc_miroc5" in message
+        assert "mpi_m_mpi_esm_lr" in message
+        assert "mohc_hadgem2_es" in message
+        assert "mpi_m_mpi_esm_mr" in message
+        assert "ncc_noresm1_m" in message
+
+
 class TestCDSBuildRequestParams:
     """Test request parameter building for CDS API."""
 
@@ -1411,31 +1445,26 @@ class TestCordexValidation:
         error_msg = str(exc_info.value)
         assert "not available" in error_msg.lower()
 
-    def test_fixed_block_validation_spanning_blocks_fails(self, dc):
-        """Test that requesting across multiple fixed blocks fails."""
+    def test_fixed_block_validation_spanning_consecutive_blocks_succeeds(self, dc):
+        """Test that requesting across multiple consecutive fixed blocks succeeds."""
         # From constraints file: africa+historical+ichec_ec_earth+clmcom_clm_cclm4_8_17
-        # has multiple blocks: ["1949"], ["1950"] and ["1951"], ["1955"]
-        # Requesting 1949-1951 spans two blocks and should fail
+        # has consecutive blocks: 1951-1955, 1956-1960, 1961-1965
+        # Requesting 1951-1960 spans two consecutive blocks and should succeed
 
-        with pytest.raises(TerrakitValidationError) as exc_info:
-            dc.connector._validate_cordex_constraints(
-                collection_name=self.collection,
-                domain="africa",
-                experiment="historical",
-                horizontal_resolution="0_44_degree_x_0_44_degree",
-                temporal_resolution="daily_mean",
-                gcm_model="ichec_ec_earth",
-                rcm_model="clmcom_clm_cclm4_8_17",
-                ensemble_member="r12i1p1",
-                variable="2m_air_temperature",
-                start_year=1949,
-                end_year=1951,
-            )
-
-        error_msg = str(exc_info.value)
-        assert "not available" in error_msg.lower()
-        # Should mention available blocks
-        assert "year" in error_msg.lower()
+        # This should NOT raise an error
+        dc.connector._validate_cordex_constraints(
+            collection_name=self.collection,
+            domain="africa",
+            experiment="historical",
+            horizontal_resolution="0_44_degree_x_0_44_degree",
+            temporal_resolution="daily_mean",
+            gcm_model="ichec_ec_earth",
+            rcm_model="clmcom_clm_cclm4_8_17",
+            ensemble_member="r12i1p1",
+            variable="2m_air_temperature",
+            start_year=1951,
+            end_year=1960,
+        )
 
     def test_fixed_block_validation_outside_blocks_fails(self, dc):
         """Test that requesting years outside all fixed blocks fails."""

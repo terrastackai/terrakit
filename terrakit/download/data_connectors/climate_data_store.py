@@ -1250,15 +1250,21 @@ class CDS(Connector):
                     combo_start_years = combo.get("start_year", [])
                     combo_end_years = combo.get("end_year", [])
 
-                    # Check if requested years are within available range
+                    # Check if requested years overlap with this combo's available range
                     if combo_start_years and combo_end_years:
-                        # Collect all year blocks from this combo
+                        # Collect year blocks from this combo that overlap with requested range
+                        combo_blocks = []
                         for sy, ey in zip(combo_start_years, combo_end_years):
                             block_start = int(sy)
                             block_end = int(ey)
-                            all_matching_blocks.append((block_start, block_end))
+                            # Only include blocks that overlap with the requested range
+                            if block_start <= end_year and block_end >= start_year:
+                                combo_blocks.append((block_start, block_end))
+                                all_matching_blocks.append((block_start, block_end))
 
-                        matching_combos.append(combo)
+                        # Only add this combo if it has blocks that overlap with requested range
+                        if combo_blocks:
+                            matching_combos.append(combo)
                 else:
                     # For 'fixed' temporal_resolution, year range doesn't apply
                     matching_combos.append(combo)
@@ -1274,11 +1280,54 @@ class CDS(Connector):
             )
 
             if is_fixed_block:
-                # For fixed blocks, the requested range must EXACTLY match one of the blocks
-                exact_match = (start_year, end_year) in unique_blocks
-                if not exact_match:
-                    # No exact match - clear matching_combos to trigger error
+                # For fixed blocks, check if the requested range can be covered by available blocks
+                # Either exact match to one block OR can be covered by consecutive blocks
+                if start_year is None or end_year is None:
                     matching_combos = []
+                else:
+                    exact_match = (start_year, end_year) in unique_blocks
+
+                    if not exact_match:
+                        # Check if multiple consecutive blocks can cover the range
+                        overlapping_blocks = [
+                            (bs, be)
+                            for bs, be in unique_blocks
+                            if bs <= end_year and be >= start_year
+                        ]
+
+                        if overlapping_blocks:
+                            # Sort blocks by start year
+                            sorted_blocks = sorted(overlapping_blocks)
+
+                            # Check if blocks are consecutive and cover the full range
+                            min_block_start = sorted_blocks[0][0]
+                            max_block_end = sorted_blocks[-1][1]
+
+                            # Verify blocks are consecutive (no gaps)
+                            is_consecutive = True
+                            for i in range(len(sorted_blocks) - 1):
+                                current_end = sorted_blocks[i][1]
+                                next_start = sorted_blocks[i + 1][0]
+                                # Blocks should be adjacent (next starts right after current ends)
+                                if next_start != current_end + 1:
+                                    is_consecutive = False
+                                    break
+
+                            # Valid if blocks are consecutive and EXACTLY match the requested range
+                            # For fixed blocks, we must request exact block boundaries, not subsets
+                            if (
+                                is_consecutive
+                                and min_block_start == start_year
+                                and max_block_end == end_year
+                            ):
+                                # Multi-block request is valid
+                                pass
+                            else:
+                                # Blocks don't exactly match the range (either gaps or subset request)
+                                matching_combos = []
+                        else:
+                            # No overlapping blocks
+                            matching_combos = []
             else:
                 # For flexible ranges, check if blocks can cover the requested range
                 # Find blocks that overlap with requested range
@@ -1439,34 +1488,18 @@ class CDS(Connector):
             )
 
             if gcm_model not in valid_gcm_models:
-                error_parts.append(
-                    f"  Valid GCM Models: {', '.join(valid_gcm_models[:10])}"
-                )
-                if len(valid_gcm_models) > 10:
-                    error_parts.append(f"    ... and {len(valid_gcm_models) - 10} more")
+                error_parts.append(f"  Valid GCM Models: {', '.join(valid_gcm_models)}")
 
             if rcm_model not in valid_rcm_models:
-                error_parts.append(
-                    f"  Valid RCM Models: {', '.join(valid_rcm_models[:10])}"
-                )
-                if len(valid_rcm_models) > 10:
-                    error_parts.append(f"    ... and {len(valid_rcm_models) - 10} more")
+                error_parts.append(f"  Valid RCM Models: {', '.join(valid_rcm_models)}")
 
             if ensemble_member not in valid_ensemble_members:
                 error_parts.append(
-                    f"  Valid Ensemble Members: {', '.join(valid_ensemble_members[:10])}"
+                    f"  Valid Ensemble Members: {', '.join(valid_ensemble_members)}"
                 )
-                if len(valid_ensemble_members) > 10:
-                    error_parts.append(
-                        f"    ... and {len(valid_ensemble_members) - 10} more"
-                    )
 
             if variable not in valid_variables:
-                error_parts.append(
-                    f"  Valid Variables: {', '.join(valid_variables[:10])}"
-                )
-                if len(valid_variables) > 10:
-                    error_parts.append(f"    ... and {len(valid_variables) - 10} more")
+                error_parts.append(f"  Valid Variables: {', '.join(valid_variables)}")
 
             # Check year range if applicable
             if (
@@ -1506,16 +1539,11 @@ class CDS(Connector):
 
                         if has_fixed_blocks:
                             error_parts.append(
-                                f"  Available Year Blocks (must request exact ranges): {', '.join(f'{sy}-{ey}' for sy, ey in year_ranges[:5])}"
+                                f"  Available Year Blocks (must request exact ranges): {', '.join(f'{sy}-{ey}' for sy, ey in year_ranges)}"
                             )
                         else:
                             error_parts.append(
-                                f"  Available Year Ranges: {', '.join(f'{sy}-{ey}' for sy, ey in year_ranges[:5])}"
-                            )
-
-                        if len(year_ranges) > 5:
-                            error_parts.append(
-                                f"    ... and {len(year_ranges) - 5} more ranges"
+                                f"  Available Year Ranges: {', '.join(f'{sy}-{ey}' for sy, ey in year_ranges)}"
                             )
         else:
             error_parts.append(
@@ -1662,6 +1690,8 @@ class CDS(Connector):
 
         # Validate contsraint parameters using collection name for better errors
         self._validate_temporal(date_start, date_end, constraints, data_collection_name)
+        if bbox is None:
+            raise TerrakitValidationError(message="bbox is required for CDS requests")
         self._validate_spatial(bbox, constraints, data_collection_name)
 
         # Generate dates
@@ -1792,10 +1822,10 @@ class CDS(Connector):
         # Load constraints and validate parameters
         constraints = self._load_constraints(data_collection_name)
         self._validate_temporal(date_start, date_end, constraints, data_collection_name)
-        self._validate_spatial(bbox, constraints, data_collection_name)
-
         if bbox is None:
             raise TerrakitValidationError(message="bbox is required for CDS downloads")
+        self._validate_spatial(bbox, constraints, data_collection_name)
+
         if bands is None:
             bands = []
 
