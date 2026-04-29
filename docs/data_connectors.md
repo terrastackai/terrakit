@@ -40,6 +40,55 @@ dc.connector.list_bands()
 
 Take a look at the [TerraKit: Easy geospatial data search and query](examples/terrakit_download.ipynb) notebook for more help getting started with TerraKit Data Connectors. For access information, [see below](#data-connector-access).
 
+## Data connector access
+Each data connector has a different access requirements. For example, connecting to SentinelHub and NASA EarthData, you will need to obtain credentials from each provider. Once these have been obtained, they can be added to a `.env` file at the root directory level using the following syntax:
+
+```.env
+SH_CLIENT_ID="<SentinelHub Client ID>"
+SH_CLIENT_SECRET="<SentinelHub Client Secret>"
+NASA_EARTH_BEARER_TOKEN="<NASA EarthData Bearer Token>"
+CDSAPI_KEY="<Climate Data Store API Key>"
+```
+
+### NASA Earthdata
+To access NASA Earthdata, register for an Earthdata Login profile and requests a bearer token. [https://urs.earthdata.nasa.gov/profile](https://urs.earthdata.nasa.gov/profile)
+
+### Sentinel Hub
+To access sentinel hub, register for an account and requests an OAuth client using the Sentinel Hub dashboard [https://www.planet.com](https://www.planet.com)
+
+### Sentinel AWS
+Access sentinel AWS data is open and does not require any credentials.
+
+### Climate Data Store
+Create an account at [https://cds.climate.copernicus.eu/](https://cds.climate.copernicus.eu/). Once created, find your API  key under the `Profile` section. Each dataset may also require accepting the licence agreement. If this is the case, the first time a request is made, an error will be returned with the url to visit to accept the terms.
+
+Available collections include:
+ - [ERA5 post-processed daily statistics on single levels from 1940 to present](https://cds.climate.copernicus.eu/datasets/derived-era5-single-levels-daily-statistics?tab=overview)
+ - [CORDEX regional climate model data on single levels](https://cds.climate.copernicus.eu/datasets/projections-cordex-domains-single-levels?tab=overview)
+
+### The Weather Company
+To access The Weather Company, register for an account and requests an API Key [https://www.weathercompany.com/weather-data-apis/](https://www.weathercompany.com/weather-data-apis/). Once you have an API key, set the following environment variable:
+
+```
+THE_WEATHER_COMPANY_API_KEY="<The Weather Company API key>"
+```
+
+### IBM Research STAC
+Access IBM Research STAC is currently restricted to IBMers and partners. If you're elegible, you need to register for an IBM AppID account and set the following environment variables:
+
+```
+APPID_ISSUER=<issuer>
+APPID_USERNAME=<user-email>
+APPID_PASSWORD=<user-password>
+CLIENT_ID=<client-id>
+CLIENT_SECRET=<client-secret>
+```
+
+Please reach out the maintainers of this repo.
+
+IBMers don't need credentials to access the internal instance of the STAC service.
+
+
 ## Bounding Box Constraints
 
 **All TerraKit data connectors adhere to standard geographic bounding box constraints:**
@@ -78,37 +127,13 @@ bbox = [-0.5, 51.7, 0.3, 51.3]  # ❌ South (51.7) must be < North (51.3)
 **Note:** For regions crossing the antimeridian (180°/-180° longitude), split the query into two separate bounding boxes or use data connector-specific handling if available.
 
 
-## Data connector access
-Each data connector has a different access requirements. For example, connecting to SentinelHub and NASA EarthData, you will need to obtain credentials from each provider. Once these have been obtained, they can be added to a `.env` file at the root directory level using the following syntax:
+## Climate Data Store Data Connectors
 
-```.env
-SH_CLIENT_ID="<SentinelHub Client ID>"
-SH_CLIENT_SECRET="<SentinelHub Client Secret>"
-NASA_EARTH_BEARER_TOKEN="<NASA EarthData Bearer Token>"
-CDSAPI_KEY="<Climate Data Store API Key>"
-```
-
-### NASA Earthdata
-To access NASA Earthdata, register for an Earthdata Login profile and requests a bearer token. [https://urs.earthdata.nasa.gov/profile](https://urs.earthdata.nasa.gov/profile)
-
-### Sentinel Hub
-To access sentinel hub, register for an account and requests an OAuth client using the Sentinel Hub dashboard [https://www.planet.com](https://www.planet.com)
-
-### Sentinel AWS
-Access sentinel AWS data is open and does not require any credentials.
-
-### Climate Data Store
-Create an account at [https://cds.climate.copernicus.eu/](https://cds.climate.copernicus.eu/). Once created, find your API  key under the `Profile` section. Each dataset may also require accepting the licence agreement. If this is the case, the first time a request is made, an error will be returned with the url to visit to accept the terms.
-
-Available collections include:
- - [ERA5 post-processed daily statistics on single levels from 1940 to present](https://cds.climate.copernicus.eu/datasets/derived-era5-single-levels-daily-statistics?tab=overview)
- - [CORDEX regional climate model data on single levels](https://cds.climate.copernicus.eu/datasets/projections-cordex-domains-single-levels?tab=overview)
-
-#### Parallel Downloads for Multi-Year Requests
+### Parallel Downloads for Multi-Year Requests
 
 The Climate Data Store connector automatically handles large multi-year requests by splitting them into smaller chunks and downloading them in parallel. The splitting strategy differs between ERA5 and CORDEX datasets:
 
-##### ERA5 Multi-Year Downloads
+#### ERA5 Multi-Year Downloads
 
 For ERA5 datasets (e.g., `derived-era5-single-levels-daily-statistics`), TerraKit automatically splits requests into **monthly chunks** to handle CDS API constraints:
 
@@ -155,7 +180,7 @@ data = dc.connector.get_data(
 )
 ```
 
-##### CORDEX Multi-Year Downloads
+#### CORDEX Multi-Year Downloads
 
 For CORDEX datasets (e.g., `projections-cordex-domains-single-levels`), TerraKit uses a different approach based on **year blocks** defined by the CDS constraints:
 
@@ -198,7 +223,7 @@ data = dc.connector.get_data(
 - The CDS API returns the entire block regardless of the date range specified, so TerraKit enforces requesting complete blocks to avoid confusion.
 - TerraKit performs preflight validation to check if your parameter combination is available before attempting download.
 
-##### Performance Tips
+#### Performance Tips
 
 **For both ERA5 and CORDEX:**
 - **Default (4 workers):** Good balance for most use cases
@@ -206,6 +231,7 @@ data = dc.connector.get_data(
 - **Lower values (1-2 workers):** Use if experiencing rate limit issues or for debugging
 - **Sequential (1 worker):** Useful for debugging or when you want to see each chunk download individually
 
+### CDS Request Validation
 #### CORDEX Data Validation
 
 For CORDEX collections, TerraKit performs **preflight validation** to ensure that the requested combination of parameters is available before attempting to download data. This validation checks the joint combination of:
@@ -222,24 +248,30 @@ For CORDEX collections, TerraKit performs **preflight validation** to ensure tha
 
 If an invalid combination is requested, TerraKit will raise a `TerrakitValidationError` with helpful suggestions for valid alternatives, **before** making any API calls to the Climate Data Store. This saves time and helps users discover available data combinations.
 
-### The Weather Company
-To access The Weather Company, register for an account and requests an API Key [https://www.weathercompany.com/weather-data-apis/](https://www.weathercompany.com/weather-data-apis/). Once you have an API key, set the following environment variable:
+#### ERA5 Data Validation
 
+For ERA5 collections (e.g., `derived-era5-single-levels-daily-statistics`), TerraKit performs **preflight validation** to ensure that the requested parameters are valid before attempting to download data. This validation includes:
+
+**Temporal Validation:**
+- Verifies that `date_start` and `date_end` are in the correct format (`YYYY-MM-DD`)
+- Ensures `date_start` is before or equal to `date_end`
+- Checks that the requested date range falls within the collection's available temporal extent (e.g., 1940-01-01 to present for ERA5)
+- Raises a `TerrakitValidationError` if dates are outside the allowed range
+
+**Spatial Validation:**
+- Validates the bounding box format and coordinates
+- Ensures the bounding box meets the minimum size requirement for ERA5's 0.25° grid resolution
+- Automatically expands bounding boxes smaller than 0.25° × 0.25° to meet the minimum resolution, preserving the center point
+- Logs a warning when automatic expansion occurs, showing the original and adjusted dimensions
+
+**Example validation errors:**
+```python
+# Date outside allowed range
+TerrakitValidationError: "Start date 1939-01-01 is before allowed start date 1940-01-01"
+
+# Bounding box too small (will be auto-expanded with warning)
+# Original: [10.0, 20.0, 10.1, 20.1] (0.1° × 0.1°)
+# Expanded: [9.925, 19.925, 10.175, 20.175] (0.25° × 0.25°)
 ```
-THE_WEATHER_COMPANY_API_KEY="<The Weather Company API key>"
-```
 
-### IBM Research STAC
-Access IBM Research STAC is currently restricted to IBMers and partners. If you're elegible, you need to register for an IBM AppID account and set the following environment variables:
-
-```
-APPID_ISSUER=<issuer>
-APPID_USERNAME=<user-email>
-APPID_PASSWORD=<user-password>
-CLIENT_ID=<client-id>
-CLIENT_SECRET=<client-secret>
-```
-
-Please reach out the maintainers of this repo.
-
-IBMers don't need credentials to access the internal instance of the STAC service.
+These validations occur **before** any API calls to the Climate Data Store, saving time and providing immediate feedback on parameter issues.

@@ -54,6 +54,12 @@ uv pip install geospatial
 
 Alternatively, you can use a conda environment and installing it with conda install -c conda-forge gdal. </span>
 
+## PyTorch Conference Europe 2026
+
+Watch TerraKit in action at the PyTorch Conference Europe 2026:
+
+[![TerraKit at PyTorch Conference Europe 2026](http://img.youtube.com/vi/V7uqdO43CH0/0.jpg)](https://www.youtube.com/watch?v=V7uqdO43CH0&list=PL_lsbAsL_o2DZbCiISSjbucDOW0QOxwBF&index=49 "Lightning Talk: TerraKit: Standardising AI-Ready Geospatial Data Preparation for the TorchGeo Ecosystem - Rosie Lickorish & Romeo Kienzler, IBM")
+
 ## Data Connectors
 Data connectors are classes which enable a user to search for data and query data from a particular data source using a common set of functions.  Each data connector has the following mandatory methods:
 * list_collections()
