@@ -1,5 +1,5 @@
 site_name: TerraKit
-site_url: https://terrastackai.github.io/terrakit/
+site_url: https://torchgeo.github.io/terrakit/
 nav:
   - Get Started:
     - TerraKit: index.md
@@ -119,7 +119,7 @@ markdown_extensions:
   - pymdownx.superfences
   - codehilite
   - admonition
-repo_url: https://github.com/terrastackai/terrakit
+repo_url: https://github.com/torchgeo/terrakit
 
 watch:
   - terrakit

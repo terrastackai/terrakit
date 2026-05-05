@@ -1,5 +1,5 @@
 # Add a New Download Transformation
-To add a new data connector, use the [download_transformation_template.py](https://github.com/terrastackai/terrakit/blob/main/terrakit/download/transformations/download_transformation_template.py) as a starting point. The new transformation should take an `xarray.DataArray` as an input and also return an `xarray.DataArray` as output. Update any data connectors that may need to use the new transformation by importing the function at the top of the file. For instance:
+To add a new data connector, use the [download_transformation_template.py](https://github.com/torchgeo/terrakit/blob/main/terrakit/download/transformations/download_transformation_template.py) as a starting point. The new transformation should take an `xarray.DataArray` as an input and also return an `xarray.DataArray` as output. Update any data connectors that may need to use the new transformation by importing the function at the top of the file. For instance:
 
 ```python
 from terrakit.download.transformations.impute_nans_xarray import impute_nans_xarray
