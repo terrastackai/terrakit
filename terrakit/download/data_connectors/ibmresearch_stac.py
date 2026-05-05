@@ -1,4 +1,4 @@
-# © Copyright IBM Corporation 2025
+# © Copyright IBM Corporation 2025-2026
 # SPDX-License-Identifier: Apache-2.0
 
 
@@ -129,7 +129,7 @@ class IBMResearchSTAC(Connector):
             "APPID_PASSWORD",
         ]:
             if var not in os.environ:
-                link = "https://github.com/terrastackai/terrakit?tab=readme-ov-file#ibm-research-stac"
+                link = "https://github.com/torchgeo/terrakit?tab=readme-ov-file#ibm-research-stac"
                 msg = f"Error! {var} is not set. Please check {link}"
                 logger.error(msg)
                 raise TerrakitMissingEnvironmentVariable(message=msg)

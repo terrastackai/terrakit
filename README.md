@@ -2,10 +2,10 @@
 
 # TerraKit
 [![PyPI version](https://img.shields.io/pypi/v/terrakit?color=blue&logo=pypi&logoColor=white)](https://pypi.org/project/terrakit/)
-[![Documentation](https://img.shields.io/badge/docs-mkdocs-blue?logo=materialformkdocs)](https://terrastackai.github.io/terrakit/)
+[![Documentation](https://img.shields.io/badge/docs-mkdocs-blue?logo=materialformkdocs)](https://torchgeo.github.io/terrakit/)
 [![Downloads](https://img.shields.io/pypi/dm/terrakit?color=orange&logo=pypi)](https://pypi.org/project/terrakit/)
-[![License](https://img.shields.io/github/license/terrastackai/terrakit?color=green)](LICENSE)
-[![GitHub stars](https://img.shields.io/github/stars/terrastackai/terrakit?style=social)](https://github.com/terrastackai/terrakit/stargazers)
+[![License](https://img.shields.io/github/license/torchgeo/terrakit?color=green)](LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/torchgeo/terrakit?style=social)](https://github.com/torchgeo/terrakit/stargazers)
 
 **🚀 A comprehensive library for generating ML-ready geospatial dataset 🌍**
 
@@ -166,7 +166,7 @@ version='v1', dest='docs/examples/test_wildfire_vector');"
 Git clone this repo:
 
 ```bash
-git clone git@github.com/terrastackai/terrakit.git
+git clone git@github.com/torchgeo/terrakit.git
 cd terrakit
 ```
 

@@ -73,9 +73,9 @@ dev = [
 ]
 
 [project.urls]
-Documentation = "https://terrastackai.github.io/terrakit/"
-Issues = "https://github.com/terrastackai/terrakit/issues"
-Source = "https://github.com/terrastackai/terrakit"
+Documentation = "https://torchgeo.github.io/terrakit/"
+Issues = "https://github.com/torchgeo/terrakit/issues"
+Source = "https://github.com/torchgeo/terrakit"
 
 [build-system]
 requires = ["uv_build>=0.8.2,<0.9.0"]
