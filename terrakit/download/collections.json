@@ -1066,5 +1066,232 @@
     "description": "The Daily Forecast API is sourced from The Weather Company (TWC) Forecast system and provides weather forecasts starting from the current day. The number of forecast days returned in the API response is determined by your content licensing agreement with TWC and is restricted by the API key issued to your company",
     "url": "https://developer.weather.com/forecastsandinsights/docs/daily-forecast-v-3-0-1",
     "id": "24738c68-96d6-4000-899e-c3cb201312fc"
+  },
+  {
+    "bands": [
+      {
+        "band_name": "B01",
+        "resolution": "60m",
+        "description": "Coastal aerosol, 442.7 nm (S2A), 442.3 nm (S2B)"
+      },
+      {
+        "band_name": "B02",
+        "resolution": "10m",
+        "description": "Blue, 492.4 nm (S2A), 492.1 nm (S2B)",
+        "RGB_band": "B"
+      },
+      {
+        "band_name": "B03",
+        "resolution": "10m",
+        "description": "Green, 559.8 nm (S2A), 559.0 nm (S2B)",
+        "RGB_band": "G"
+      },
+      {
+        "band_name": "B04",
+        "resolution": "10m",
+        "description": "Red, 664.6 nm (S2A), 665.0 nm (S2B)",
+        "RGB_band": "R"
+      },
+      {
+        "band_name": "B05",
+        "resolution": "20m",
+        "description": "Vegetation red edge, 704.1 nm (S2A), 703.8 nm (S2B)"
+      },
+      {
+        "band_name": "B06",
+        "resolution": "20m",
+        "description": "Vegetation red edge, 740.5 nm (S2A), 739.1 nm (S2B)"
+      },
+      {
+        "band_name": "B07",
+        "resolution": "20m",
+        "description": "Vegetation red edge, 782.8 nm (S2A), 779.7 nm (S2B)"
+      },
+      {
+        "band_name": "B08",
+        "resolution": "10m",
+        "description": "NIR, 832.8 nm (S2A), 833.0 nm (S2B)"
+      },
+      {
+        "band_name": "B8A",
+        "resolution": "20m",
+        "description": "Narrow NIR, 864.7 nm (S2A), 864.0 nm (S2B)"
+      },
+      {
+        "band_name": "B09",
+        "resolution": "60m",
+        "description": "Water vapour, 945.1 nm (S2A), 943.2 nm (S2B)"
+      },
+      {
+        "band_name": "B11",
+        "resolution": "20m",
+        "description": "SWIR, 1613.7 nm (S2A), 1610.4 nm (S2B)"
+      },
+      {
+        "band_name": "B12",
+        "resolution": "20m",
+        "description": "SWIR, 2202.4 nm (S2A), 2185.7 nm (S2B)"
+      },
+      {
+        "band_name": "SCL",
+        "resolution": "20m",
+        "description": "Scene Classification Layer"
+      }
+    ],
+    "cloud_masking": {
+      "band": "SCL",
+      "encoding": "sentinel2_lulc"
+    },
+    "connector": "planetary_computer",
+    "rgb_bands": [
+      "B04",
+      "B03",
+      "B02"
+    ],
+    "resolution_m": 10,
+    "collection_name": "sentinel-2-l2a",
+    "modality_tag": "S2L2A",
+    "collection_long_name": "Sentinel-2 Level-2A",
+    "description": "Sentinel-2 Level-2A data from Microsoft Planetary Computer. Provides atmospherically corrected surface reflectance imagery with 13 spectral bands at 10m, 20m, and 60m resolution. Includes Scene Classification Layer (SCL) for cloud masking.",
+    "url": "https://planetarycomputer.microsoft.com/dataset/sentinel-2-l2a",
+    "id": "pc-sentinel-2-l2a"
+  },
+  {
+    "bands": [
+      {
+        "band_name": "SR_B1",
+        "resolution": "30m",
+        "description": "Coastal/Aerosol, 433-453 nm",
+        "alt_names": ["coastal"]
+      },
+      {
+        "band_name": "SR_B2",
+        "resolution": "30m",
+        "description": "Blue, 450-515 nm",
+        "RGB_band": "B",
+        "alt_names": ["blue"]
+      },
+      {
+        "band_name": "SR_B3",
+        "resolution": "30m",
+        "description": "Green, 525-600 nm",
+        "RGB_band": "G",
+        "alt_names": ["green"]
+      },
+      {
+        "band_name": "SR_B4",
+        "resolution": "30m",
+        "description": "Red, 630-680 nm",
+        "RGB_band": "R",
+        "alt_names": ["red"]
+      },
+      {
+        "band_name": "SR_B5",
+        "resolution": "30m",
+        "description": "NIR, 845-885 nm",
+        "alt_names": ["nir08"]
+      },
+      {
+        "band_name": "SR_B6",
+        "resolution": "30m",
+        "description": "SWIR 1, 1560-1660 nm",
+        "alt_names": ["swir16"]
+      },
+      {
+        "band_name": "SR_B7",
+        "resolution": "30m",
+        "description": "SWIR 2, 2100-2300 nm",
+        "alt_names": ["swir22"]
+      },
+      {
+        "band_name": "ST_B10",
+        "resolution": "100m",
+        "description": "Thermal Infrared, 10.6-11.2 μm"
+      },
+      {
+        "band_name": "QA_PIXEL",
+        "resolution": "30m",
+        "description": "Pixel quality assessment band"
+      }
+    ],
+    "cloud_masking": {
+      "band": "QA_PIXEL",
+      "encoding": "landsat_qa"
+    },
+    "connector": "planetary_computer",
+    "rgb_bands": [
+      "SR_B4",
+      "SR_B3",
+      "SR_B2"
+    ],
+    "resolution_m": 30,
+    "collection_name": "landsat-c2-l2",
+    "modality_tag": "LANDSAT_C2_L2",
+    "collection_long_name": "Landsat Collection 2 Level-2",
+    "description": "Landsat Collection 2 Level-2 surface reflectance and surface temperature data from Landsat 8 and 9. Provides 30m optical bands and 100m thermal band with global coverage since 2013. Includes quality assessment bands for cloud masking.",
+    "url": "https://planetarycomputer.microsoft.com/dataset/landsat-c2-l2",
+    "id": "pc-landsat-c2-l2"
+  },
+  {
+    "bands": [
+      {
+        "band_name": "R",
+        "resolution": "0.6m-1m",
+        "description": "Red band",
+        "RGB_band": "R"
+      },
+      {
+        "band_name": "G",
+        "resolution": "0.6m-1m",
+        "description": "Green band",
+        "RGB_band": "G"
+      },
+      {
+        "band_name": "B",
+        "resolution": "0.6m-1m",
+        "description": "Blue band",
+        "RGB_band": "B"
+      },
+      {
+        "band_name": "N",
+        "resolution": "0.6m-1m",
+        "description": "Near Infrared band"
+      }
+    ],
+    "connector": "planetary_computer",
+    "rgb_bands": [
+      "R",
+      "G",
+      "B"
+    ],
+    "resolution_m": 1,
+    "collection_name": "naip",
+    "modality_tag": "NAIP",
+    "collection_long_name": "NAIP - National Agriculture Imagery Program",
+    "description": "High-resolution aerial imagery (0.6m-1m) covering the continental United States. Provides 4-band imagery (RGB + NIR) collected during agricultural growing seasons. Updated on a 2-3 year cycle.",
+    "url": "https://planetarycomputer.microsoft.com/dataset/naip",
+    "id": "pc-naip"
+  },
+  {
+    "bands": [
+      {
+        "band_name": "vv",
+        "resolution": "10m",
+        "description": "VV polarization - Vertical transmit, Vertical receive"
+      },
+      {
+        "band_name": "vh",
+        "resolution": "10m",
+        "description": "VH polarization - Vertical transmit, Horizontal receive"
+      }
+    ],
+    "connector": "planetary_computer",
+    "resolution_m": 10,
+    "collection_name": "sentinel-1-rtc",
+    "modality_tag": "S1_RTC",
+    "collection_long_name": "Sentinel-1 RTC (Radiometrically Terrain Corrected)",
+    "description": "Sentinel-1 SAR (Synthetic Aperture Radar) data that has been radiometrically terrain corrected. Provides all-weather, day-and-night imaging capability with VV and VH polarizations at 10m resolution. Useful for flood mapping, soil moisture, and change detection.",
+    "url": "https://planetarycomputer.microsoft.com/dataset/sentinel-1-rtc",
+    "id": "pc-sentinel-1-rtc"
   }
 ]

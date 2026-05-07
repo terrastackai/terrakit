@@ -14,6 +14,7 @@ from .download.data_connectors.nasa_earthdata import NASA_EarthData
 from .download.data_connectors.sentinel_aws import Sentinel_AWS
 from .download.data_connectors.ibmresearch_stac import IBMResearchSTAC
 from .download.data_connectors.sentinelhub import SentinelHub
+from .download.data_connectors.planetary_computer import PlanetaryComputer
 from .general_utils.exceptions import TerrakitValidationError
 from .validate.data_connector import ConnectorType
 
@@ -54,6 +55,8 @@ class DataConnectorFactory:
             return IBMResearchSTAC()
         elif connector_type.connector_type == "TheWeatherCompany":
             return TheWeatherCompany()
+        elif connector_type.connector_type == "planetary_computer":
+            return PlanetaryComputer()
         # -----> Include new connectors here < ------
         # elif connector_type == "<new_connector>"
         #   return NewConnectorClass()

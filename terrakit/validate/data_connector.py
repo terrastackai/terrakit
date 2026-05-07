@@ -27,5 +27,6 @@ class ConnectorType(BaseModel):
         "sentinel_aws",
         "IBMResearchSTAC",
         "TheWeatherCompany",
+        "planetary_computer",
     ]
-    """The type of connector to be use to download data. nasa_earthdata, sentinelhub, sentinel_aws, IBMResearchSTAC or TheWeatherCompany"""
+    """The type of connector to be use to download data. nasa_earthdata, sentinelhub, sentinel_aws, IBMResearchSTAC, TheWeatherCompany or planetary_computer"""
