@@ -33,6 +33,9 @@ from .transform import labels  # noqa
 from .transform.labels import process_labels  # noqa
 from .store.taco import taco_store_data, load_tortilla  # noqa
 from .download.geodata_utils import *  # noqa
+from .general_utils import plotting  # noqa
+from .general_utils import geospatial_util  # noqa
+from .general_utils import labels_downloader  # noqa
 
 # Set up logging
 LOGLEVEL = os.environ.get("LOGLEVEL", "INFO").upper()
