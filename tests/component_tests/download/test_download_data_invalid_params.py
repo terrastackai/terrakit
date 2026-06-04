@@ -1,4 +1,4 @@
-# © Copyright IBM Corporation 2025
+# © Copyright IBM Corporation 2025-2026
 # SPDX-License-Identifier: Apache-2.0
 
 
@@ -44,7 +44,6 @@ class TestDownloadData_FailureTests:
         )
 
         assert queried_data is not None
-
 
 
 class TestDownloadData_InvalidParams:

@@ -1,4 +1,4 @@
-# © Copyright IBM Corporation 2025
+# © Copyright IBM Corporation 2025-2026
 # SPDX-License-Identifier: Apache-2.0
 
 
@@ -16,7 +16,7 @@ def taco_setup():
     """
     Set up test copying a dummy tif file into the working directory.
     One file is called `dummy_imputed.tif`, while the other is called
-    `dummy_imputed_labels.tif`.
+    `dummy_imputed_label.tif`.
     """
     print("Setting up test data")
     Path(WORKING_DIR).mkdir(parents=True, exist_ok=True)

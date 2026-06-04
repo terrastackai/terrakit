@@ -1,4 +1,4 @@
-# © Copyright IBM Corporation 2025
+# © Copyright IBM Corporation 2025-2026
 # SPDX-License-Identifier: Apache-2.0
 
 
@@ -18,7 +18,7 @@ class ChipAndLabelModel(BaseModel):
 
     active: bool = True
     data_suffix: str = ".tif"
-    label_suffix: str = "_labels.tif"
+    label_suffix: str = "_label.tif"
     chip_suffix: str = ".data.tif"
     chip_label_suffix: str = ".label.tif"
     sample_dim: int = 256

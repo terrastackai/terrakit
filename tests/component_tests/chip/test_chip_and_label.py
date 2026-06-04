@@ -1,4 +1,4 @@
-# © Copyright IBM Corporation 2025
+# © Copyright IBM Corporation 2025-2026
 # SPDX-License-Identifier: Apache-2.0
 
 
@@ -105,7 +105,7 @@ class TestChipAndLabel:
 
         assert os.listdir(WORKING_DIR) == [
             "dummy_imputed.tif",
-            "dummy_imputed_labels.tif",
+            "dummy_imputed_label.tif",
             "TEST_metadata.json",
             "dummy_imputed_0.data.tif",
             "dummy_imputed_0.label.tif",
@@ -125,7 +125,7 @@ class TestChipAndLabel:
         )
         assert os.listdir(WORKING_DIR) == [
             "dummy_imputed.tif",
-            "dummy_imputed_labels.tif",
+            "dummy_imputed_label.tif",
             "TEST_metadata.json",
             "dummy_imputed_0.data.tif",
             "dummy_imputed_0.label.tif",
@@ -214,7 +214,7 @@ class TestChipAndLabel:
     def test_chip_and_label__chip_label_suffix(
         self, chip_and_label_setup, chip_and_label_cleanup
     ):
-        chip_label_suffix = "_labels.tiff"
+        chip_label_suffix = "_label.tiff"
         res = chip_and_label_data(
             dataset_name="TEST",
             working_dir=WORKING_DIR,
