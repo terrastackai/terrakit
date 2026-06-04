@@ -1,6 +1,6 @@
 [project]
 name = "TerraKit"
-version = "0.1.8"
+version = "0.1.8+hotfix.1"
 description = "A Python package for finding and getting geospatial data."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -20,11 +20,13 @@ dependencies = [
         "boto3>=1.36.0",
         "contextily>=1.6.2",
         "cdsapi>=0.7.7",
+        "click>=8.3.3",
         "dask==2025.7.0",
         "folium>=0.20.0",
         "huggingface-hub",
         "geojson>=3.2.0",
         "geopandas>=1.1.2",
+        "idna>=3.15",
         "joblib==1.5.2",
         "jsonargparse>=4.40.2",
         "netcdf4>=1.7.3",
@@ -46,7 +48,7 @@ dependencies = [
         "tacotoolbox==0.5.2",
         "tqdm==4.67.1",
         "xarray>=v2023.1.0 ",
-        "urllib3>=2.6.3",
+        "urllib3>=2.7.0",
         "zarr>=2.18.3",
 ]
 
