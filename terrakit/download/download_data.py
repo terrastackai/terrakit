@@ -1,4 +1,4 @@
-# © Copyright IBM Corporation 2025
+# © Copyright IBM Corporation 2026
 # SPDX-License-Identifier: Apache-2.0
 
 
@@ -297,29 +297,43 @@ class DownloadCls:
                 )
 
                 try:
-                    if self.transform.scale_data_xarray:
+                    if self.transform.scale_data_xarray and self.transform.impute_nans:
                         dai = scale_data_xarray(da, list(np.ones(len(source.bands))))  # type: ignore[arg-type]
-                    if self.transform.impute_nans:
                         dai = impute_nans_xarray(dai)
+                    elif (
+                        self.transform.scale_data_xarray
+                        and not self.transform.impute_nans
+                    ):
+                        dai = scale_data_xarray(da, list(np.ones(len(source.bands))))  # type: ignore[arg-type]
+                    elif (
+                        self.transform.impute_nans
+                        and not self.transform.scale_data_xarray
+                    ):
+                        dai = impute_nans_xarray(da)
+                    else:
+                        dai = da
                     """ >>> INCLUDE NEW TRANSFORMATIONS HERE <<< 
                     if self.transform.<new_transformation_func>:
                         dai = <new_tranformation_fnc(da)>
                     """
-                    save_data_array_to_file(dai, save_file, imputed=True)
+                    save_file_updated = save_data_array_to_file(
+                        dai, save_file, imputed=self.transform.impute_nans
+                    )
                 except TerrakitBaseException as e:
                     raise TerrakitBaseException(
                         f"Error while transforming data... {e}"
                     ) from e
 
                 for i, t in enumerate(da.time.values):  # type: ignore[union-attr]
-                    date = t.astype(str)[:10]
-                    queried_data.append(
-                        save_file.replace(".tif", f"_{date}_imputed.tif")
-                    )
+                    queried_data.append(save_file_updated)
 
-                if self.keep_files is False:
-                    logger.info(f"Deleting {save_file.replace('.tif', f'_{date}.tif')}")
-                    os.remove(save_file.replace(".tif", f"_{date}.tif"))
+                    if self.transform.impute_nans and self.keep_files is False:
+                        date = t.astype(str)[:10]
+                        logger.info(
+                            f"Deleting {save_file.replace('.tif', f'_{date}.tif')}"
+                        )
+                        os.remove(save_file.replace(".tif", f"_{date}.tif"))
+
             logging.info(f"Queried data: {queried_data}")
         return queried_data
 
@@ -387,9 +401,9 @@ class DownloadCls:
                 if set_no_data:
                     out_meta.update({"nodata": -1})
                 # Write the burned image to geotiff
-                logging.info(f"Writing to {q.replace('.tif', '')}_labels.tif")
+                logging.info(f"Writing to {q.replace('.tif', '')}_label.tif")
                 with rasterio.open(
-                    f"{q.replace('.tif', '')}_labels.tif", "w", **out_meta
+                    f"{q.replace('.tif', '')}_label.tif", "w", **out_meta
                 ) as dst:
                     dst.write(image, indexes=1)
                     file_save_count += 1

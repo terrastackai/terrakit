@@ -60,7 +60,7 @@ filename,date
 EMSR748_AOI01_DEL_MONIT05_observedEventA_v1.json,2024-08-26
 EMSR801_AOI01_DEL_MONIT02_observedEventA_v1.json,2025-04-23
 ```
-TerraKit will look a file called `metadata.csv` in the `labels_folder`.
+TerraKit will look for a file called `metadata.csv` in the `labels_folder`.
 
 ### label_type
 `label_type`: Set to either `raster` or `vector`. TerraKit expects label data in either vector or raster format.

@@ -1,4 +1,4 @@
-# © Copyright IBM Corporation 2025
+# © Copyright IBM Corporation 2025-2026
 # SPDX-License-Identifier: Apache-2.0
 
 
@@ -7,7 +7,6 @@ import pytest
 from glob import glob
 
 from terrakit.download.download_data import download_data
-from terrakit.general_utils.exceptions import TerrakitValueError
 
 
 @pytest.mark.parametrize(
@@ -67,6 +66,155 @@ class TestDownloadData_WorkingDir:
         assert len(glob("./tmp/*.tif")) > 1
         assert len(glob("./tmp/terrakit_curated_dataset_metadata.json")) == 1
 
+    def test_download_data__imput_nans_is_false(
+        self,
+        download_data_setup,
+        default_dir_clean_up,
+        mock_nasa_download_datasets,
+        mock_sentinelhub_save_data,
+        mock_aws_get_data,
+        mock_stackstac,
+        connector_type,
+        collection,
+        bands,
+    ):
+        """Input: .shp file in default working dir
+        Output: tiles in default working dir: ./tmp folder
+        """
+        data_source = [
+            {
+                "data_connector": connector_type,
+                "collection_name": collection,
+                "bands": bands,
+                "save_file": "",
+            },
+        ]
+        queried_data = download_data(
+            data_sources=data_source,
+            date_allowance={"pre_days": 0, "post_days": 21},
+            transform={
+                "scale_data_xarray": False,
+                "impute_nans": False,
+                "reproject": False,
+            },
+        )
+
+        if connector_type == "sentinelhub":
+            assert len(queried_data) == 14  # 7 unique dates for each event -> 7x2 =14
+        elif connector_type == "sentinel_aws":
+            assert len(queried_data) == 14  # 7 unique dates for each event -> 7x2 =14
+        elif connector_type == "nasa_earthdata":
+            assert len(queried_data) == 10  # 5 unique dates for each event -> 5x2=10
+        assert (
+            len(glob("./tmp/terrakit_curated_dataset_all_bboxes*")) == 5
+        )  # bbox shp files
+        assert (
+            len(glob("./tmp/terrakit_curated_dataset_labels*")) == 5
+        )  # labels shp files
+        assert len(glob("./tmp/*.tif")) > 1
+        assert len(glob("./tmp/*_imputed.tif")) == 0
+        assert len(glob("./tmp/terrakit_curated_dataset_metadata.json")) == 1
+
+    def test_download_data__keep_files_is_false(
+        self,
+        download_data_setup,
+        default_dir_clean_up,
+        mock_nasa_download_datasets,
+        mock_sentinelhub_save_data,
+        mock_aws_get_data,
+        mock_stackstac,
+        connector_type,
+        collection,
+        bands,
+    ):
+        """Input: .shp file in default working dir
+        Output: tiles in default working dir: ./tmp folder
+        """
+        data_source = [
+            {
+                "data_connector": connector_type,
+                "collection_name": collection,
+                "bands": bands,
+                "save_file": "",
+            },
+        ]
+        queried_data = download_data(
+            data_sources=data_source,
+            date_allowance={"pre_days": 0, "post_days": 21},
+            transform={
+                "scale_data_xarray": True,
+                "impute_nans": True,
+                "reproject": True,
+            },
+            keep_files=False,
+        )
+
+        if connector_type == "sentinelhub":
+            assert len(queried_data) == 14  # 7 unique dates for each event -> 7x2 =14
+        elif connector_type == "sentinel_aws":
+            assert len(queried_data) == 14  # 7 unique dates for each event -> 7x2 =14
+        elif connector_type == "nasa_earthdata":
+            assert len(queried_data) == 10  # 5 unique dates for each event -> 5x2=10
+        assert (
+            len(glob("./tmp/terrakit_curated_dataset_all_bboxes*")) == 5
+        )  # bbox shp files
+        assert (
+            len(glob("./tmp/terrakit_curated_dataset_labels*")) == 5
+        )  # labels shp files
+        assert len(glob("./tmp/*.tif")) > 1
+        assert len(glob("./tmp/*_imputed.tif")) > 1
+        assert len(glob("./tmp/terrakit_curated_dataset_metadata.json")) == 1
+
+    def test_download_data__imput_nans_is_false_keep_files_is_false(
+        self,
+        download_data_setup,
+        default_dir_clean_up,
+        mock_nasa_download_datasets,
+        mock_sentinelhub_save_data,
+        mock_aws_get_data,
+        mock_stackstac,
+        connector_type,
+        collection,
+        bands,
+    ):
+        """Input: .shp file in default working dir
+        Output: tiles in default working dir: ./tmp folder
+        """
+        data_source = [
+            {
+                "data_connector": connector_type,
+                "collection_name": collection,
+                "bands": bands,
+                "save_file": "",
+            },
+        ]
+        queried_data = download_data(
+            data_sources=data_source,
+            date_allowance={"pre_days": 0, "post_days": 21},
+            transform={
+                "scale_data_xarray": False,
+                "impute_nans": False,
+                "reproject": False,
+            },
+            keep_files=False,
+        )
+
+        if connector_type == "sentinelhub":
+            assert len(queried_data) == 14  # 7 unique dates for each event -> 7x2 =14
+        elif connector_type == "sentinel_aws":
+            assert len(queried_data) == 14  # 7 unique dates for each event -> 7x2 =14
+        elif connector_type == "nasa_earthdata":
+            assert len(queried_data) == 10  # 5 unique dates for each event -> 5x2=10
+        assert (
+            len(glob("./tmp/terrakit_curated_dataset_all_bboxes*")) == 5
+        )  # bbox shp files
+        assert (
+            len(glob("./tmp/terrakit_curated_dataset_labels*")) == 5
+        )  # labels shp files
+        assert len(glob("./tmp/*.tif")) > 1
+        assert len(glob("./tmp/*_imputed.tif")) == 0
+        assert len(glob("./tmp/terrakit_curated_dataset_metadata.json")) == 1
+
 
 class TestDownloadData_SetNoDataWithClasses:
     """Test set_no_data functionality with multi-class labels"""
@@ -109,7 +257,7 @@ class TestDownloadData_SetNoDataWithClasses:
         assert len(queried_data) > 0
 
         # Verify label raster was created with proper naming
-        label_files = glob("./tmp/*_imputed_labels.tif")
+        label_files = glob("./tmp/*_imputed_label.tif")
         assert len(label_files) > 0, "Expected label raster file to be created"
 
         # Verify metadata was created

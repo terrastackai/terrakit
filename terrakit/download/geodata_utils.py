@@ -444,15 +444,21 @@ def check_and_crop_bbox(bbox, resolution):
     return aoi_bbox, aoi_size
 
 
-def save_data_array_to_file(da, save_file, imputed=False) -> None:
+def save_data_array_to_file(
+    da, save_file: str | None, imputed: bool = False
+) -> str | None:
     """
     Save an xarray DataArray to a GeoTIFF file.
 
     Parameters:
         da (xarray.DataArray): The input DataArray.
-        save_file (str): The path to save the DataArray.
+        save_file (str | None): The path to save the DataArray.
         imputed (bool): Whether the DataArray has been imputed.
+
+    Returns:
+        str | None: The path to the saved GeoTIFF file, or None if save_file is None.
     """
+    file_path: str | None = save_file
     if save_file is not None:
         if da.time is not None:
             for i, t in enumerate(da.time.values):
@@ -463,11 +469,16 @@ def save_data_array_to_file(da, save_file, imputed=False) -> None:
                     file_path = save_file
                 if imputed is True and "imputed" not in file_path:
                     file_path = file_path.replace(".tif", "_imputed.tif")
-                save_cog(da.isel(time=i), file_path)
+                try:
+                    save_cog(da.isel(time=i), file_path)
+                except Exception as e:
+                    logger.warning(f"Error saving {file_path}. {e}")
         else:
             logger.warning(
                 f"Error saving file. Missing time dimension. Dimensions are: {da.dims}"
             )
+
+    return file_path
 
 
 def save_cog(ds, filename="cogeo.tif") -> None:
