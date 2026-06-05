@@ -20,6 +20,15 @@
 import logging
 import os
 
+LOGLEVEL = os.environ.get("LOGLEVEL", "INFO").upper()
+logging.basicConfig(
+    format="%(asctime)s [%(levelname)-8s] %(message)s (%(filename)s:%(lineno)s)",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    level=LOGLEVEL,
+    force=True,  # Force reconfiguration even if handlers exist
+)
+logger = logging.getLogger(__name__)
+
 from .download.data_connectors.sentinelhub import SentinelHub  # noqa
 from .download.data_connectors.nasa_earthdata import NASA_EarthData  # noqa
 from .download.data_connectors.sentinel_aws import Sentinel_AWS  # noqa
@@ -36,12 +45,3 @@ from .download.geodata_utils import *  # noqa
 from .general_utils import plotting  # noqa
 from .general_utils import geospatial_util  # noqa
 from .general_utils import labels_downloader  # noqa
-
-# Set up logging
-LOGLEVEL = os.environ.get("LOGLEVEL", "INFO").upper()
-logging.basicConfig(
-    format="%(asctime)s [%(levelname)-8s] %(message)s (%(filename)s:%(lineno)s)",
-    datefmt="%Y-%m-%d %H:%M:%S",
-    level=LOGLEVEL,
-)
-logger = logging.getLogger(__name__)
