@@ -241,7 +241,6 @@ class ChipAndLabelCls:
             candidate_list = glob(f"{working_dir}/*{self.data_suffix}")
         else:
             candidate_list = self.queried_data
-        logger.info("CHIPPING>>>>! GO!!!@@@")
         logger.info(f"Found candidate files to chip: {candidate_list}")
         queried_data = []
         for file in candidate_list:
