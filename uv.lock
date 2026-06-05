@@ -5283,7 +5283,7 @@ wheels = [
 
 [[package]]
 name = "terrakit"
-version = "0.1.8+hotfix.1"
+version = "0.1.8.post1"
 source = { editable = "." }
 dependencies = [
     { name = "aiohttp" },
