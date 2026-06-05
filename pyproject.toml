@@ -16,7 +16,7 @@ authors = [
     {"name" = "Romeo Kienzler"},
     ]
 dependencies = [
-        "aiohttp>=3.13.4",
+        "aiohttp>=3.14.0",
         "boto3>=1.36.0",
         "contextily>=1.6.2",
         "cdsapi>=0.7.7",
