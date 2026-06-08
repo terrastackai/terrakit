@@ -230,7 +230,7 @@ def find_sh_aws_stac_items(
     if len(stac_items.items) == 0:
         err_msg = f"No items found for query parameters: bbox={bbox}, start_date={from_datetime}, end_date={to_datetime}, collection={collections}, fields={fields}."
         logger.warning(err_msg)
-        return None, None
+        raise TerrakitNoDataFoundError(err_msg)
 
     if maxcc:
         logger.info(f"Filtering for maximum cloud cover of {maxcc}%")
@@ -421,11 +421,6 @@ class Sentinel_AWS(Connector):
             data_connector_spec=data_connector_spec,
             fields=fields,
         )
-
-        # except ValueError as e:
-        #     error_msg = f"Unable to find data for collection '{data_collection_name}. This could be due to the parameters set:\n\t bbox={bbox}, start_date={date_start}, end_date={date_end}, collection={data_collection_name}, fields={fields}, max_cc={maxcc}."
-        #     logger.exception(error_msg)
-        #     raise TerrakitValueError(error_msg) from e
 
         if len(unique_dates) == 0:
             err_msg = f"No data found for collection '{data_collection_name}'."

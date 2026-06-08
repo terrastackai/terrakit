@@ -243,7 +243,7 @@ class DownloadCls:
         )
         queried_data = []
         for li in range(0, len(grouped_bbox_gdf_unique)):
-            print(
+            logger.info(
                 f"Selected {li}+1 of {len(grouped_bbox_gdf_unique)} unique bounding boxes"
             )  # add 1 since indexing starts at 0
 
