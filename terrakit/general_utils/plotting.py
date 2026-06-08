@@ -250,6 +250,9 @@ def plot_tiles_and_label_pair(
             axs = fig.add_subplot(2, len(image_list), count)
             # Plot image first with higher zorder
             axs.imshow(image_stack, extent=extent, alpha=alpha, zorder=2)
+            # Set axes limits to match extent for proper basemap overlay
+            axs.set_xlim(extent[0], extent[1])
+            axs.set_ylim(extent[2], extent[3])
             axs.axis("off")
             axs.set_title(f"image_{i}")
             # Add basemap behind with explicit zorder

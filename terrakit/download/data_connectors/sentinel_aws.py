@@ -26,6 +26,7 @@ from ..connector import Connector
 from ...general_utils.exceptions import (
     TerrakitValueError,
     TerrakitBaseException,
+    TerrakitNoDataFoundError,
 )
 from terrakit.validate.helpers import (
     check_collection_exists,
@@ -100,7 +101,7 @@ def find_items(
     bbox: list,
     from_datetime: str,
     to_datetime: str,
-    bands=None,
+    bands: Union[list[Any], None] = None,
     collections=["HLSS30.v2.0", "HLSL30.v2.0"],
     limit=250,
     maxcc: float = 100,
@@ -124,22 +125,43 @@ def find_items(
     """
 
     # Find STAC items and stacked data
+    search_bands = bands or []
     stac_items, stack = find_sh_aws_stac_items(
         stac_url,
         bbox,
         from_datetime,
         to_datetime,
-        bands,
+        search_bands,
         collections,
         maxcc=maxcc,
         data_connector_spec=data_connector_spec,
         fields=fields,
     )
-    if len(stack.time.values) == 0:
-        logger.error(f"No data found: {stack.time}")
-        unique_dates: list = []
-        return unique_dates, stac_items
+    if stac_items is None:
+        err_msg = (
+            f"No STAC items found for bbox={bbox}, "
+            f"date_range={from_datetime} to {to_datetime}."
+        )
+        logger.warning(err_msg)
+        raise TerrakitNoDataFoundError(err_msg)
+
+    if stack is None:
+        err_msg = (
+            f"Stack data is None for bbox={bbox}, "
+            f"date_range={from_datetime} to {to_datetime}."
+        )
+        logger.warning(err_msg)
+        raise TerrakitNoDataFoundError(err_msg)
+
+    if not hasattr(stack, "time") or len(stack.time.values) == 0:
+        err_msg = (
+            f"Stack contains no time values for bbox={bbox}, "
+            f"date_range={from_datetime} to {to_datetime}."
+        )
+        logger.warning(err_msg)
+        raise TerrakitNoDataFoundError(err_msg)
     # Extract unique dates from stack time values
+    unique_dates: list[str]
     if isinstance(stack.time.values[0], str):
         # If time values are strings, assume format 'YYYY-MM-DD'
         unique_dates = sorted(list(set([X.split("T")[0] for X in stack.time.values])))
@@ -155,6 +177,13 @@ def find_items(
                 )
             )
         )
+    else:
+        err_msg = (
+            f"Unsupported time value type returned from stack for bbox={bbox}, "
+            f"date_range={from_datetime} to {to_datetime}."
+        )
+        logger.warning(err_msg)
+        raise TerrakitNoDataFoundError(err_msg)
 
     return unique_dates, stac_items
 
@@ -201,7 +230,7 @@ def find_sh_aws_stac_items(
     if len(stac_items.items) == 0:
         err_msg = f"No items found for query parameters: bbox={bbox}, start_date={from_datetime}, end_date={to_datetime}, collection={collections}, fields={fields}."
         logger.warning(err_msg)
-        raise TerrakitValueError(err_msg)
+        return None, None
 
     if maxcc:
         logger.info(f"Filtering for maximum cloud cover of {maxcc}%")
@@ -218,7 +247,7 @@ def find_sh_aws_stac_items(
         if len(stac_items) == 0:
             err_msg = f"After filtering for cloud cover, no items were found. 'max_cc' set to {maxcc}. Consider increasing the maximum allowed cloud cover."
             logger.warning(err_msg)
-            raise TerrakitValueError(err_msg)
+            raise TerrakitNoDataFoundError(err_msg)
 
     if bands:
         stack = stackstac.stack(
@@ -312,8 +341,8 @@ class Sentinel_AWS(Connector):
         """
         self.connector_type = "sentinel_aws"
         self.stac_url = "https://earth-search.aws.element84.com/v1/"
-        self.collections: list[Any] = load_and_list_collections(
-            connector_type="sentinel_aws"
+        self.collections: list[Any] = list(
+            load_and_list_collections(connector_type="sentinel_aws")
         )
         self.collections_details = load_and_list_collections(
             as_json=True, connector_type="sentinel_aws"
@@ -340,7 +369,7 @@ class Sentinel_AWS(Connector):
         bands=[],
         maxcc=100,
         data_connector_spec=None,
-    ) -> Union[tuple[list[Any], list[dict[str, Any]]], tuple[None, None]]:
+    ) -> tuple[list[Any], list[dict[str, Any]]]:
         """
         Find Sentinel AWS data based on given parameters.
 
@@ -356,6 +385,11 @@ class Sentinel_AWS(Connector):
 
         Returns:
             tuple: A tuple containing unique dates and STAC items.
+
+        Raises:
+            TerrakitValidationError: If a validation error occurs.
+            TerrakitValueError: If a value error occurs.
+            TerrakitNoDataFoundError: If no files are found for the requested query.
         """
         logger.info("Listing Sentinel AWS data")
 
@@ -370,24 +404,33 @@ class Sentinel_AWS(Connector):
         collection_detials = self._get_collection_info(data_collection_name)
         fields = self._get_search_fields(collection_detials)
 
-        try:
-            unique_dates, stac_items = find_items(
-                self.stac_url,
-                bbox,
-                date_start,
-                date_end,
-                bands=bands,
-                collections=[data_collection_name],
-                limit=250,
-                maxcc=maxcc,
-                data_connector_spec=data_connector_spec,
-                fields=fields,
-            )
+        if bbox is None:
+            err_msg = "Sentinel AWS requires 'bbox' to search for data."
+            logger.error(err_msg)
+            raise TerrakitValueError(err_msg)
 
-        except ValueError as e:
-            error_msg = f"Unable to find data for collection '{data_collection_name}. This could be due to the parameters set:\n\t bbox={bbox}, start_date={date_start}, end_date={date_end}, collection={data_collection_name}, fields={fields}, max_cc={maxcc}."
-            logger.exception(error_msg)
-            raise TerrakitValueError(error_msg) from e
+        unique_dates, stac_items = find_items(
+            self.stac_url,
+            bbox,
+            date_start,
+            date_end,
+            bands=bands,
+            collections=[data_collection_name],
+            limit=250,
+            maxcc=maxcc,
+            data_connector_spec=data_connector_spec,
+            fields=fields,
+        )
+
+        # except ValueError as e:
+        #     error_msg = f"Unable to find data for collection '{data_collection_name}. This could be due to the parameters set:\n\t bbox={bbox}, start_date={date_start}, end_date={date_end}, collection={data_collection_name}, fields={fields}, max_cc={maxcc}."
+        #     logger.exception(error_msg)
+        #     raise TerrakitValueError(error_msg) from e
+
+        if len(unique_dates) == 0:
+            err_msg = f"No data found for collection '{data_collection_name}'."
+            logger.warning(err_msg)
+            raise TerrakitNoDataFoundError(err_msg)
 
         stac_items = [
             {"id": item.id, "properties": item.properties} for item in stac_items
@@ -407,7 +450,7 @@ class Sentinel_AWS(Connector):
         data_connector_spec=None,
         save_file=None,
         working_dir=".",
-    ) -> Union[xr.DataArray, None]:
+    ) -> xr.DataArray:
         """
         Get Sentinel AWS data based on given parameters.
 
@@ -429,6 +472,11 @@ class Sentinel_AWS(Connector):
             xarray.DataArray: An xarray DataArray containing all fetched data with dimensions (time, band, y, x).
                 All dates are stacked along the time dimension, and all bands are stacked along the band dimension.
                 If save_file is provided, individual date files are also saved to disk.
+
+        Raises:
+            TerrakitValidationError: If a validation error occurs.
+            TerrakitValueError: If a value error occurs.
+            TerrakitNoDataFoundError: If no files are found for the requested query.
         """
         check_collection_exists(data_collection_name, self.collections)
         # Check that the bands the user has requested exist in the data collection
@@ -442,7 +490,7 @@ class Sentinel_AWS(Connector):
             data_connector_spec_list = [
                 X
                 for X in self.collections_details
-                if X["collection_name"] == data_collection_name
+                if isinstance(X, dict) and X["collection_name"] == data_collection_name
             ]
             if len(data_connector_spec_list) == 0:
                 error_msg = (
@@ -462,11 +510,16 @@ class Sentinel_AWS(Connector):
                 maxcc=maxcc,
                 data_connector_spec=data_connector_spec,
             )
-        except TerrakitValueError as e:
+        except (TerrakitValueError, TerrakitNoDataFoundError) as e:
             raise e
 
         da_list: list[Any] = []
         for date in unique_dates:  # type: ignore[union-attr]
+            if bbox is None:
+                err_msg = "Sentinel AWS requires 'bbox' to retrieve data."
+                logger.error(err_msg)
+                raise TerrakitValueError(err_msg)
+
             da: xr.DataArray = get_sh_aws_data(
                 self.stac_url,
                 bbox,
@@ -482,16 +535,27 @@ class Sentinel_AWS(Connector):
             da = da.assign_coords({"band": bands, "time": date_time_stamp})
             da_list.append(da)
 
+        if len(da_list) == 0:
+            err_msg = (
+                f"No usable data retrieved for collection '{data_collection_name}' "
+                f"between {date_start} and {date_end}."
+            )
+            logger.warning(err_msg)
+            raise TerrakitNoDataFoundError(err_msg)
+
         da = xr.concat(da_list, dim="time")
         save_data_array_to_file(da, save_file)
 
         return da
 
     def _get_collection_info(self, collection_name) -> dict[str, Any]:
-        collection_info = {}
-        for i, collections_details in enumerate(self.collections_details):
-            if collections_details["collection_name"] == collection_name:
-                collection_info = self.collections_details[i]
+        collection_info: dict[str, Any] = {}
+        for collections_details in self.collections_details:
+            if (
+                isinstance(collections_details, dict)
+                and collections_details["collection_name"] == collection_name
+            ):
+                collection_info = collections_details
         return collection_info
 
     def _get_search_fields(self, collection_info: dict[str, Any]) -> str:

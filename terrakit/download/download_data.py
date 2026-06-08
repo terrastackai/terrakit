@@ -18,6 +18,7 @@ from terrakit.general_utils.exceptions import (
     TerrakitValidationError,
     TerrakitValueError,
     TerrakitBaseException,
+    TerrakitNoDataFoundError,
 )
 from terrakit.general_utils.curation_metadata import dataset_metdata
 from terrakit.validate.pipeline_model import PipelineModel, pipeline_model_validation
@@ -228,6 +229,7 @@ class DownloadCls:
         bbox_shp_file = self._find_shp_file(
             shp_file_type="bbox", shp_file_path=self.datetime_bbox_shp_file
         )
+
         grouped_bbox_gdf = self._read_shp_file(bbox_shp_file)
 
         # Deduplicate by datetime and geometry to avoid downloading same tile multiple times
@@ -236,10 +238,20 @@ class DownloadCls:
             subset=["datetime", "geometry"], keep="first"
         ).reset_index(drop=True)
 
+        logger.info(
+            f"Extracting {len(grouped_bbox_gdf_unique)} unique bounding boxes from {bbox_shp_file}"
+        )
         queried_data = []
         for li in range(0, len(grouped_bbox_gdf_unique)):
+            print(
+                f"Selected {li}+1 of {len(grouped_bbox_gdf_unique)} unique bounding boxes"
+            )  # add 1 since indexing starts at 0
+
             l = grouped_bbox_gdf_unique.loc[li]  # noqa
             requested_date = datetime.strptime(l.datetime, "%Y-%m-%d")
+            logger.info(
+                f"Querying data for date: {requested_date} ± {self.date_allowance.pre_days} pre days and ± {self.date_allowance.post_days} post days"
+            )
 
             from_date = (
                 requested_date - timedelta(days=self.date_allowance.pre_days)
@@ -249,31 +261,40 @@ class DownloadCls:
             ).strftime("%Y-%m-%d")
 
             for source in self.data_sources:
+                logger.info(
+                    f"Searching for data - Source: {source}: {source.collection_name} "
+                )
                 dc = DataConnector(connector_type=source.data_connector)
 
                 bbox = list(l.geometry.bounds)
                 logger.info(
-                    f"Searching for data - Collection: {source.collection_name}, "
                     f"Date range: {from_date} to {to_date}, "
                     f"BBox: {bbox}, "
                     f"Bands: {source.bands}, "
                     f"maxcc: {self.max_cloud_cover}"
                 )
 
-                unique_dates, results = dc.connector.find_data(  # type: ignore[attr-defined]
-                    data_collection_name=source.collection_name,
-                    date_start=from_date,
-                    date_end=to_date,
-                    bbox=bbox,
-                    bands=source.bands,
-                    maxcc=self.max_cloud_cover,
-                )
-
-                if len(unique_dates) == 0:  # type: ignore[arg-type]
-                    logger.warning(
-                        f"No data found for given request: {source}, {from_date}, {to_date}, {list(l.geometry.bounds)}."
+                try:
+                    unique_dates, results = dc.connector.find_data(  # type: ignore[attr-defined]
+                        data_collection_name=source.collection_name,
+                        date_start=from_date,
+                        date_end=to_date,
+                        bbox=bbox,
+                        bands=source.bands,
+                        maxcc=self.max_cloud_cover,
                     )
-                    return []
+                except TerrakitNoDataFoundError as e:
+                    logger.warning(
+                        "No data found during search for source=%s, collection=%s, "
+                        "date_range=%s to %s, bbox=%s. %s",
+                        source.data_connector,
+                        source.collection_name,
+                        from_date,
+                        to_date,
+                        bbox,
+                        e,
+                    )
+                    continue
 
                 logger.info(f"Unique dates found from search: {unique_dates}")
                 # Now find the closest date from the search
@@ -299,15 +320,27 @@ class DownloadCls:
 
                 save_file = f"{self.working_dir}/{source.data_connector}_{source.collection_name}.tif"
 
-                da = dc.connector.get_data(  # type: ignore[attr-defined]
-                    data_collection_name=source.collection_name,
-                    date_start=closest_date,
-                    date_end=closest_date,
-                    bbox=list(l.geometry.bounds),
-                    bands=source.bands,
-                    save_file=save_file,
-                    maxcc=self.max_cloud_cover,
-                )
+                try:
+                    da = dc.connector.get_data(  # type: ignore[attr-defined]
+                        data_collection_name=source.collection_name,
+                        date_start=closest_date,
+                        date_end=closest_date,
+                        bbox=list(l.geometry.bounds),
+                        bands=source.bands,
+                        save_file=save_file,
+                        maxcc=self.max_cloud_cover,
+                    )
+                except TerrakitNoDataFoundError as e:
+                    logger.warning(
+                        "No data found during retrieval for source=%s, collection=%s, "
+                        "date=%s, bbox=%s. %s",
+                        source.data_connector,
+                        source.collection_name,
+                        closest_date,
+                        bbox,
+                        e,
+                    )
+                    continue
 
                 try:
                     if self.transform.scale_data_xarray and self.transform.impute_nans:
@@ -347,7 +380,7 @@ class DownloadCls:
                         )
                         os.remove(save_file.replace(".tif", f"_{date}.tif"))
 
-            logging.info(f"Queried data: {queried_data}")
+            logging.info(f"Queried data: {queried_data}\n----\n")
         return queried_data
 
     def rasterize_vectors_to_the_queried_data(
@@ -501,11 +534,14 @@ def download_validation(
 
     if isinstance(transform, dict):
         if "scale_data_xarray" not in transform:
+            msg = "Dict in transform list did not contain 'scale_data_xarray'"
             raise TerrakitValidationError(msg)
         if "impute_nans" not in transform:
             msg = "Dict in transform list did not contain 'impute_nans'"
+            raise TerrakitValidationError(msg)
         if "reproject" not in transform:
             msg = "Dict in transform list did not contain 'reproject'"
+            raise TerrakitValidationError(msg)
     transform = Transform(
         scale_data_xarray=transform["scale_data_xarray"],  # type: ignore[index]
         impute_nans=transform["impute_nans"],  # type: ignore[index]

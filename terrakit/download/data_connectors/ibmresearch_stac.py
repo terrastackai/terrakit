@@ -5,11 +5,12 @@
 import logging
 import os
 from pathlib import Path
-from typing import Any, Union
+from typing import Any
 import requests
 
 from terrakit.general_utils.exceptions import (
     TerrakitMissingEnvironmentVariable,
+    TerrakitNoDataFoundError,
     TerrakitValueError,
 )
 
@@ -301,7 +302,7 @@ class IBMResearchSTAC(Connector):
         bands=[],
         maxcc=100,
         data_connector_spec=None,
-    ) -> Union[tuple[list[Any], list[dict[str, Any]]], tuple[None, None]]:
+    ) -> tuple[list[Any], list[dict[str, Any]]]:
         """
         This function retrieves unique dates and corresponding data results from a specified Sentinel Hub data collection.
 
@@ -317,6 +318,9 @@ class IBMResearchSTAC(Connector):
 
         Returns:
             tuple: A tuple containing a sorted list of unique dates and a list of data results.
+
+        Raises:
+            TerrakitNoDataFoundError: If no matching or usable data is found for a valid query.
         """
         # validate user's input
         IBMResearchSTAC._validate_dates(start=date_start, end=date_end)
@@ -352,6 +356,15 @@ class IBMResearchSTAC(Connector):
             date_str = ts.date().isoformat()
             unique_dates.add(date_str)
             results.append(item_dict)
+
+        if not results:
+            msg = (
+                f"No data found for collection '{data_collection_name}' between "
+                f"{date_start} and {date_end}."
+            )
+            logger.warning(msg)
+            raise TerrakitNoDataFoundError(msg)
+
         return sorted(list(unique_dates)), results
 
     def get_data(
@@ -384,6 +397,9 @@ class IBMResearchSTAC(Connector):
 
         Returns:
             xarray: An xarray Datasets containing the fetched data with dimensions (time, band, y, x).
+
+        Raises:
+            TerrakitNoDataFoundError: If no matching or usable data is found for a valid query.
         """
         if bbox is not None and not isinstance(bbox, tuple):
             bbox = tuple(bbox)

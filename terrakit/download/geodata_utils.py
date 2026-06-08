@@ -177,7 +177,6 @@ def load_and_list_collections(
     Returns:
         Union[list, Dict[str, Any]]: List of collection names or JSON object containing collection specifications.
     """
-    logger.info(connector_type)
     location = os.path.dirname(os.path.realpath(__file__))
     file_path = os.path.join(location, "collections.json")
     with open(file_path, "r") as file:

@@ -1,4 +1,4 @@
-# © Copyright IBM Corporation 2025
+# © Copyright IBM Corporation 2025-2026
 # SPDX-License-Identifier: Apache-2.0
 
 
@@ -9,6 +9,7 @@ from glob import glob
 from rasterio.crs import CRS
 
 from terrakit import DataConnector
+from terrakit.general_utils.exceptions import TerrakitNoDataFoundError
 
 
 class TestSentinelAWS:
@@ -99,3 +100,21 @@ class TestSentinelAWS:
         assert len(data_array.coords["band"]) == len(self.bands)
         assert len(data_array.time) >= 1
         assert len(glob(f"{save_file_dir}/*.tif")) == 7  # 7 unique dates found
+
+    def test_find_data_sentinel_aws__raises_no_data_found(
+        self, mocker, start_date, end_date, bbox
+    ):
+        mocker.patch(
+            "terrakit.download.data_connectors.sentinel_aws.find_items",
+            side_effect=TerrakitNoDataFoundError("No data found"),
+        )
+        dc = DataConnector(connector_type=self.connector_type)
+
+        with pytest.raises(TerrakitNoDataFoundError):
+            dc.connector.find_data(
+                data_collection_name="sentinel-2-l2a",
+                date_start=start_date,
+                date_end=end_date,
+                bbox=bbox,
+                bands=self.bands,
+            )

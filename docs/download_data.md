@@ -63,10 +63,31 @@ Alternatively, use the TerraKit data_connectors directly by specify the collecti
 
 ```python
 from terrakit import DataConnector
+from terrakit.general_utils.exceptions import TerrakitNoDataFoundError
 
 dc = DataConnector(connector_type="sentinel_aws")
 dc.connector.list_collections()
+
+try:
+    unique_dates, results = dc.connector.find_data(
+        data_collection_name="sentinel-2-l2a",
+        date_start="2024-01-01",
+        date_end="2024-01-31",
+        bbox=[34.671440, -0.090887, 34.706448, -0.087678],
+        bands=["blue", "green", "red"],
+    )
+except TerrakitNoDataFoundError:
+    # Valid query, but no matching data was available
+    ...
 ```
+
+When using data connectors directly, `find_data()` and `get_data()` raise
+`TerrakitNoDataFoundError` when a valid request returns no matching or usable data.
+This allows production applications to handle no-data conditions explicitly.
+
+Within the `download_data` pipeline, TerraKit treats `TerrakitNoDataFoundError` as a
+recoverable condition for an individual bbox/source query: the event is logged and the
+next bbox is queried.
 
 ## Configure the Download pipeline
 Use the following parameters to configure the TerraKit Download pipeline.

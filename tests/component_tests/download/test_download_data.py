@@ -7,6 +7,7 @@ import pytest
 from glob import glob
 
 from terrakit.download.download_data import download_data
+from terrakit.general_utils.exceptions import TerrakitNoDataFoundError
 
 
 @pytest.mark.parametrize(
@@ -262,3 +263,49 @@ class TestDownloadData_SetNoDataWithClasses:
 
         # Verify metadata was created
         assert len(glob("./tmp/terrakit_curated_dataset_classes_metadata.json")) == 1
+
+
+def test_download_data__continues_when_find_data_returns_no_data(
+    download_data_setup,
+    default_dir_clean_up,
+    mock_aws_get_data,
+    mock_stackstac,
+    mocker,
+):
+    data_source = [
+        {
+            "data_connector": "sentinel_aws",
+            "collection_name": "sentinel-2-l2a",
+            "bands": ["blue", "green", "red"],
+            "save_file": "",
+        },
+    ]
+
+    original_find_data = (
+        "terrakit.download.data_connectors.sentinel_aws.Sentinel_AWS.find_data"
+    )
+    original_method = __import__(
+        "terrakit.download.data_connectors.sentinel_aws",
+        fromlist=["Sentinel_AWS"],
+    ).Sentinel_AWS.find_data
+    call_count = {"count": 0}
+
+    def mock_find_data(self, *args, **kwargs):
+        call_count["count"] += 1
+        if call_count["count"] == 1:
+            raise TerrakitNoDataFoundError("No data found for first bbox")
+        return original_method(self, *args, **kwargs)
+
+    mocker.patch(original_find_data, new=mock_find_data)
+
+    queried_data = download_data(
+        data_sources=data_source,
+        date_allowance={"pre_days": 0, "post_days": 21},
+        transform={
+            "scale_data_xarray": False,
+            "impute_nans": False,
+            "reproject": False,
+        },
+    )
+
+    assert len(queried_data) == 7

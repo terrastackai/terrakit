@@ -1,11 +1,11 @@
-# © Copyright IBM Corporation 2025
+# © Copyright IBM Corporation 2025-2026
 # SPDX-License-Identifier: Apache-2.0
 
 
 import xarray as xr
 
 from abc import ABC, abstractmethod
-from typing import Any, Union
+from typing import Any
 
 
 class Connector(ABC):
@@ -44,7 +44,7 @@ class Connector(ABC):
         bands=[],
         maxcc=100,
         data_connector_spec=None,
-    ) -> Union[tuple[list[Any], list[dict[str, Any]]], tuple[None, None]]:
+    ) -> tuple[list[Any], list[dict[str, Any]]]:
         """
         Finds data within specified parameters and returns relevant metadata.
 
@@ -59,7 +59,10 @@ class Connector(ABC):
             data_connector_spec (Optional[Any]): Additional specifications for the data connector.
 
         Returns:
-            Union[tuple[list[Any], list[dict[str, Any]]], tuple[None, None]]: A tuple containing a list of data identifiers and a list of metadata dictionaries, or (None, None) if no data is found.
+            tuple[list[Any], list[dict[str, Any]]]: A tuple containing a list of data identifiers and a list of metadata dictionaries.
+
+        Raises:
+            TerrakitNoDataFoundError: If no matching data is found for a valid query.
         """
         pass
 
@@ -76,7 +79,7 @@ class Connector(ABC):
         data_connector_spec=None,
         save_file=None,
         working_dir=".",
-    ) -> Union[xr.DataArray, None]:
+    ) -> xr.DataArray:
         """
         Retrieves data based on given parameters and optional saving to file.
 
@@ -93,6 +96,9 @@ class Connector(ABC):
             working_dir (str): Working directory for saving the file.
 
         Returns:
-            Union[xr.DataArray, None]: The retrieved xarray DataArray or None if no data is found.
+            xr.DataArray: The retrieved xarray DataArray.
+
+        Raises:
+            TerrakitNoDataFoundError: If no matching or usable data is found for a valid query.
         """
         pass

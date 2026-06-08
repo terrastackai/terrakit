@@ -33,7 +33,10 @@ from terrakit.download.data_connectors.local_file_system import (
     _read_zarr,
     _scan_collection_dir,
 )
-from terrakit.general_utils.exceptions import TerrakitValueError
+from terrakit.general_utils.exceptions import (
+    TerrakitNoDataFoundError,
+    TerrakitValueError,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -335,27 +338,25 @@ class TestLocalFileSystemFindData:
         self, local_data_dir: Path, data_connector_spec: dict
     ):
         connector = LocalFileSystem()
-        unique_dates, results = connector.find_data(
-            data_collection_name="sentinel2",
-            date_start="2023-01-01",
-            date_end="2023-12-31",
-            data_connector_spec=data_connector_spec,
-        )
-        assert unique_dates is None
-        assert results is None
+        with pytest.raises(TerrakitNoDataFoundError):
+            connector.find_data(
+                data_collection_name="sentinel2",
+                date_start="2024-01-01",
+                date_end="2024-01-01",
+                data_connector_spec=data_connector_spec,
+            )
 
     def test_returns_none_for_empty_collection(
         self, local_data_dir: Path, data_connector_spec: dict
     ):
         connector = LocalFileSystem()
-        unique_dates, results = connector.find_data(
-            data_collection_name="empty_collection",
-            date_start="2024-01-01",
-            date_end="2024-12-31",
-            data_connector_spec=data_connector_spec,
-        )
-        assert unique_dates is None
-        assert results is None
+        with pytest.raises(TerrakitNoDataFoundError):
+            connector.find_data(
+                data_collection_name="empty_collection",
+                date_start="2024-01-01",
+                date_end="2024-12-31",
+                data_connector_spec=data_connector_spec,
+            )
 
     def test_raises_when_collection_dir_missing(self, data_connector_spec: dict):
         connector = LocalFileSystem()
@@ -475,25 +476,25 @@ class TestLocalFileSystemGetData:
         self, local_data_dir: Path, data_connector_spec: dict
     ):
         connector = LocalFileSystem()
-        result = connector.get_data(
-            data_collection_name="sentinel2",
-            date_start="2023-01-01",
-            date_end="2023-12-31",
-            data_connector_spec=data_connector_spec,
-        )
-        assert result is None
+        with pytest.raises(TerrakitNoDataFoundError):
+            connector.get_data(
+                data_collection_name="sentinel2",
+                date_start="2023-01-01",
+                date_end="2023-12-31",
+                data_connector_spec=data_connector_spec,
+            )
 
     def test_returns_none_for_empty_collection(
         self, local_data_dir: Path, data_connector_spec: dict
     ):
         connector = LocalFileSystem()
-        result = connector.get_data(
-            data_collection_name="empty_collection",
-            date_start="2024-01-01",
-            date_end="2024-12-31",
-            data_connector_spec=data_connector_spec,
-        )
-        assert result is None
+        with pytest.raises(TerrakitNoDataFoundError):
+            connector.get_data(
+                data_collection_name="empty_collection",
+                date_start="2024-01-01",
+                date_end="2024-12-31",
+                data_connector_spec=data_connector_spec,
+            )
 
     def test_saves_file_when_save_file_provided(
         self,

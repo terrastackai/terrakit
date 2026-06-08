@@ -1,4 +1,4 @@
-# © Copyright IBM Corporation 2025
+# © Copyright IBM Corporation 2025-2026
 # SPDX-License-Identifier: Apache-2.0
 
 
@@ -10,6 +10,7 @@ from rasterio.crs import CRS
 
 
 from terrakit import DataConnector
+from terrakit.general_utils.exceptions import TerrakitNoDataFoundError
 
 
 class TestSentinelHub:
@@ -119,3 +120,21 @@ class TestSentinelHub:
         assert len(data.coords["band"]) == len(self.bands)
         assert len(data.time) >= 1
         assert len(glob(f"{save_file_dir}/*.tif")) == 7
+
+    def test_find_data_sentinelhub__raises_no_data_found(
+        self, mock_setup_sentinelhub, mocker, start_date, end_date, bbox
+    ):
+        mocker.patch(
+            "terrakit.download.data_connectors.sentinelhub.SentinelHubCatalog.search",
+            return_value=iter([]),
+        )
+        dc = DataConnector(connector_type=self.connector_type)
+
+        with pytest.raises(TerrakitNoDataFoundError):
+            dc.connector.find_data(
+                data_collection_name="s2_l1c",
+                date_start=start_date,
+                date_end=end_date,
+                bbox=bbox,
+                bands=self.bands,
+            )
