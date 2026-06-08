@@ -239,29 +239,34 @@ class DownloadCls:
         queried_data = []
         for li in range(0, len(grouped_bbox_gdf_unique)):
             l = grouped_bbox_gdf_unique.loc[li]  # noqa
+            requested_date = datetime.strptime(l.datetime, "%Y-%m-%d")
 
             from_date = (
-                datetime.strptime(l.datetime, "%Y-%m-%d")
-                - timedelta(days=self.date_allowance.pre_days)
+                requested_date - timedelta(days=self.date_allowance.pre_days)
             ).strftime("%Y-%m-%d")
             to_date = (
-                datetime.strptime(l.datetime, "%Y-%m-%d")
-                + timedelta(days=self.date_allowance.post_days)
+                requested_date + timedelta(days=self.date_allowance.post_days)
             ).strftime("%Y-%m-%d")
 
             for source in self.data_sources:
                 dc = DataConnector(connector_type=source.data_connector)
 
-                logger.info(source.collection_name)
-                logger.info(from_date)
-                logger.info(to_date)
-                logger.info(list(l.geometry.bounds))
+                bbox = list(l.geometry.bounds)
+                logger.info(
+                    f"Searching for data - Collection: {source.collection_name}, "
+                    f"Date range: {from_date} to {to_date}, "
+                    f"BBox: {bbox}, "
+                    f"Bands: {source.bands}, "
+                    f"maxcc: {self.max_cloud_cover}"
+                )
+
                 unique_dates, results = dc.connector.find_data(  # type: ignore[attr-defined]
                     data_collection_name=source.collection_name,
                     date_start=from_date,
                     date_end=to_date,
-                    bbox=list(l.geometry.bounds),
+                    bbox=bbox,
                     bands=source.bands,
+                    maxcc=self.max_cloud_cover,
                 )
 
                 if len(unique_dates) == 0:  # type: ignore[arg-type]
@@ -270,19 +275,27 @@ class DownloadCls:
                     )
                     return []
 
-                logger.info(unique_dates)
-
+                logger.info(f"Unique dates found from search: {unique_dates}")
                 # Now find the closest date from the search
                 time_diffs_abs = [
-                    abs(
-                        datetime.strptime(X, "%Y-%m-%d")
-                        - datetime.strptime(l.datetime, "%Y-%m-%d")
-                    )
+                    abs(datetime.strptime(X, "%Y-%m-%d") - requested_date)
                     for X in unique_dates  # type: ignore[union-attr]
                 ]
                 closest_index = time_diffs_abs.index(min(time_diffs_abs))
 
                 closest_date = unique_dates[closest_index]  # type: ignore[index]
+
+                requested_date = requested_date
+                closest_date_dt = datetime.strptime(closest_date, "%Y-%m-%d")
+                date_diff_days = abs((requested_date - closest_date_dt).days)
+
+                if date_diff_days == 0:
+                    logger.info(f"Exact date match found: {closest_date}")
+                else:
+                    logger.info(
+                        f"Closest available date: {closest_date} "
+                        f"(±{date_diff_days} day{'s' if date_diff_days != 1 else ''} from requested {l.datetime})"
+                    )
 
                 save_file = f"{self.working_dir}/{source.data_connector}_{source.collection_name}.tif"
 

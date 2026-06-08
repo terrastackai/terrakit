@@ -196,15 +196,25 @@ def find_sh_aws_stac_items(
         fields=fields,
     )
 
+    logger.info(f"Found {len(stac_items)} items.")
+
     if len(stac_items.items) == 0:
         err_msg = f"No items found for query parameters: bbox={bbox}, start_date={from_datetime}, end_date={to_datetime}, collection={collections}, fields={fields}."
         logger.warning(err_msg)
         raise TerrakitValueError(err_msg)
 
     if maxcc:
+        logger.info(f"Filtering for maximum cloud cover of {maxcc}%")
         stac_items = [
-            item for item in stac_items if item.properties.get("eo:cloud_cover") < maxcc
+            item
+            for item in stac_items
+            if item.properties.get("eo:cloud_cover")
+            < maxcc  # filter for maximum allowed cloud cover
         ]
+        average_cloud_cover = np.mean(
+            [item.properties.get("eo:cloud_cover") for item in stac_items]
+        )
+        logger.info(f"Average cloud cover: {average_cloud_cover}%")
         if len(stac_items) == 0:
             err_msg = f"After filtering for cloud cover, no items were found. 'max_cc' set to {maxcc}. Consider increasing the maximum allowed cloud cover."
             logger.warning(err_msg)

@@ -7,6 +7,7 @@ import boto3
 import dotenv
 import glob
 import logging
+import numpy as np
 import os
 import rioxarray
 import rasterio as rio
@@ -400,11 +401,16 @@ class NASA_EarthData(Connector):
                 limit=250,
             )
             if maxcc:
+                logger.info(f"Filtering for maximum cloud cover of {maxcc}%")
                 results = [
                     item
                     for item in results
                     if item["properties"].get("eo:cloud_cover") < maxcc
                 ]
+                average_cloud_cover = np.mean(
+                    [item["properties"].get("eo:cloud_cover") for item in results]
+                )
+                logger.info(f"Average cloud cover: {average_cloud_cover}%")
             unique_dates = sorted(
                 set(([X["properties"]["datetime"].split("T")[0] for X in results]))
             )

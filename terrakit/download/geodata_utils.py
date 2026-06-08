@@ -10,6 +10,7 @@ import xarray as xr
 import json
 import logging
 import math
+import tempfile
 import typing
 import numpy as np
 import os
@@ -21,6 +22,7 @@ from sentinelhub import (
     BBox,
     bbox_to_dimensions,
 )
+from pathlib import Path
 from shapely.geometry import shape
 from typing import Any, Dict, Union
 
@@ -502,8 +504,6 @@ def save_cog(ds, filename="cogeo.tif") -> None:
         # For COG with band descriptions, we need a two-step process:
         # 1. Save as regular GeoTIFF with band descriptions
         # 2. Convert to COG format
-        import tempfile
-        from pathlib import Path
 
         # Create temporary file for intermediate GeoTIFF
         temp_dir = Path(filename).parent
