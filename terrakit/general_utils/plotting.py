@@ -225,7 +225,7 @@ def plot_tiles_and_label_pair(
 
             extent = [bounds.left, bounds.right, bounds.bottom, bounds.top]
             suffix = Path(image_path[i]).suffix
-            label_path = image_path[i].replace(suffix, f"_labels{suffix}")
+            label_path = image_path[i].replace(suffix, f"_label{suffix}")
 
             # Check if label file exists
             if not Path(label_path).exists():
@@ -253,16 +253,37 @@ def plot_tiles_and_label_pair(
             # Get unique label classes (excluding NaN values)
             unique_classes = np.unique(labels[~np.isnan(labels)])
 
-            # Create a colormap for the label classes
-            cmap = (
-                plt.cm.get_cmap("tab10", len(unique_classes))
-                if len(unique_classes) > 0
-                else None
-            )
+            # Create a masked array to properly handle NaN values (make them transparent)
+            labels_masked = np.ma.masked_where(np.isnan(labels), labels)
 
-            # Display labels with colormap
+            # Create a colormap for the label classes
+            if len(unique_classes) > 0:
+                # Use a copy of the colormap to avoid modifying the original
+                cmap = plt.cm.get_cmap("tab10", len(unique_classes)).copy()
+                # Set the colormap to make masked values transparent
+                cmap.set_bad(color="none", alpha=0.0)
+            else:
+                cmap = None
+
+            # Set vmin and vmax to properly scale the colormap
+            # For single class, we need a range for the colormap to work properly
+            if len(unique_classes) > 0:
+                vmin = unique_classes.min()
+                # Ensure vmax is different from vmin for proper colormap scaling
+                vmax = unique_classes.max() if unique_classes.max() > vmin else vmin + 1
+            else:
+                vmin = 0
+                vmax = 1
+
+            # Display labels with colormap using masked array
             im = axs_labels.imshow(
-                labels, alpha=alpha, extent=extent, zorder=2, cmap=cmap
+                labels_masked,
+                alpha=alpha,
+                extent=extent,
+                zorder=2,
+                cmap=cmap,
+                vmin=vmin,
+                vmax=vmax,
             )
 
             # Add colorbar with class labels if there are multiple classes
@@ -321,8 +342,28 @@ def plot_chip_and_label_pairs(
     max_samples = 10
     if samples > max_samples:
         samples = max_samples
+    elif samples < 1:
+        raise TerrakitBaseException(
+            f"samples parameter must be a positive integer, got {samples}. "
+            "Please provide a value greater than 0."
+        )
 
     chip_list = [chip for chip in chip_list if chip_suffix in chip]
+
+    # Check if chip_list is empty after filtering
+    if len(chip_list) == 0:
+        raise TerrakitBaseException(
+            f"No chips found matching suffix '{chip_suffix}'. "
+            "Please check that your chip_list contains files with the correct suffix."
+        )
+
+    # Ensure samples is at least 1
+    if samples <= 0:
+        raise TerrakitBaseException(
+            f"samples parameter must be a positive integer, got {samples}. "
+            "Please provide a value greater than 0."
+        )
+
     chip_list = random.sample(chip_list, min([len(chip_list), samples]))
 
     fig, axs = plt.subplots(1, len(chip_list), figsize=(15, 4))

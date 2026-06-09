@@ -10,6 +10,7 @@ import xarray as xr
 import json
 import logging
 import math
+import tempfile
 import typing
 import numpy as np
 import os
@@ -21,6 +22,7 @@ from sentinelhub import (
     BBox,
     bbox_to_dimensions,
 )
+from pathlib import Path
 from shapely.geometry import shape
 from typing import Any, Dict, Union
 
@@ -444,15 +446,21 @@ def check_and_crop_bbox(bbox, resolution):
     return aoi_bbox, aoi_size
 
 
-def save_data_array_to_file(da, save_file, imputed=False) -> None:
+def save_data_array_to_file(
+    da, save_file: str | None, imputed: bool = False
+) -> str | None:
     """
     Save an xarray DataArray to a GeoTIFF file.
 
     Parameters:
         da (xarray.DataArray): The input DataArray.
-        save_file (str): The path to save the DataArray.
+        save_file (str | None): The path to save the DataArray.
         imputed (bool): Whether the DataArray has been imputed.
+
+    Returns:
+        str | None: The path to the saved GeoTIFF file, or None if save_file is None.
     """
+    file_path: str | None = save_file
     if save_file is not None:
         if da.time is not None:
             for i, t in enumerate(da.time.values):
@@ -463,11 +471,16 @@ def save_data_array_to_file(da, save_file, imputed=False) -> None:
                     file_path = save_file
                 if imputed is True and "imputed" not in file_path:
                     file_path = file_path.replace(".tif", "_imputed.tif")
-                save_cog(da.isel(time=i), file_path)
+                try:
+                    save_cog(da.isel(time=i), file_path)
+                except Exception as e:
+                    logger.warning(f"Error saving {file_path}. {e}")
         else:
             logger.warning(
                 f"Error saving file. Missing time dimension. Dimensions are: {da.dims}"
             )
+
+    return file_path
 
 
 def save_cog(ds, filename="cogeo.tif") -> None:
@@ -491,8 +504,6 @@ def save_cog(ds, filename="cogeo.tif") -> None:
         # For COG with band descriptions, we need a two-step process:
         # 1. Save as regular GeoTIFF with band descriptions
         # 2. Convert to COG format
-        import tempfile
-        from pathlib import Path
 
         # Create temporary file for intermediate GeoTIFF
         temp_dir = Path(filename).parent

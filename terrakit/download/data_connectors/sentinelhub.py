@@ -5,6 +5,7 @@
 # Assisted by watsonx Code Assistant
 
 import os
+import numpy as np
 import xarray as xr
 import rioxarray
 import shutil
@@ -351,6 +352,17 @@ class SentinelHub(Connector):
             )
             logger.error(error_msg)
             return None, None
+
+        # Log average cloud cover if maxcc filtering was applied
+        if maxcc < 100 and results:
+            cloud_covers = [
+                X["properties"].get("eo:cloud_cover", 0)
+                for X in results
+                if "eo:cloud_cover" in X.get("properties", {})
+            ]
+            if cloud_covers:
+                average_cloud_cover = np.mean(cloud_covers)
+                logger.info(f"Average cloud cover: {average_cloud_cover}%")
 
         unique_dates = sorted(set([X["properties"]["datetime"][0:10] for X in results]))
         return unique_dates, results

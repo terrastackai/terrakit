@@ -1,4 +1,4 @@
-# © Copyright IBM Corporation 2025
+# © Copyright IBM Corporation 2026
 # SPDX-License-Identifier: Apache-2.0
 
 
@@ -239,29 +239,34 @@ class DownloadCls:
         queried_data = []
         for li in range(0, len(grouped_bbox_gdf_unique)):
             l = grouped_bbox_gdf_unique.loc[li]  # noqa
+            requested_date = datetime.strptime(l.datetime, "%Y-%m-%d")
 
             from_date = (
-                datetime.strptime(l.datetime, "%Y-%m-%d")
-                - timedelta(days=self.date_allowance.pre_days)
+                requested_date - timedelta(days=self.date_allowance.pre_days)
             ).strftime("%Y-%m-%d")
             to_date = (
-                datetime.strptime(l.datetime, "%Y-%m-%d")
-                + timedelta(days=self.date_allowance.post_days)
+                requested_date + timedelta(days=self.date_allowance.post_days)
             ).strftime("%Y-%m-%d")
 
             for source in self.data_sources:
                 dc = DataConnector(connector_type=source.data_connector)
 
-                logger.info(source.collection_name)
-                logger.info(from_date)
-                logger.info(to_date)
-                logger.info(list(l.geometry.bounds))
+                bbox = list(l.geometry.bounds)
+                logger.info(
+                    f"Searching for data - Collection: {source.collection_name}, "
+                    f"Date range: {from_date} to {to_date}, "
+                    f"BBox: {bbox}, "
+                    f"Bands: {source.bands}, "
+                    f"maxcc: {self.max_cloud_cover}"
+                )
+
                 unique_dates, results = dc.connector.find_data(  # type: ignore[attr-defined]
                     data_collection_name=source.collection_name,
                     date_start=from_date,
                     date_end=to_date,
-                    bbox=list(l.geometry.bounds),
+                    bbox=bbox,
                     bands=source.bands,
+                    maxcc=self.max_cloud_cover,
                 )
 
                 if len(unique_dates) == 0:  # type: ignore[arg-type]
@@ -270,19 +275,27 @@ class DownloadCls:
                     )
                     return []
 
-                logger.info(unique_dates)
-
+                logger.info(f"Unique dates found from search: {unique_dates}")
                 # Now find the closest date from the search
                 time_diffs_abs = [
-                    abs(
-                        datetime.strptime(X, "%Y-%m-%d")
-                        - datetime.strptime(l.datetime, "%Y-%m-%d")
-                    )
+                    abs(datetime.strptime(X, "%Y-%m-%d") - requested_date)
                     for X in unique_dates  # type: ignore[union-attr]
                 ]
                 closest_index = time_diffs_abs.index(min(time_diffs_abs))
 
                 closest_date = unique_dates[closest_index]  # type: ignore[index]
+
+                requested_date = requested_date
+                closest_date_dt = datetime.strptime(closest_date, "%Y-%m-%d")
+                date_diff_days = abs((requested_date - closest_date_dt).days)
+
+                if date_diff_days == 0:
+                    logger.info(f"Exact date match found: {closest_date}")
+                else:
+                    logger.info(
+                        f"Closest available date: {closest_date} "
+                        f"(±{date_diff_days} day{'s' if date_diff_days != 1 else ''} from requested {l.datetime})"
+                    )
 
                 save_file = f"{self.working_dir}/{source.data_connector}_{source.collection_name}.tif"
 
@@ -297,29 +310,43 @@ class DownloadCls:
                 )
 
                 try:
-                    if self.transform.scale_data_xarray:
+                    if self.transform.scale_data_xarray and self.transform.impute_nans:
                         dai = scale_data_xarray(da, list(np.ones(len(source.bands))))  # type: ignore[arg-type]
-                    if self.transform.impute_nans:
                         dai = impute_nans_xarray(dai)
+                    elif (
+                        self.transform.scale_data_xarray
+                        and not self.transform.impute_nans
+                    ):
+                        dai = scale_data_xarray(da, list(np.ones(len(source.bands))))  # type: ignore[arg-type]
+                    elif (
+                        self.transform.impute_nans
+                        and not self.transform.scale_data_xarray
+                    ):
+                        dai = impute_nans_xarray(da)
+                    else:
+                        dai = da
                     """ >>> INCLUDE NEW TRANSFORMATIONS HERE <<< 
                     if self.transform.<new_transformation_func>:
                         dai = <new_tranformation_fnc(da)>
                     """
-                    save_data_array_to_file(dai, save_file, imputed=True)
+                    save_file_updated = save_data_array_to_file(
+                        dai, save_file, imputed=self.transform.impute_nans
+                    )
                 except TerrakitBaseException as e:
                     raise TerrakitBaseException(
                         f"Error while transforming data... {e}"
                     ) from e
 
                 for i, t in enumerate(da.time.values):  # type: ignore[union-attr]
-                    date = t.astype(str)[:10]
-                    queried_data.append(
-                        save_file.replace(".tif", f"_{date}_imputed.tif")
-                    )
+                    queried_data.append(save_file_updated)
 
-                if self.keep_files is False:
-                    logger.info(f"Deleting {save_file.replace('.tif', f'_{date}.tif')}")
-                    os.remove(save_file.replace(".tif", f"_{date}.tif"))
+                    if self.transform.impute_nans and self.keep_files is False:
+                        date = t.astype(str)[:10]
+                        logger.info(
+                            f"Deleting {save_file.replace('.tif', f'_{date}.tif')}"
+                        )
+                        os.remove(save_file.replace(".tif", f"_{date}.tif"))
+
             logging.info(f"Queried data: {queried_data}")
         return queried_data
 
@@ -387,9 +414,9 @@ class DownloadCls:
                 if set_no_data:
                     out_meta.update({"nodata": -1})
                 # Write the burned image to geotiff
-                logging.info(f"Writing to {q.replace('.tif', '')}_labels.tif")
+                logging.info(f"Writing to {q.replace('.tif', '')}_label.tif")
                 with rasterio.open(
-                    f"{q.replace('.tif', '')}_labels.tif", "w", **out_meta
+                    f"{q.replace('.tif', '')}_label.tif", "w", **out_meta
                 ) as dst:
                     dst.write(image, indexes=1)
                     file_save_count += 1

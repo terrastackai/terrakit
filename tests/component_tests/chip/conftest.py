@@ -1,4 +1,4 @@
-# © Copyright IBM Corporation 2025
+# © Copyright IBM Corporation 2025-2026
 # SPDX-License-Identifier: Apache-2.0
 
 
@@ -9,7 +9,7 @@ from pathlib import Path
 
 WORKING_DIR = "tests/resources/component_test_data/chip"
 DEFAULT_DATA_SUFFIX = ".tif"
-DEFAULT_LABEL_SUFFIX = "_labels.tif"
+DEFAULT_LABEL_SUFFIX = "_label.tif"
 
 
 @pytest.fixture
@@ -17,7 +17,7 @@ def chip_and_label_setup():
     """
     Set up test copying a dummy tif file into the working directory.
     One file is called `dummy_imputed.tif`, while the other is called
-    `dummy_imputed_labels.tif`.
+    `dummy_imputed_label.tif`.
     """
     Path(WORKING_DIR).mkdir(parents=True, exist_ok=True)
     shutil.copy(
@@ -65,7 +65,7 @@ def chip_and_label_setup_file_extension():
     )
     shutil.copy(
         "tests/resources/component_test_data/download/dummy.tif",
-        f"{WORKING_DIR}/dummy_imputed_labels.tiff",
+        f"{WORKING_DIR}/dummy_imputed_label.tif",
     )
 
 

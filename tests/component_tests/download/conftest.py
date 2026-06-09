@@ -371,7 +371,6 @@ def mock_stackstac(mocker):
         "stackstac.stack",
         return_value=stackstac.stack(stac_items, epsg=4326, sortby_date="asc"),
     )
-    print("Running mock for stack stac here")
     mock_stackstac_stack
 
 

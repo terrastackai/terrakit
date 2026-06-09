@@ -1,4 +1,4 @@
-# © Copyright IBM Corporation 2025
+# © Copyright IBM Corporation 2025-2026
 # SPDX-License-Identifier: Apache-2.0
 
 
@@ -101,7 +101,7 @@ class ChipAndLabelCls:
             working_dir="./tmp",
             active=True,
             data_suffix=".tif",
-            label_suffix="_labels.tif",
+            label_suffix="_label.tif",
             chip_suffix=".data.tif",
             chip_label_suffix=".label.tif",
             sample_dim=256,
@@ -119,7 +119,7 @@ class ChipAndLabelCls:
         working_dir: str = "./tmp",
         active: bool = True,
         data_suffix: str = ".tif",
-        label_suffix: str = "_labels.tif",
+        label_suffix: str = "_label.tif",
         chip_suffix: str = ".data.tif",
         chip_label_suffix: str = ".label.tif",
         sample_dim: int = 256,
@@ -156,6 +156,8 @@ class ChipAndLabelCls:
         self.keep_files = keep_files
         self.match_suffix = match_suffix
         self.stats = stats
+
+        print("Reloading chip and label")
 
     def get_windows(self, data_meta: dict):
         """
@@ -265,7 +267,7 @@ class ChipAndLabelCls:
             list: List of all chipped data and label files.
         """
         data_files_to_chip = self.files_to_chip(self.working_dir)
-        logging.info(f"Chipping data: {data_files_to_chip}")
+        logger.info(f"Chipping data: {data_files_to_chip}")
 
         # Initalize stats:
         data_file_count = len(data_files_to_chip)
@@ -443,7 +445,7 @@ def chip_and_label_data(
     working_dir: str = "./tmp",
     active: bool = True,
     data_suffix: str = ".tif",
-    label_suffix: str = "_labels.tif",
+    label_suffix: str = "_label.tif",
     chip_suffix: str = ".data.tif",
     chip_label_suffix: str = ".label.tif",
     sample_dim: int = 256,
