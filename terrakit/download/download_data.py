@@ -232,10 +232,14 @@ class DownloadCls:
 
         grouped_bbox_gdf = self._read_shp_file(bbox_shp_file)
 
-        # Deduplicate by datetime and geometry to avoid downloading same tile multiple times
+        # Deduplicate by datetime, geometry, and tile_suffix to avoid downloading same tile multiple times
         # This happens when multiple label classes exist for the same date/location
+        # Include tile_suffix to preserve unique tiles for non-overlapping geometries
+        dedup_columns = ["datetime", "geometry"]
+        if "tilesuffix" in grouped_bbox_gdf.columns:
+            dedup_columns.append("tilesuffix")
         grouped_bbox_gdf_unique = grouped_bbox_gdf.drop_duplicates(
-            subset=["datetime", "geometry"], keep="first"
+            subset=dedup_columns, keep="first"
         ).reset_index(drop=True)
 
         logger.info(
@@ -244,7 +248,7 @@ class DownloadCls:
         queried_data = []
         for li in range(0, len(grouped_bbox_gdf_unique)):
             logger.info(
-                f"Selected {li}+1 of {len(grouped_bbox_gdf_unique)} unique bounding boxes"
+                f"Selected {li + 1} of {len(grouped_bbox_gdf_unique)} unique bounding boxes"
             )  # add 1 since indexing starts at 0
 
             l = grouped_bbox_gdf_unique.loc[li]  # noqa
@@ -318,7 +322,9 @@ class DownloadCls:
                         f"(±{date_diff_days} day{'s' if date_diff_days != 1 else ''} from requested {l.datetime})"
                     )
 
-                save_file = f"{self.working_dir}/{source.data_connector}_{source.collection_name}.tif"
+                # Include tile_suffix in filename if available
+                tile_suffix = getattr(l, "tilesuffix", "")
+                save_file = f"{self.working_dir}/{source.data_connector}_{source.collection_name}{tile_suffix}.tif"
 
                 try:
                     da = dc.connector.get_data(  # type: ignore[attr-defined]
