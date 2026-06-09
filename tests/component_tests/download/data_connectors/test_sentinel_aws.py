@@ -118,3 +118,31 @@ class TestSentinelAWS:
                 bbox=bbox,
                 bands=self.bands,
             )
+
+    def test_find_sh_aws_stac_items__raises_no_data_found_when_no_items(
+        self, mocker, start_date, end_date, bbox
+    ):
+        """Test that TerrakitNoDataFoundError is raised when no STAC items are found initially."""
+        # Mock stac_get_items to return an empty ItemCollection
+        empty_catalog = mocker.MagicMock()
+        empty_catalog.items = []
+        mocker.patch(
+            "terrakit.download.data_connectors.sentinel_aws.stac_get_items",
+            return_value=empty_catalog,
+        )
+
+        from terrakit.download.data_connectors.sentinel_aws import (
+            find_sh_aws_stac_items,
+        )
+
+        with pytest.raises(TerrakitNoDataFoundError) as exc_info:
+            find_sh_aws_stac_items(
+                stac_url="https://earth-search.aws.element84.com/v1/",
+                bbox=bbox,
+                from_datetime=start_date,
+                to_datetime=end_date,
+                bands=self.bands,
+                collections=["sentinel-2-l2a"],
+            )
+
+        assert "No items found for query parameters" in str(exc_info.value)
