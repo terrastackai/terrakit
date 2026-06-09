@@ -1632,7 +1632,7 @@ class CDS(Connector):
         bands=[],
         maxcc=100,
         data_connector_spec=None,
-    ) -> Union[tuple[list[Any], list[dict[str, Any]]], tuple[None, None]]:
+    ) -> tuple[list[Any], list[dict[str, Any]]]:
         """
         This function retrieves unique dates and corresponding data results from a specified Climate Data Store data collection.
 
@@ -1648,6 +1648,11 @@ class CDS(Connector):
 
         Returns:
             tuple: A tuple containing a sorted list of unique dates and a list of data results.
+
+        Raises:
+            TerrakitValidationError: If a validation error occurs.
+            TerrakitValueError: If a value error occurs.
+            TerrakitNoDataFoundError: If no data is available for the requested query.
         """
         if "CDSAPI_KEY" not in os.environ:
             raise TerrakitValidationError(
@@ -1731,8 +1736,11 @@ class CDS(Connector):
                 Each variable has dimensions (time, latitude, longitude) and includes a 'stepType'
                 attribute indicating the parameter class ('instant', 'accum', 'avg', 'max', 'min').
 
-                To convert to the old DataArray format:
-                    data_array = dataset.to_array(dim='band')
+        Raises:
+            TerrakitValidationError: If a validation error occurs.
+            TerrakitValueError: If a value error occurs.
+            TerrakitNoDataFoundError: If no matching or usable data is found for a valid query.
+
 
         Note:
             This method now returns xarray.Dataset instead of xarray.DataArray to preserve

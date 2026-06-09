@@ -1,4 +1,4 @@
-# © Copyright IBM Corporation 2025
+# © Copyright IBM Corporation 2025-2026
 # SPDX-License-Identifier: Apache-2.0
 
 
@@ -6,6 +6,7 @@ import pytest
 import xarray as xr
 
 from terrakit import DataConnector
+from terrakit.general_utils.exceptions import TerrakitNoDataFoundError
 
 
 class TestNASAEarthData:
@@ -127,3 +128,21 @@ class TestNASAEarthData:
         assert isinstance(data_array, xr.DataArray)
         assert len(data_array.coords["band"]) == len(self.bands)
         assert len(data_array.time) >= 1
+
+    def test_find_data_nasa_earthdata__raises_no_data_found(
+        self, mocker, start_date, end_date, bbox
+    ):
+        mocker.patch(
+            "terrakit.download.data_connectors.nasa_earthdata.find_items",
+            return_value=[],
+        )
+        dc = DataConnector(connector_type=self.connector_type)
+
+        with pytest.raises(TerrakitNoDataFoundError):
+            dc.connector.find_data(
+                data_collection_name="HLSS30_2.0",
+                date_start=start_date,
+                date_end=end_date,
+                bbox=bbox,
+                bands=self.bands,
+            )

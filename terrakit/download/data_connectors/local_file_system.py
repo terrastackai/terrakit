@@ -14,7 +14,7 @@ from datetime import datetime
 from typing import Any, Union
 
 from ..connector import Connector
-from ...general_utils.exceptions import TerrakitValueError
+from ...general_utils.exceptions import TerrakitNoDataFoundError, TerrakitValueError
 from terrakit.validate.helpers import (
     check_start_end_date,
 )
@@ -239,7 +239,7 @@ def _read_geotiff(path: str, spec: dict) -> xr.DataArray:
                 exc,
             )
 
-    da: xr.DataArray = rioxarray.open_rasterio(path, **open_kwargs)
+    da = xr.DataArray(rioxarray.open_rasterio(path, **open_kwargs))
     logger.debug(
         "Opened GeoTIFF '%s' (COG=%s), shape=%s.",
         path,
@@ -684,7 +684,7 @@ class LocalFileSystem(Connector):
         bands: list = [],
         maxcc: int = 100,
         data_connector_spec: Union[dict, None] = None,
-    ) -> Union[tuple[list[Any], list[dict[str, Any]]], tuple[None, None]]:
+    ) -> tuple[list[Any], list[dict[str, Any]]]:
         """
         Discover supported raster files whose names contain a date within
         [date_start, date_end].
@@ -702,7 +702,10 @@ class LocalFileSystem(Connector):
             data_connector_spec (dict | None): Must contain ``"base_path"``.
 
         Returns:
-            tuple[list[str], list[dict]] | tuple[None, None]
+            tuple[list[str], list[dict]]
+
+        Raises:
+            TerrakitNoDataFoundError: If no files are found for the requested query.
         """
         check_start_end_date(date_start=date_start, date_end=date_end)
 
@@ -719,13 +722,12 @@ class LocalFileSystem(Connector):
         )
 
         if not results:
-            logger.info(
-                "No files found for collection '%s' between %s and %s.",
-                data_collection_name,
-                date_start,
-                date_end,
+            msg = (
+                f"No files found for collection '{data_collection_name}' "
+                f"between {date_start} and {date_end}."
             )
-            return None, None
+            logger.info(msg)
+            raise TerrakitNoDataFoundError(msg)
 
         logger.info(
             "Found %d file(s) across %d unique date(s) in collection '%s'.",
@@ -747,7 +749,7 @@ class LocalFileSystem(Connector):
         data_connector_spec: Union[dict, None] = None,
         save_file: Union[str, None] = None,
         working_dir: str = ".",
-    ) -> Union[xr.DataArray, None]:
+    ) -> xr.DataArray:
         """
         Load all matching files and stack them as ``(time, band, y, x)``.
 
@@ -769,7 +771,10 @@ class LocalFileSystem(Connector):
             working_dir (str): Ignored (API compatibility).
 
         Returns:
-            xr.DataArray | None
+            xr.DataArray
+
+        Raises:
+            TerrakitNoDataFoundError: If no files are found for the requested query.
         """
         spec: dict = data_connector_spec if data_connector_spec is not None else {}
 
@@ -783,9 +788,6 @@ class LocalFileSystem(Connector):
             maxcc=maxcc,
             data_connector_spec=data_connector_spec,
         )
-
-        if unique_dates is None or results is None:
-            return None
 
         da_list: list[xr.DataArray] = []
         for result in results:
@@ -808,9 +810,6 @@ class LocalFileSystem(Connector):
             timestamp = datetime.strptime(date_str, "%Y-%m-%d")
             da = da.expand_dims(dim="time").assign_coords(time=[timestamp])
             da_list.append(da)
-
-        if not da_list:
-            return None
 
         stacked: xr.DataArray = xr.concat(da_list, dim="time")
 

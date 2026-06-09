@@ -204,6 +204,16 @@ def plot_tiles_and_label_pair(
     max_samples = 4
     if samples > max_samples:
         samples = max_samples
+    elif samples < 1:
+        raise TerrakitBaseException(
+            f"samples parameter must be a positive integer, got {samples}. "
+            "Please provide a value greater than 0."
+        )
+    elif type(samples) is not int:
+        raise TerrakitBaseException(
+            f"samples parameter must be an integer, got {type(samples)}. "
+            "Please provide a value that is an integer."
+        )
 
     image_list = random.sample(image_list, min([len(image_list), samples]))
 
@@ -238,13 +248,19 @@ def plot_tiles_and_label_pair(
             image_stack = np.dstack(image)
 
             axs = fig.add_subplot(2, len(image_list), count)
+            # Plot image first with higher zorder
             axs.imshow(image_stack, extent=extent, alpha=alpha, zorder=2)
+            # Set axes limits to match extent for proper basemap overlay
+            axs.set_xlim(extent[0], extent[1])
+            axs.set_ylim(extent[2], extent[3])
             axs.axis("off")
             axs.set_title(f"image_{i}")
+            # Add basemap behind with explicit zorder
             cx.add_basemap(
                 axs,
                 crs=crs,
                 source=cx.providers.OpenStreetMap.Mapnik,
+                zorder=0,
             )
             count = count + 1
 
@@ -295,10 +311,12 @@ def plot_tiles_and_label_pair(
 
             axs_labels.axis("off")
             axs_labels.set_title(f"label_{i}")
+            # Add basemap behind with explicit zorder
             cx.add_basemap(
                 axs_labels,
                 crs=crs,
                 source=cx.providers.OpenStreetMap.Mapnik,
+                zorder=0,
             )
             count = count + 1
             plt.show()
@@ -346,6 +364,11 @@ def plot_chip_and_label_pairs(
         raise TerrakitBaseException(
             f"samples parameter must be a positive integer, got {samples}. "
             "Please provide a value greater than 0."
+        )
+    elif type(samples) is not int:
+        raise TerrakitBaseException(
+            f"samples parameter must be an integer, got {type(samples)}. "
+            "Please provide a value that is an integer."
         )
 
     chip_list = [chip for chip in chip_list if chip_suffix in chip]

@@ -1,4 +1,4 @@
-# © Copyright IBM Corporation 2025
+# © Copyright IBM Corporation 2025-2026
 # SPDX-License-Identifier: Apache-2.0
 
 
@@ -32,4 +32,10 @@ class TerrakitValueError(TerrakitBaseException):
 
 
 class TerrakitMissingEnvironmentVariable(TerrakitBaseException):
+    pass
+
+
+class TerrakitNoDataFoundError(TerrakitBaseException):
+    """Raised when a valid query returns no matching or usable data."""
+
     pass

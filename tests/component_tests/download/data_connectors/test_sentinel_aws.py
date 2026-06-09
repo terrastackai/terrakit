@@ -1,4 +1,4 @@
-# © Copyright IBM Corporation 2025
+# © Copyright IBM Corporation 2025-2026
 # SPDX-License-Identifier: Apache-2.0
 
 
@@ -9,6 +9,7 @@ from glob import glob
 from rasterio.crs import CRS
 
 from terrakit import DataConnector
+from terrakit.general_utils.exceptions import TerrakitNoDataFoundError
 
 
 class TestSentinelAWS:
@@ -99,3 +100,49 @@ class TestSentinelAWS:
         assert len(data_array.coords["band"]) == len(self.bands)
         assert len(data_array.time) >= 1
         assert len(glob(f"{save_file_dir}/*.tif")) == 7  # 7 unique dates found
+
+    def test_find_data_sentinel_aws__raises_no_data_found(
+        self, mocker, start_date, end_date, bbox
+    ):
+        mocker.patch(
+            "terrakit.download.data_connectors.sentinel_aws.find_items",
+            side_effect=TerrakitNoDataFoundError("No data found"),
+        )
+        dc = DataConnector(connector_type=self.connector_type)
+
+        with pytest.raises(TerrakitNoDataFoundError):
+            dc.connector.find_data(
+                data_collection_name="sentinel-2-l2a",
+                date_start=start_date,
+                date_end=end_date,
+                bbox=bbox,
+                bands=self.bands,
+            )
+
+    def test_find_sh_aws_stac_items__raises_no_data_found_when_no_items(
+        self, mocker, start_date, end_date, bbox
+    ):
+        """Test that TerrakitNoDataFoundError is raised when no STAC items are found initially."""
+        # Mock stac_get_items to return an empty ItemCollection
+        empty_catalog = mocker.MagicMock()
+        empty_catalog.items = []
+        mocker.patch(
+            "terrakit.download.data_connectors.sentinel_aws.stac_get_items",
+            return_value=empty_catalog,
+        )
+
+        from terrakit.download.data_connectors.sentinel_aws import (
+            find_sh_aws_stac_items,
+        )
+
+        with pytest.raises(TerrakitNoDataFoundError) as exc_info:
+            find_sh_aws_stac_items(
+                stac_url="https://earth-search.aws.element84.com/v1/",
+                bbox=bbox,
+                from_datetime=start_date,
+                to_datetime=end_date,
+                bands=self.bands,
+                collections=["sentinel-2-l2a"],
+            )
+
+        assert "No items found for query parameters" in str(exc_info.value)

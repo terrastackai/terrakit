@@ -5,7 +5,7 @@
 import xarray as xr
 import logging
 
-from typing import Any, Union
+from typing import Any
 
 from ..connector import Connector
 from ..geodata_utils import (
@@ -64,7 +64,7 @@ class ConnectorTemplate(Connector):
         bands=[],
         maxcc=100,
         data_connector_spec=None,
-    ) -> Union[tuple[list[Any], list[dict[str, Any]]], tuple[None, None]]:
+    ) -> tuple[list[Any], list[dict[str, Any]]]:
         """
         This function retrieves unique dates and corresponding data results from a specified <new_connector> data collection.
 

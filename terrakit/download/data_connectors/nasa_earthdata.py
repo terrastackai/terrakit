@@ -21,7 +21,7 @@ from rasterio.session import AWSSession
 from rasterio.errors import RasterioIOError
 from shapely import box
 from tqdm import tqdm
-from typing import Any, Union
+from typing import Any
 
 from ..geodata_utils import (
     load_and_list_collections,
@@ -33,6 +33,7 @@ from ...general_utils.exceptions import (
     TerrakitValidationError,
     TerrakitValueError,
     TerrakitBaseException,
+    TerrakitNoDataFoundError,
 )
 from terrakit.validate.helpers import (
     check_collection_exists,
@@ -250,7 +251,7 @@ class NASA_EarthData(Connector):
         bands=[],
         maxcc=100,
         data_connector_spec=None,
-    ) -> Union[tuple[list[Any], list[dict[str, Any]]], tuple[None, None]]:
+    ) -> tuple[list[Any], list[dict[str, Any]]]:
         """
         Finds data items in the specified collection, date range, and area.
 
@@ -266,6 +267,11 @@ class NASA_EarthData(Connector):
 
         Returns:
             tuple: A tuple containing unique dates and the list of data items.
+
+        Raises:
+            TerrakitValidationError: If a validation error occurs.
+            TerrakitValueError: If a value error occurs.
+            TerrakitNoDataFoundError: If no files are found for the requested query.
         """
 
         # Check credentials have been set correctly.
@@ -294,6 +300,15 @@ class NASA_EarthData(Connector):
                 for item in items
                 if item["properties"].get("eo:cloud_cover") < maxcc
             ]
+
+        if len(items) == 0:
+            err_msg = (
+                f"No data found for collection '{data_collection_name}' "
+                f"between {date_start} and {date_end}."
+            )
+            logger.warning(err_msg)
+            raise TerrakitNoDataFoundError(err_msg)
+
         items = [
             {
                 "id": item["id"],
@@ -324,7 +339,7 @@ class NASA_EarthData(Connector):
         data_connector_spec=None,
         save_file=None,
         working_dir=".",
-    ) -> Union[xr.DataArray, None]:
+    ) -> xr.DataArray:
         """
         Fetches data from NASA EarthData connector for the specified collection, date range, area, and bands.
 
@@ -346,6 +361,11 @@ class NASA_EarthData(Connector):
             xarray.DataArray: An xarray DataArray containing all fetched data with dimensions (time, band, y, x).
                 All dates are stacked along the time dimension, and all bands are stacked along the band dimension.
                 If save_file is provided, individual date files are also saved to disk.
+
+        Raises:
+            TerrakitValidationError: If a validation error occurs.
+            TerrakitValueError: If a value error occurs.
+            TerrakitNoDataFoundError: If no files are found for the requested query.
         """
         # Check credentials have been set correctly.
         if "NASA_EARTH_BEARER_TOKEN" not in os.environ:
@@ -389,9 +409,6 @@ class NASA_EarthData(Connector):
             )
 
         with rio_env:
-            unique_dates: Union[list[str], None]
-            results: Union[list[dict[str, Any]], None]
-
             results = find_items(
                 self.lp_search,
                 bbox,
@@ -407,17 +424,23 @@ class NASA_EarthData(Connector):
                     for item in results
                     if item["properties"].get("eo:cloud_cover") < maxcc
                 ]
-                average_cloud_cover = np.mean(
-                    [item["properties"].get("eo:cloud_cover") for item in results]
+                if len(results) > 0:
+                    average_cloud_cover = np.mean(
+                        [item["properties"].get("eo:cloud_cover") for item in results]
+                    )
+                    logger.info(f"Average cloud cover: {average_cloud_cover}%")
+
+            if len(results) == 0:
+                err_msg = (
+                    f"No data found for collection '{data_collection_name}' "
+                    f"between {date_start} and {date_end}."
                 )
-                logger.info(f"Average cloud cover: {average_cloud_cover}%")
+                logger.warning(err_msg)
+                raise TerrakitNoDataFoundError(err_msg)
+
             unique_dates = sorted(
                 set(([X["properties"]["datetime"].split("T")[0] for X in results]))
             )
-            # Check that unique dates and find_data results are not None.
-            if unique_dates is None and results is None:
-                logger.warning("Warning: Unique dates and find_data results are None")
-                return None
 
             ds: xr.DataArray
             ds_list: list[Any] = []
@@ -437,6 +460,14 @@ class NASA_EarthData(Connector):
                 da = da.assign_coords({"band": bands, "time": data_date_datetime})
 
                 ds_list.append(da)
+            if len(ds_list) == 0:
+                err_msg = (
+                    f"No usable data retrieved for collection '{data_collection_name}' "
+                    f"between {date_start} and {date_end}."
+                )
+                logger.warning(err_msg)
+                raise TerrakitNoDataFoundError(err_msg)
+
             ds = xr.concat(ds_list, dim="time")
 
             save_data_array_to_file(ds, save_file)

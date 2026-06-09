@@ -26,13 +26,17 @@ from sentinelhub import (
     SentinelHubRequest,
     bbox_to_dimensions,
 )
-from typing import Any, Union
+from typing import Any
 
 from ..geodata_utils import (
     load_and_list_collections,
     save_data_array_to_file,
 )
-from ...general_utils.exceptions import TerrakitValidationError, TerrakitValueError
+from ...general_utils.exceptions import (
+    TerrakitValidationError,
+    TerrakitValueError,
+    TerrakitNoDataFoundError,
+)
 from ..connector import Connector
 from terrakit.validate.helpers import (
     check_collection_exists,
@@ -243,7 +247,7 @@ class SentinelHub(Connector):
         bands=[],
         maxcc=100,
         data_connector_spec=None,
-    ) -> Union[tuple[list[Any], list[dict[str, Any]]], tuple[None, None]]:
+    ) -> tuple[list[Any], list[dict[str, Any]]]:
         """
         This function retrieves unique dates and corresponding data results from a specified Sentinel Hub data collection.
 
@@ -263,6 +267,7 @@ class SentinelHub(Connector):
         Raises:
             TerrakitValidationError: If a validation error occurs.
             TerrakitValueError: If a value error occurs.
+            TerrakitNoDataFoundError: If no files are found for the requested query.
         """
         # Check credentials have been set correctly.
         if "SH_CLIENT_ID" not in os.environ and "SH_CLIENT_SECRET" not in os.environ:
@@ -351,7 +356,15 @@ class SentinelHub(Connector):
                 f"Error: Issue authenticating. Check credentials are up to date.{e}"
             )
             logger.error(error_msg)
-            return None, None
+            raise TerrakitValidationError(error_msg)
+
+        if len(results) == 0:
+            error_msg = (
+                f"No data found for collection '{data_collection_name}' "
+                f"between {date_start} and {date_end}."
+            )
+            logger.warning(error_msg)
+            raise TerrakitNoDataFoundError(error_msg)
 
         # Log average cloud cover if maxcc filtering was applied
         if maxcc < 100 and results:
@@ -379,7 +392,7 @@ class SentinelHub(Connector):
         data_connector_spec=None,
         save_file=None,
         working_dir=".",
-    ) -> Union[xr.DataArray, None]:
+    ) -> xr.DataArray:
         """
         Fetches data from SentinelHub for the specified collection, date range, area, and bands.
 
@@ -405,6 +418,7 @@ class SentinelHub(Connector):
         Raises:
             TerrakitValidationError: If a validation error occurs.
             TerrakitValueError: If a value error occurs.
+            TerrakitNoDataFoundError: If no files are found for the requested query.
         """
         # Check credentials have been set correctly.
         if "SH_CLIENT_ID" not in os.environ and "SH_CLIENT_SECRET" not in os.environ:
@@ -429,16 +443,13 @@ class SentinelHub(Connector):
             data_collection_name, date_start, date_end, bbox=bbox, maxcc=maxcc
         )
 
-        # Check that unique dates and find_data results are not None.
-        if unique_dates is None and res is None:
-            logger.warning("Warning: Unique dates and find_data results are None")
-            return None
-
         if unique_dates == []:
-            logger.warning(
-                f"No data found for the specified date range {date_start}:{date_end}. Unique dates: {unique_dates}"
+            error_msg = (
+                f"No data found for the specified date range "
+                f"{date_start}:{date_end}. Unique dates: {unique_dates}"
             )
-            return None
+            logger.warning(error_msg)
+            raise TerrakitNoDataFoundError(error_msg)
         da_list = []
         logger.info(f"The following unique dates were found: {unique_dates}")
         for udate in unique_dates:  # type: ignore[union-attr]
@@ -458,7 +469,19 @@ class SentinelHub(Connector):
                 sh_data_dir=f"{working_dir}/sh_data",
             )
 
+            if da.size == 0:
+                logger.warning("No usable data returned for date %s", udate)
+                continue
+
             da_list.append(da)
+
+        if len(da_list) == 0:
+            error_msg = (
+                f"No usable data retrieved for collection '{data_collection_name}' "
+                f"between {date_start} and {date_end}."
+            )
+            logger.warning(error_msg)
+            raise TerrakitNoDataFoundError(error_msg)
 
         logger.info("Concatenating data...")
         da = xr.concat(da_list, dim="time")
