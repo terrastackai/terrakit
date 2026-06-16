@@ -29,6 +29,11 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Suppress rasterio warnings that are safe to ignore
+# These warnings (e.g., "CPLE_NotSupported in warp options") occur during reprojection
+# and do not affect the correctness of results
+logging.getLogger("rasterio").setLevel(logging.ERROR)
+
 from .download.data_connectors.sentinelhub import SentinelHub  # noqa
 from .download.data_connectors.nasa_earthdata import NASA_EarthData  # noqa
 from .download.data_connectors.sentinel_aws import Sentinel_AWS  # noqa

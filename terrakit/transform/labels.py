@@ -1,8 +1,7 @@
-# © Copyright IBM Corporation 2025
+# © Copyright IBM Corporation 2025-2026
 # SPDX-License-Identifier: Apache-2.0
 
 
-import copy
 import geopandas as gpd
 import json
 import logging
@@ -20,7 +19,7 @@ from pydantic import ValidationError
 from shapely.geometry import box, shape
 from shapely.ops import unary_union
 from rasterio.features import shapes
-from typing import Literal
+from typing import Any, Literal
 
 from terrakit.general_utils.exceptions import (
     TerrakitValidationError,
@@ -361,49 +360,86 @@ class LabelsCls:
         return final_gdf
 
     def get_grouped_bbox_gdf(self, label_gdf: pd.DataFrame) -> pd.DataFrame:
-        """Group bounding boxes by date and return a GeoDataFrame.
+        """Group bounding boxes by date and overlapping source file extents.
+
+        For each unique datetime, source raster files are grouped based on whether
+        their geographic extents overlap or are nearby. All labels from overlapping
+        source files are grouped together, ensuring that labels from tiles with
+        overlapping footprints are in the same group.
 
         Parameters:
             label_gdf (pd.DataFrame): GeoDataFrame containing label data.
 
         Returns:
-            pd.DataFrame: GeoDataFrame with grouped bounding boxes.
+            pd.DataFrame: GeoDataFrame with grouped bounding boxes and tilesuffix column.
         """
         logging.info(
             f"Getting grouped bounding boxes for {self.dataset_name} at {self.working_dir}"
         )
         label_bbox_grouped_bbox_list: list[pd.DataFrame] = []
 
-        label_bbox_gdf = copy.deepcopy(label_gdf)
+        group_idx = 0
+        for d in list(label_gdf.datetime.unique()):
+            label_date_gdf = label_gdf[label_gdf.datetime == d]
 
-        label_bbox_gdf["geometry"] = label_gdf.geometry.apply(
-            lambda x: box(*x.bounds)
-        ).tolist()
+            # Step 1: Get source file extents for each unique filename
+            file_extents = {}
+            for filename in label_date_gdf.filename.unique():
+                # Only use filename to determine extent since opening each file may be an expensive operation to perform
+                file_labels = label_date_gdf[label_date_gdf.filename == filename]
+                file_extents[filename] = box(
+                    *unary_union(file_labels.geometry.tolist()).bounds
+                )
 
-        for d in list(label_bbox_gdf.datetime.unique()):
-            label_bbox_date_gdf = label_bbox_gdf[label_bbox_gdf.datetime == d]
+            filenames = list(file_extents.keys())
+            extent_geoms = [file_extents[fn] for fn in filenames]
 
-            # Get the union of all geometries to find the overall bounds
-            all_geoms = label_bbox_date_gdf.geometry.tolist()
-            combined_bounds = unary_union(all_geoms).bounds
-            combined_bbox = box(*combined_bounds)
+            logging.info(f"Date {d}: Processing {len(filenames)} source file(s)")
 
-            logging.info(f"Date {d}: Combined bbox bounds = {combined_bounds}")
+            # Step 2: Group files by overlapping/nearby extents
+            file_groups = self._group_overlapping_geometries(extent_geoms)
+
             logging.info(
-                f"  Number of label classes: {len(label_bbox_date_gdf.labelclass.unique())}"
+                f"Date {d}: Found {len(file_groups)} non-overlapping file group(s)"
             )
 
-            # Create one row per class, all with the same combined bbox
-            # This ensures plotting functions can iterate over all classes
-            for lc in list(label_bbox_date_gdf.labelclass.unique()):
-                label_bbox_class_row = (
-                    label_bbox_date_gdf[label_bbox_date_gdf.labelclass == lc]
-                    .iloc[[0]]
-                    .copy()
+            # Step 3: Process each group of files
+            for subgroup_idx, file_indices in enumerate(file_groups):
+                # Get all filenames in this group
+                group_filenames = [filenames[i] for i in file_indices]
+
+                # Get all labels from these files
+                group_labels = label_date_gdf[
+                    label_date_gdf.filename.isin(group_filenames)
+                ]
+
+                # Create combined bbox for all labels in this group
+                all_group_geoms = group_labels.geometry.tolist()
+                combined_bounds = unary_union(all_group_geoms).bounds
+                combined_bbox = box(*combined_bounds)
+
+                # Create tile suffix for this group
+                tile_suffix = f"_tile_{group_idx}_{subgroup_idx + 1}"
+
+                logging.info(
+                    f"  Group {group_idx}.{subgroup_idx + 1}: {len(group_filenames)} file(s), "
+                    f"bbox bounds = {combined_bounds}, tilesuffix = {tile_suffix}"
                 )
-                label_bbox_class_row["geometry"] = [combined_bbox]
-                logging.info(f"  Adding bbox for class {lc}: {combined_bbox.bounds}")
-                label_bbox_grouped_bbox_list.append(label_bbox_class_row)
+                logging.info(f"    Files: {group_filenames}")
+
+                # Create one row per class in this group
+                for lc in list(group_labels.labelclass.unique()):
+                    label_bbox_class_row = (
+                        group_labels[group_labels.labelclass == lc].iloc[[0]].copy()
+                    )
+                    label_bbox_class_row["geometry"] = [combined_bbox]
+                    label_bbox_class_row["tilesuffix"] = tile_suffix
+                    logging.info(
+                        f"    Adding bbox for class {lc}: {combined_bbox.bounds}"
+                    )
+                    label_bbox_grouped_bbox_list.append(label_bbox_class_row)
+
+            group_idx += 1
 
         label_bbox_grouped_bbox_gdf = pd.concat(
             label_bbox_grouped_bbox_list, ignore_index=True
@@ -411,6 +447,66 @@ class LabelsCls:
 
         self.save_shp_file("all_bboxes.shp", label_bbox_grouped_bbox_gdf)
         return label_bbox_grouped_bbox_gdf
+
+    def _group_overlapping_geometries(
+        self, geometries: list, proximity_threshold: float = 0.01
+    ) -> list[list[int]]:
+        """Group geometries based on spatial proximity.
+
+        Uses a union-find algorithm to group geometries that overlap, touch, or are
+        within a specified distance of each other. This allows grouping of nearby
+        geometries even if they don't directly intersect.
+
+        Parameters:
+            geometries (list): List of shapely geometry objects.
+            proximity_threshold (float, optional): Distance threshold in degrees for
+                grouping nearby geometries. Geometries within this distance will be
+                grouped together. Default is 0.01 degrees (~1.1 km at equator).
+                Set to 0 to only group intersecting geometries.
+
+        Returns:
+            list[list[int]]: List of groups, where each group is a list of indices
+                           of geometries that are spatially proximate to each other.
+        """
+        n = len(geometries)
+        if n == 0:
+            return []
+
+        # Initialize union-find structure
+        parent = list(range(n))
+
+        def find(x):
+            if parent[x] != x:
+                parent[x] = find(parent[x])
+            return parent[x]
+
+        def union(x, y):
+            root_x = find(x)
+            root_y = find(y)
+            if root_x != root_y:
+                parent[root_x] = root_y
+
+        # Check all pairs for proximity
+        for i in range(n):
+            for j in range(i + 1, n):
+                # Check if geometries intersect or are within proximity threshold
+                if geometries[i].intersects(geometries[j]):
+                    union(i, j)
+                elif proximity_threshold > 0:
+                    # Check distance between geometries
+                    distance = geometries[i].distance(geometries[j])
+                    if distance <= proximity_threshold:
+                        union(i, j)
+
+        # Group indices by their root parent
+        groups_dict: dict[Any, Any] = {}
+        for i in range(n):
+            root = find(i)
+            if root not in groups_dict:
+                groups_dict[root] = []
+            groups_dict[root].append(i)
+
+        return list(groups_dict.values())
 
 
 def labels_model_validation(
