@@ -1,4 +1,4 @@
-# © Copyright IBM Corporation 2025
+# © Copyright IBM Corporation 2025-2026
 # SPDX-License-Identifier: Apache-2.0
 
 
@@ -93,7 +93,6 @@ def main() -> None:
             cfg.working_dir,
             active=cfg.store.active,
             format=cfg.store.format,
-            dataset_save_dir=cfg.store.dataset_save_dir,
             save_dir=cfg.store.save_dir,
             tortilla_name=cfg.store.tortilla_name,
         )

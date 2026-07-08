@@ -45,7 +45,7 @@ from .chip import tiling  # noqa
 from .chip.tiling import chip_and_label_data  # noqa
 from .transform import labels  # noqa
 from .transform.labels import process_labels  # noqa
-from .store.taco import taco_store_data, load_tortilla  # noqa
+from .store.taco import taco_store_data, load_taco  # noqa
 from .download.geodata_utils import *  # noqa
 from .general_utils import plotting  # noqa
 from .general_utils import geospatial_util  # noqa

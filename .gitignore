@@ -112,7 +112,7 @@ dmypy.json
 *.prj
 *.shx
 *.cpg
-*.tortilla
+*.tacozip
 *metadata.json
 *.nc
 *.zip
