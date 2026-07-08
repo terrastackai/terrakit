@@ -49,7 +49,7 @@ dependencies = [
         "tqdm>=4.67.1",
         "xarray>=v2023.1.0 ",
         "urllib3>=2.7.0",
-        "zarr>=2.18.3",
+        "zarr>=2.18.0",
 ]
 
 [dependency-groups]

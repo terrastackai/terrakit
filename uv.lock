@@ -5081,7 +5081,7 @@ requires-dist = [
     { name = "tqdm", specifier = ">=4.67.1" },
     { name = "urllib3", specifier = ">=2.7.0" },
     { name = "xarray", specifier = ">=2023.1.0" },
-    { name = "zarr", specifier = ">=2.18.3" },
+    { name = "zarr", specifier = ">=2.18.0" },
 ]
 
 [package.metadata.requires-dev]
