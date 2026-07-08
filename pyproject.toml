@@ -3,7 +3,7 @@ name = "TerraKit"
 version = "0.1.8.post1"
 description = "A Python package for finding and getting geospatial data."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 authors = [
     {"name"="Blair Edwards", "email"="bedwards@uk.ibm.com"},
     {"name"="Rosie Lickorish"},
@@ -44,8 +44,8 @@ dependencies = [
         "sentinelhub>=3.11.1",
         "shapely>=2.1.1",
         "stackstac>=0.5.1",
-        "tacoreader==0.5.6",
-        "tacotoolbox==0.5.2",
+        "tacoreader==2.4.21",
+        "tacotoolbox==0.26.9",
         "tqdm>=4.67.1",
         "xarray>=v2023.1.0 ",
         "urllib3>=2.7.0",

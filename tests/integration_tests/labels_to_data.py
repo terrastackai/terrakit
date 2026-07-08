@@ -1,4 +1,4 @@
-# © Copyright IBM Corporation 2025
+# © Copyright IBM Corporation 2025-2026
 # SPDX-License-Identifier: Apache-2.0
 
 
@@ -164,9 +164,8 @@ taco_store_data(
     dataset_name=DATASET_NAME,
     working_dir=WORKING_DIR,
     save_dir=WORKING_DIR,
-    tortilla_name="terrakit_curated_dataset.tortilla",
 )
-assert "terrakit_curated_dataset.tortilla" in os.listdir(WORKING_DIR)
+assert f"{DATASET_NAME}.tacozip" in os.listdir(WORKING_DIR)
 
 ####################################################################
 #                                                                  #

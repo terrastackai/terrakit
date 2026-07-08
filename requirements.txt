@@ -10,8 +10,6 @@ aiosignal==1.4.0
 annotated-doc==0.0.4
 annotated-types==0.7.0
 anyio==4.13.0
-asciitree==0.3.3 ; python_full_version < '3.11'
-async-timeout==5.0.1 ; python_full_version < '3.11'
 attrs==26.1.0
 boto3==1.43.0
 botocore==1.43.0
@@ -26,15 +24,13 @@ cligj==0.7.2
 cloudpickle==3.1.2
 colorama==0.4.6 ; sys_platform == 'win32'
 contextily==1.7.0
-contourpy==1.3.2 ; python_full_version < '3.11'
-contourpy==1.3.3 ; python_full_version >= '3.11'
+contourpy==1.3.3
 cycler==0.12.1
 dask==2026.3.0
 dataclasses-json==0.6.7
-donfig==0.8.1.post1 ; python_full_version >= '3.11'
+donfig==0.8.1.post1
+duckdb==1.5.4
 ecmwf-datastores-client==0.5.1
-exceptiongroup==1.3.1 ; python_full_version < '3.11'
-fasteners==0.20 ; python_full_version < '3.11' and sys_platform != 'emscripten'
 filelock==3.29.1
 folium==0.20.0
 fonttools==4.63.0
@@ -44,7 +40,7 @@ geographiclib==2.1
 geojson==3.3.0
 geopandas==1.1.3
 geopy==2.4.1
-google-crc32c==1.8.0 ; python_full_version >= '3.11'
+google-crc32c==1.8.0
 h11==0.16.0
 hf-xet==1.5.0 ; platform_machine == 'AMD64' or platform_machine == 'aarch64' or platform_machine == 'amd64' or platform_machine == 'arm64' or platform_machine == 'x86_64'
 httpcore==1.0.9
@@ -69,19 +65,18 @@ mercantile==1.2.1
 multidict==6.7.1
 multiurl==0.3.7
 mypy-extensions==1.1.0
-narwhals==2.22.1 ; python_full_version >= '3.11'
+narwhals==2.22.1
 nest-asyncio==1.6.0
-netcdf4==1.7.3 ; python_full_version < '3.11' and platform_machine == 'ARM64' and sys_platform == 'win32'
-netcdf4==1.7.4 ; python_full_version >= '3.11' or platform_machine != 'ARM64' or sys_platform != 'win32'
-numcodecs==0.13.1 ; python_full_version < '3.11'
-numcodecs==0.16.5 ; python_full_version >= '3.11'
-numpy==2.2.6 ; python_full_version < '3.11'
-numpy==2.4.6 ; python_full_version >= '3.11'
+netcdf4==1.7.4
+numcodecs==0.16.5
+numpy==2.4.6
 oauthlib==3.3.1
+obstore==0.10.1
 packaging==26.2
 pandas==2.3.3
 partd==1.4.2
 pillow==12.2.0
+platformdirs==4.10.0
 propcache==0.5.2
 pyarrow==24.0.0
 pydantic==2.13.4
@@ -89,13 +84,11 @@ pydantic-core==2.46.4
 pygments==2.20.0
 pyogrio==0.12.1
 pyparsing==3.3.2
-pyproj==3.7.1 ; python_full_version < '3.11'
-pyproj==3.7.2 ; python_full_version >= '3.11'
+pyproj==3.7.2
 pystac==1.14.3
 pystac-client==0.9.0
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.2
-pytortilla==0.5.1
 pytz==2026.2
 pyyaml==6.0.3
 rasterio==1.4.4 ; python_full_version < '3.12'
@@ -106,24 +99,21 @@ requests-oauthlib==2.0.0
 rich==15.0.0
 rioxarray==0.19.0 ; python_full_version < '3.12'
 rioxarray==0.22.0 ; python_full_version >= '3.12'
-rpds-py==0.30.0 ; python_full_version < '3.11'
-rpds-py==2026.5.1 ; python_full_version >= '3.11'
+rpds-py==2026.5.1
 s3fs==2026.4.0
 s3transfer==0.17.1
-scikit-learn==1.7.2 ; python_full_version < '3.11'
-scikit-learn==1.9.0 ; python_full_version >= '3.11'
-scipy==1.15.3 ; python_full_version < '3.11'
-scipy==1.17.1 ; python_full_version >= '3.11'
+scikit-learn==1.9.0
+scipy==1.17.1
 sentinelhub==3.11.5
 shapely==2.1.2
 shellingham==1.5.4
 six==1.17.0
 stackstac==0.5.1
-tacoreader==0.5.6
-tacotoolbox==0.5.2
+tacoreader==2.4.21
+tacotoolbox==0.26.9
+tacozip==0.12.0
 threadpoolctl==3.6.0
-tifffile==2025.5.10 ; python_full_version < '3.11'
-tifffile==2026.3.3 ; python_full_version == '3.11.*'
+tifffile==2026.3.3 ; python_full_version < '3.12'
 tifffile==2026.6.1 ; python_full_version >= '3.12'
 tomli==2.4.1
 tomli-w==1.2.0
@@ -137,11 +127,9 @@ tzdata==2026.2
 urllib3==2.7.0
 utm==0.8.1
 wrapt==2.2.1
-xarray==2025.6.1 ; python_full_version < '3.11'
-xarray==2026.4.0 ; python_full_version >= '3.11'
+xarray==2026.4.0
 xyzservices==2026.3.0
 yarl==1.24.2
-zarr==2.18.3 ; python_full_version < '3.11'
-zarr==3.1.6 ; python_full_version == '3.11.*'
+zarr==3.1.6 ; python_full_version < '3.12'
 zarr==3.2.1 ; python_full_version >= '3.12'
 zipp==4.1.0 ; python_full_version < '3.12'
