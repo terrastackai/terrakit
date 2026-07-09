@@ -30,16 +30,14 @@ logger = logging.getLogger(__name__)
 
 
 def format_dataset_stats(
-    dataset_name, chip_suffix, total_mean, total_std, bands, tile_stats
+    dataset_name, chip_suffix, total_mean, total_std, band_names, tile_stats
 ):
-    """Organises dataset stats in a dictorary"""
-    norm_stds = total_std.tolist()
-    norm_means = total_mean.tolist()
+    """Organises dataset stats in a dictionary with per-band entries keyed by band name."""
     dataset_stats = {
         "dataset_name": dataset_name,
-        "norm_stds": norm_stds,
-        "norm_means": norm_means,
-        "bands": bands,
+        "norm_stds": {name: val for name, val in zip(band_names, total_std.tolist())},
+        "norm_means": {name: val for name, val in zip(band_names, total_mean.tolist())},
+        "bands": len(band_names),
         "file_suffix": chip_suffix,
         "tile_stats": tile_stats,
     }
@@ -315,6 +313,10 @@ class ChipAndLabelCls:
                 # gather stats for each tile
                 if self.stats:
                     bands = src.count
+                    band_names = [
+                        desc if desc else f"band_{i}"
+                        for i, desc in enumerate(src.descriptions, start=1)
+                    ]
                     image = src.read()[range(bands), :, :]
                     sums[count] = image.sum(axis=(1, 2))
                     sums_sqs[count] = (image**2).sum(axis=(1, 2))
@@ -359,15 +361,15 @@ class ChipAndLabelCls:
             total_sum = sum(sums)  # type: ignore[arg-type]
             total_sum_sqs = sum(sums_sqs)  # type: ignore[arg-type]
             pixel_count = count * image.shape[1] * image.shape[2]
-            total_mean = np.float64(total_sum / pixel_count)
+            total_mean = total_sum / pixel_count
             total_var = (total_sum_sqs / pixel_count) - (total_mean**2)
-            total_std = np.float64(np.sqrt(total_var))
+            total_std = np.sqrt(total_var)
             dataset_stats = format_dataset_stats(
                 self.dataset_name,
                 self.chip_suffix,
                 total_mean,
                 total_std,
-                bands,
+                band_names,
                 tile_stats,
             )
             save_dataset_properties(self.working_dir, dataset_stats)
