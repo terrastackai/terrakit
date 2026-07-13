@@ -1,0 +1,201 @@
+{
+    "dataset_name": "test_dataset_raster",
+    "creation_date": "2026-06-22T12:50:08.606460+00:00",
+    "dataset_version": "1.0",
+    "description": "A geospatial dataset curated using TerraKit.",
+    "package": "terrakit v0.1.8.post1",
+    "lineage": [
+        {
+            "step_id": "labels",
+            "activity": "Process label files to bound box and label shp files",
+            "method": "terrakit.transform.labels.process_labels",
+            "working_dir": "./tmp/test_dataset_raster",
+            "parameters": {
+                "labels_folder": "test_burn_scar_raster",
+                "active": true,
+                "label_type": "raster",
+                "datetime_info": "filename"
+            },
+            "input_files": [
+                "subsetted_512x512_HLS.S30.T10SEH.2018245.v1.4.mask.tif",
+                "subsetted_512x512_HLS.S30.T10SGD.2021306.v1.4.mask.tif"
+            ],
+            "output_label_dates": [
+                "2018-09-02",
+                "2021-11-02"
+            ],
+            "output_files": [
+                "test_dataset_raster_all_bboxes.shp",
+                "test_dataset_raster_labels.shp"
+            ],
+            "timestamp": "2026-06-22T12:50:08.606639+00:00",
+            "step_order": 0
+        },
+        {
+            "step_id": "download",
+            "activity": "Extract datetime and bounding boxes from labels. Download data for a given date and bbox according to parameters.",
+            "method": "terrakit.download.download_data",
+            "working_dir": "./tmp/test_dataset_raster",
+            "parameters": {
+                "transform": {
+                    "scale_data_xarray": true,
+                    "impute_nans": true,
+                    "reproject": true
+                },
+                "date_allowance": {
+                    "pre_days": 0,
+                    "post_days": 21
+                },
+                "active": true,
+                "max_cloud_cover": 80,
+                "keep_files": false,
+                "datetime_bbox_shp_file": "./tmp/terrakit_curated_dataset_all_bboxes.shp",
+                "labels_shp_file": "./tmp/terrakit_curated_dataset_labels.shp",
+                "data_sources": [
+                    {
+                        "data_connector": "sentinel_aws",
+                        "collection_name": "sentinel-2-l2a",
+                        "bands": [
+                            "blue",
+                            "green",
+                            "red"
+                        ],
+                        "save_file": null
+                    }
+                ]
+            },
+            "timestamp": "2026-06-22T12:50:30.073156+00:00",
+            "step_order": 1
+        },
+        {
+            "step_id": "chip",
+            "activity": "Chip tiles and labels.",
+            "method": "terrakit.chip.tiling.chip_and_label_data",
+            "working_dir": "./tmp/test_dataset_raster",
+            "parameters": {
+                "active": true,
+                "data_suffix": ".tif",
+                "label_suffix": "_label.tif",
+                "chip_suffix": ".data.tif",
+                "chip_label_suffix": ".label.tif",
+                "sample_dim": 256,
+                "queried_data": [
+                    "tmp/test_dataset_raster/sentinel_aws_sentinel-2-l2a_tile_0_1_2018-09-02_imputed.tif",
+                    "tmp/test_dataset_raster/sentinel_aws_sentinel-2-l2a_tile_1_1_2021-11-02_imputed.tif"
+                ],
+                "keep_files": true,
+                "match_suffix": true
+            },
+            "dataset_statistics": {
+                "dataset_name": "test_dataset_raster",
+                "norm_stds": [
+                    288.70543105202427,
+                    401.44135087076404,
+                    540.3787499019123
+                ],
+                "norm_means": [
+                    192.40807238075266,
+                    303.0337485979436,
+                    387.9505085789936
+                ],
+                "bands": 3,
+                "file_suffix": ".data.tif",
+                "tile_stats": [
+                    {
+                        "tile": "tmp/test_dataset_raster/sentinel_aws_sentinel-2-l2a_tile_0_1_2018-09-02_imputed.tif",
+                        "sum": [
+                            91787431.0,
+                            136212638.0,
+                            192465531.0
+                        ],
+                        "bands": 3
+                    },
+                    {
+                        "tile": "tmp/test_dataset_raster/sentinel_aws_sentinel-2-l2a_tile_1_1_2021-11-02_imputed.tif",
+                        "sum": [
+                            411012119.0,
+                            647324936.0,
+                            828719703.0
+                        ],
+                        "bands": 3
+                    }
+                ]
+            },
+            "timestamp": "2026-06-22T12:50:33.093227+00:00",
+            "step_order": 2
+        },
+        {
+            "step_id": "store",
+            "activity": "Package dataset in taco format",
+            "method": "terrakit.store.taco.taco_store_data",
+            "working_dir": "./tmp/test_dataset_raster",
+            "parameters": {
+                "active": true,
+                "format": "taco",
+                "dataset_save_dir": ".",
+                "save_dir": "./tmp/test_dataset_raster",
+                "tortilla_name": "terrakit_curated_dataset.tacozip",
+                "statistics": true,
+                "include_config": true,
+                "check_dataset": true
+            },
+            "timestamp": "2026-06-22T12:50:33.729206+00:00",
+            "step_order": 3
+        },
+        {
+            "step_id": "store",
+            "activity": "Package dataset in taco format",
+            "method": "terrakit.store.taco.taco_store_data",
+            "working_dir": "/Users/rosielickorish/Documents/IBMResearch/2026/terrakit/docs/examples/tmp/test_dataset_raster",
+            "parameters": {
+                "active": true,
+                "format": "taco",
+                "dataset_save_dir": ".",
+                "save_dir": "/Users/rosielickorish/Documents/IBMResearch/2026/terrakit/docs/examples/tmp/test_dataset_raster",
+                "tortilla_name": "terrakit_curated_dataset.tacozip",
+                "statistics": true,
+                "include_config": true,
+                "check_dataset": true
+            },
+            "timestamp": "2026-06-23T08:51:17.322141+00:00",
+            "step_order": 4
+        },
+        {
+            "step_id": "store",
+            "activity": "Package dataset in taco format",
+            "method": "terrakit.store.taco.taco_store_data",
+            "working_dir": "/Users/rosielickorish/Documents/IBMResearch/2026/terrakit/docs/examples/tmp/test_dataset_raster",
+            "parameters": {
+                "active": true,
+                "format": "taco",
+                "dataset_save_dir": ".",
+                "save_dir": "/Users/rosielickorish/Documents/IBMResearch/2026/terrakit/docs/examples/tmp/test_dataset_raster",
+                "tortilla_name": "terrakit_curated_dataset.tacozip",
+                "statistics": true,
+                "include_config": true,
+                "check_dataset": true
+            },
+            "timestamp": "2026-06-23T09:00:08.239969+00:00",
+            "step_order": 5
+        },
+        {
+            "step_id": "store",
+            "activity": "Package dataset in taco format",
+            "method": "terrakit.store.taco.taco_store_data",
+            "working_dir": "/Users/rosielickorish/Documents/IBMResearch/2026/terrakit/docs/examples/tmp/test_dataset_raster",
+            "parameters": {
+                "active": true,
+                "format": "taco",
+                "dataset_save_dir": ".",
+                "save_dir": "/Users/rosielickorish/Documents/IBMResearch/2026/terrakit/docs/examples/tmp/test_dataset_raster",
+                "tortilla_name": "terrakit_curated_dataset.tacozip",
+                "statistics": true,
+                "include_config": true,
+                "check_dataset": true
+            },
+            "timestamp": "2026-06-23T12:14:10.024334+00:00",
+            "step_order": 6
+        }
+    ],
+    "last_update": "2026-06-23T12:14:10.024334+00:00"
+}

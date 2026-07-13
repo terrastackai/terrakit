@@ -1,0 +1,209 @@
+{
+    "dataset_name": "test_dataset",
+    "creation_date": "2026-06-22T12:49:25.188403+00:00",
+    "dataset_version": "1.0",
+    "description": "A geospatial dataset curated using TerraKit.",
+    "package": "terrakit v0.1.8.post1",
+    "lineage": [
+        {
+            "step_id": "labels",
+            "activity": "Process label files to bound box and label shp files",
+            "method": "terrakit.transform.labels.process_labels",
+            "working_dir": "./tmp/test_dataset",
+            "parameters": {
+                "labels_folder": "test_wildfire_vector",
+                "active": true,
+                "label_type": "vector",
+                "datetime_info": "filename"
+            },
+            "input_files": [
+                "EMSR801_AOI01_DEL_MONIT02_observedEventA_v1_2025-04-23.json",
+                "EMSR748_AOI01_DEL_MONIT05_observedEventA_v1_2024-08-26.json"
+            ],
+            "output_label_dates": [
+                "2025-04-23",
+                "2024-08-26"
+            ],
+            "output_files": [
+                "test_dataset_all_bboxes.shp",
+                "test_dataset_labels.shp"
+            ],
+            "timestamp": "2026-06-22T12:49:25.188571+00:00",
+            "step_order": 0
+        },
+        {
+            "step_id": "labels",
+            "activity": "Process label files to bound box and label shp files",
+            "method": "terrakit.transform.labels.process_labels",
+            "working_dir": "./tmp/test_dataset",
+            "parameters": {
+                "labels_folder": "test_wildfire_vector",
+                "active": true,
+                "label_type": "vector",
+                "datetime_info": "filename"
+            },
+            "input_files": [
+                "EMSR801_AOI01_DEL_MONIT02_observedEventA_v1_2025-04-23.json",
+                "EMSR748_AOI01_DEL_MONIT05_observedEventA_v1_2024-08-26.json"
+            ],
+            "output_label_dates": [
+                "2025-04-23",
+                "2024-08-26"
+            ],
+            "output_files": [
+                "test_dataset_all_bboxes.shp",
+                "test_dataset_labels.shp"
+            ],
+            "timestamp": "2026-06-22T12:49:36.135884+00:00",
+            "step_order": 1
+        },
+        {
+            "step_id": "download",
+            "activity": "Extract datetime and bounding boxes from labels. Download data for a given date and bbox according to parameters.",
+            "method": "terrakit.download.download_data",
+            "working_dir": "./tmp/test_dataset",
+            "parameters": {
+                "transform": {
+                    "scale_data_xarray": true,
+                    "impute_nans": true,
+                    "reproject": true
+                },
+                "date_allowance": {
+                    "pre_days": 0,
+                    "post_days": 21
+                },
+                "active": true,
+                "max_cloud_cover": 80,
+                "keep_files": false,
+                "datetime_bbox_shp_file": "./tmp/terrakit_curated_dataset_all_bboxes.shp",
+                "labels_shp_file": "./tmp/terrakit_curated_dataset_labels.shp",
+                "data_sources": [
+                    {
+                        "data_connector": "sentinel_aws",
+                        "collection_name": "sentinel-2-l2a",
+                        "bands": [
+                            "blue",
+                            "green",
+                            "red"
+                        ],
+                        "save_file": null
+                    }
+                ]
+            },
+            "timestamp": "2026-06-22T12:49:58.034849+00:00",
+            "step_order": 2
+        },
+        {
+            "step_id": "chip",
+            "activity": "Chip tiles and labels.",
+            "method": "terrakit.chip.tiling.chip_and_label_data",
+            "working_dir": "./tmp/test_dataset",
+            "parameters": {
+                "active": true,
+                "data_suffix": ".tif",
+                "label_suffix": "_label.tif",
+                "chip_suffix": ".data.tif",
+                "chip_label_suffix": ".label.tif",
+                "sample_dim": 256,
+                "queried_data": [
+                    "tmp/test_dataset/sentinel_aws_sentinel-2-l2a_tile_0_1_2025-04-23_imputed.tif",
+                    "tmp/test_dataset/sentinel_aws_sentinel-2-l2a_tile_1_1_2024-08-30_imputed.tif"
+                ],
+                "keep_files": true,
+                "match_suffix": true
+            },
+            "dataset_statistics": {
+                "dataset_name": "test_dataset",
+                "norm_stds": [
+                    2490.615653334838,
+                    2476.277563408447,
+                    2519.747993215223
+                ],
+                "norm_means": [
+                    1661.2933077889088,
+                    1668.3692318120843,
+                    1686.4314535348346
+                ],
+                "bands": 3,
+                "file_suffix": ".data.tif",
+                "tile_stats": [
+                    {
+                        "tile": "tmp/test_dataset/sentinel_aws_sentinel-2-l2a_tile_0_1_2025-04-23_imputed.tif",
+                        "sum": [
+                            11403672.0,
+                            14961828.0,
+                            17405131.0
+                        ],
+                        "bands": 3
+                    },
+                    {
+                        "tile": "tmp/test_dataset/sentinel_aws_sentinel-2-l2a_tile_1_1_2024-08-30_imputed.tif",
+                        "sum": [
+                            4656538690.0,
+                            4676372222.0,
+                            4726999907.0
+                        ],
+                        "bands": 3
+                    }
+                ]
+            },
+            "timestamp": "2026-06-22T12:50:07.233736+00:00",
+            "step_order": 3
+        },
+        {
+            "step_id": "store",
+            "activity": "Package dataset in taco format",
+            "method": "terrakit.store.taco.taco_store_data",
+            "working_dir": "./tmp/test_dataset",
+            "parameters": {
+                "active": true,
+                "format": "taco",
+                "dataset_save_dir": ".",
+                "save_dir": "./tmp/test_dataset",
+                "tortilla_name": "terrakit_curated_dataset.tacozip",
+                "statistics": true,
+                "include_config": true,
+                "check_dataset": true
+            },
+            "timestamp": "2026-06-22T12:50:08.174255+00:00",
+            "step_order": 4
+        },
+        {
+            "step_id": "store",
+            "activity": "Package dataset in taco format",
+            "method": "terrakit.store.taco.taco_store_data",
+            "working_dir": "./tmp/test_dataset",
+            "parameters": {
+                "active": true,
+                "format": "taco",
+                "dataset_save_dir": ".",
+                "save_dir": "./tmp/test_dataset",
+                "tortilla_name": "",
+                "statistics": true,
+                "include_config": true,
+                "check_dataset": true
+            },
+            "timestamp": "2026-06-23T12:52:08.712691+00:00",
+            "step_order": 5
+        },
+        {
+            "step_id": "store",
+            "activity": "Package dataset in taco format",
+            "method": "terrakit.store.taco.taco_store_data",
+            "working_dir": "./tmp/test_dataset",
+            "parameters": {
+                "active": true,
+                "format": "taco",
+                "dataset_save_dir": ".",
+                "save_dir": "./tmp/test_dataset",
+                "tortilla_name": "",
+                "statistics": true,
+                "include_config": true,
+                "check_dataset": true
+            },
+            "timestamp": "2026-06-23T19:53:10.492423+00:00",
+            "step_order": 6
+        }
+    ],
+    "last_update": "2026-06-23T19:53:10.492423+00:00"
+}

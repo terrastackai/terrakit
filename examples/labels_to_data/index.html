@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../../img/terrakit.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -2277,7 +2277,12 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
     if (!diagrams.length) {
       return;
     }
-    const mermaid = (await import("https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.7.0/mermaid.esm.min.mjs")).default;
+    const mermaid = (await import("https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.0/mermaid.esm.min.mjs")).default;
+    const elkUrl = "https://cdnjs.cloudflare.com/ajax/libs/mermaid-layout-elk/0.1.9/mermaid-layout-elk.esm.min.mjs";
+    if(elkUrl) {
+      const elkLayouts = (await import(elkUrl)).default;
+      mermaid.registerLayoutLoaders(elkLayouts);
+    }
     const parser = new DOMParser();
 
     mermaid.initialize({
@@ -2374,7 +2379,8 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
      * Post-process to ensure mermaid diagrams contain only valid SVG and XHTML.
      */
     function cleanMermaidSvg(svg) {
-      return svg.replace(RE_VOID_ELEMENT, replaceVoidElement);
+      svg = svg.replace(RE_VOID_ELEMENT, replaceVoidElement);
+      return `${SVG_XML_HEADER}${svg}`;
     }
 
 
@@ -2400,6 +2406,285 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
       }
       return `<${tag} ${rest}>`;
     }
+
+
+  /**
+   * Named HTML entities with their decimal equivalent codes.
+   *
+   * @see https://www.w3.org/TR/WD-html40-970708/sgml/entities.html
+   * */
+  const HTML_ENTITIES = `<!ENTITY Aacute "&#193;">
+<!ENTITY aacute "&#225;">
+<!ENTITY Acirc "&#194;">
+<!ENTITY acirc "&#226;">
+<!ENTITY acute "&#180;">
+<!ENTITY AElig "&#198;">
+<!ENTITY aelig "&#230;">
+<!ENTITY Agrave "&#192;">
+<!ENTITY agrave "&#224;">
+<!ENTITY alefsym "&#8501;">
+<!ENTITY Alpha "&#913;">
+<!ENTITY alpha "&#945;">
+<!ENTITY amp "&#38;">
+<!ENTITY and "&#8869;">
+<!ENTITY ang "&#8736;">
+<!ENTITY Aring "&#197;">
+<!ENTITY aring "&#229;">
+<!ENTITY asymp "&#8776;">
+<!ENTITY Atilde "&#195;">
+<!ENTITY atilde "&#227;">
+<!ENTITY Auml "&#196;">
+<!ENTITY auml "&#228;">
+<!ENTITY bdquo "&#8222;">
+<!ENTITY Beta "&#914;">
+<!ENTITY beta "&#946;">
+<!ENTITY brvbar "&#166;">
+<!ENTITY bull "&#8226;">
+<!ENTITY cap "&#8745;">
+<!ENTITY Ccedil "&#199;">
+<!ENTITY ccedil "&#231;">
+<!ENTITY cedil "&#184;">
+<!ENTITY cent "&#162;">
+<!ENTITY Chi "&#935;">
+<!ENTITY chi "&#967;">
+<!ENTITY circ "&#710;">
+<!ENTITY clubs "&#9827;">
+<!ENTITY cong "&#8773;">
+<!ENTITY copy "&#169;">
+<!ENTITY crarr "&#8629;">
+<!ENTITY cup "&#8746;">
+<!ENTITY curren "&#164;">
+<!ENTITY dagger "&#8224;">
+<!ENTITY Dagger "&#8225;">
+<!ENTITY darr "&#8595;">
+<!ENTITY dArr "&#8659;">
+<!ENTITY deg "&#176;">
+<!ENTITY Delta "&#916;">
+<!ENTITY delta "&#948;">
+<!ENTITY diams "&#9830;">
+<!ENTITY divide "&#247;">
+<!ENTITY Eacute "&#201;">
+<!ENTITY eacute "&#233;">
+<!ENTITY Ecirc "&#202;">
+<!ENTITY ecirc "&#234;">
+<!ENTITY Egrave "&#200;">
+<!ENTITY egrave "&#232;">
+<!ENTITY empty "&#8709;">
+<!ENTITY emsp "&#8195;">
+<!ENTITY ensp "&#8194;">
+<!ENTITY epsilon "&#949;">
+<!ENTITY Epsilon "&#917;">
+<!ENTITY equiv "&#8801;">
+<!ENTITY Eta "&#919;">
+<!ENTITY eta "&#951;">
+<!ENTITY ETH "&#208;">
+<!ENTITY eth "&#240;">
+<!ENTITY Euml "&#203;">
+<!ENTITY euml "&#235;">
+<!ENTITY exist "&#8707;">
+<!ENTITY fnof "&#402;">
+<!ENTITY forall "&#8704;">
+<!ENTITY frac12 "&#189;">
+<!ENTITY frac14 "&#188;">
+<!ENTITY frac34 "&#190;">
+<!ENTITY frasl "&#8260;">
+<!ENTITY Gamma "&#915;">
+<!ENTITY gamma "&#947;">
+<!ENTITY ge "&#8805;">
+<!ENTITY gt "&#62;">
+<!ENTITY harr "&#8596;">
+<!ENTITY hArr "&#8660;">
+<!ENTITY hearts "&#9829;">
+<!ENTITY hellip "&#8230;">
+<!ENTITY Iacute "&#205;">
+<!ENTITY iacute "&#237;">
+<!ENTITY Icirc "&#206;">
+<!ENTITY icirc "&#238;">
+<!ENTITY iexcl "&#161;">
+<!ENTITY Igrave "&#204;">
+<!ENTITY igrave "&#236;">
+<!ENTITY image "&#8465;">
+<!ENTITY infin "&#8734;">
+<!ENTITY int "&#8747;">
+<!ENTITY Iota "&#921;">
+<!ENTITY iota "&#953;">
+<!ENTITY iquest "&#191;">
+<!ENTITY isin "&#8712;">
+<!ENTITY Iuml "&#207;">
+<!ENTITY iuml "&#239;">
+<!ENTITY Kappa "&#922;">
+<!ENTITY kappa "&#954;">
+<!ENTITY Lambda "&#923;">
+<!ENTITY lambda "&#955;">
+<!ENTITY lang "&#9001;">
+<!ENTITY laquo "&#171;">
+<!ENTITY larr "&#8592;">
+<!ENTITY lArr "&#8656;">
+<!ENTITY lceil "&#8968;">
+<!ENTITY ldquo "&#8220;">
+<!ENTITY le "&#8804;">
+<!ENTITY lfloor "&#8970;">
+<!ENTITY lowast "&#8727;">
+<!ENTITY loz "&#9674;">
+<!ENTITY lrm "&#8206;">
+<!ENTITY lsaquo "&#8249;">
+<!ENTITY lsquo "&#8216;">
+<!ENTITY lt "&#60;">
+<!ENTITY macr "&#175;">
+<!ENTITY mdash "&#8212;">
+<!ENTITY micro "&#181;">
+<!ENTITY middot "&#183;">
+<!ENTITY minus "&#8722;">
+<!ENTITY Mu "&#924;">
+<!ENTITY mu "&#956;">
+<!ENTITY nabla "&#8711;">
+<!ENTITY nbsp "&#160;">
+<!ENTITY ndash "&#8211;">
+<!ENTITY ne "&#8800;">
+<!ENTITY ni "&#8715;">
+<!ENTITY not "&#172;">
+<!ENTITY notin "&#8713;">
+<!ENTITY nsub "&#8836;">
+<!ENTITY Ntilde "&#209;">
+<!ENTITY ntilde "&#241;">
+<!ENTITY Nu "&#925;">
+<!ENTITY nu "&#957;">
+<!ENTITY Oacute "&#211;">
+<!ENTITY oacute "&#243;">
+<!ENTITY Ocirc "&#212;">
+<!ENTITY ocirc "&#244;">
+<!ENTITY OElig "&#338;">
+<!ENTITY oelig "&#339;">
+<!ENTITY Ograve "&#210;">
+<!ENTITY ograve "&#242;">
+<!ENTITY oline "&#8254;">
+<!ENTITY Omega "&#937;">
+<!ENTITY omega "&#969;">
+<!ENTITY Omicron "&#927;">
+<!ENTITY omicron "&#959;">
+<!ENTITY oplus "&#8853;">
+<!ENTITY or "&#8870;">
+<!ENTITY ordf "&#170;">
+<!ENTITY ordm "&#186;">
+<!ENTITY Oslash "&#216;">
+<!ENTITY oslash "&#248;">
+<!ENTITY Otilde "&#213;">
+<!ENTITY otilde "&#245;">
+<!ENTITY otimes "&#8855;">
+<!ENTITY Ouml "&#214;">
+<!ENTITY ouml "&#246;">
+<!ENTITY para "&#182;">
+<!ENTITY part "&#8706;">
+<!ENTITY permil "&#8240;">
+<!ENTITY perp "&#8869;">
+<!ENTITY Phi "&#934;">
+<!ENTITY phi "&#966;">
+<!ENTITY Pi "&#928;">
+<!ENTITY pi "&#960;">
+<!ENTITY piv "&#982;">
+<!ENTITY plusmn "&#177;">
+<!ENTITY pound "&#163;">
+<!ENTITY prime "&#8242;">
+<!ENTITY Prime "&#8243;">
+<!ENTITY prod "&#8719;">
+<!ENTITY prop "&#8733;">
+<!ENTITY Psi "&#936;">
+<!ENTITY psi "&#968;">
+<!ENTITY quot "&#34;">
+<!ENTITY radic "&#8730;">
+<!ENTITY rang "&#9002;">
+<!ENTITY raquo "&#187;">
+<!ENTITY rarr "&#8594;">
+<!ENTITY rArr "&#8658;">
+<!ENTITY rceil "&#8969;">
+<!ENTITY rdquo "&#8221;">
+<!ENTITY real "&#8476;">
+<!ENTITY reg "&#174;">
+<!ENTITY rfloor "&#8971;">
+<!ENTITY Rho "&#929;">
+<!ENTITY rho "&#961;">
+<!ENTITY rlm "&#8207;">
+<!ENTITY rsaquo "&#8250;">
+<!ENTITY rsquo "&#8217;">
+<!ENTITY sbquo "&#8218;">
+<!ENTITY Scaron "&#352;">
+<!ENTITY scaron "&#353;">
+<!ENTITY sdot "&#8901;">
+<!ENTITY sect "&#167;">
+<!ENTITY shy "&#173;">
+<!ENTITY Sigma "&#931;">
+<!ENTITY sigma "&#963;">
+<!ENTITY sigmaf "&#962;">
+<!ENTITY sim "&#8764;">
+<!ENTITY spades "&#9824;">
+<!ENTITY sub "&#8834;">
+<!ENTITY sube "&#8838;">
+<!ENTITY sum "&#8721;">
+<!ENTITY sup "&#8835;">
+<!ENTITY sup1 "&#185;">
+<!ENTITY sup2 "&#178;">
+<!ENTITY sup3 "&#179;">
+<!ENTITY supe "&#8839;">
+<!ENTITY szlig "&#223;">
+<!ENTITY Tau "&#932;">
+<!ENTITY tau "&#964;">
+<!ENTITY there4 "&#8756;">
+<!ENTITY Theta "&#920;">
+<!ENTITY theta "&#952;">
+<!ENTITY thetasym "&#977;">
+<!ENTITY thinsp "&#8201;">
+<!ENTITY THORN "&#222;">
+<!ENTITY thorn "&#254;">
+<!ENTITY tilde "&#732;">
+<!ENTITY times "&#215;">
+<!ENTITY trade "&#8482;">
+<!ENTITY Uacute "&#218;">
+<!ENTITY uacute "&#250;">
+<!ENTITY uarr "&#8593;">
+<!ENTITY uArr "&#8657;">
+<!ENTITY Ucirc "&#219;">
+<!ENTITY ucirc "&#251;">
+<!ENTITY Ugrave "&#217;">
+<!ENTITY ugrave "&#249;">
+<!ENTITY uml "&#168;">
+<!ENTITY upsih "&#978;">
+<!ENTITY Upsilon "&#933;">
+<!ENTITY upsilon "&#965;">
+<!ENTITY Uuml "&#220;">
+<!ENTITY uuml "&#252;">
+<!ENTITY weierp "&#8472;">
+<!ENTITY Xi "&#926;">
+<!ENTITY xi "&#958;">
+<!ENTITY Yacute "&#221;">
+<!ENTITY yacute "&#253;">
+<!ENTITY yen "&#165;">
+<!ENTITY Yuml "&#376;">
+<!ENTITY yuml "&#255;">
+<!ENTITY Zeta "&#918;">
+<!ENTITY zeta "&#950;">
+<!ENTITY zwj "&#8205;">
+<!ENTITY zwnj "&#8204;">`.replace(/\n/g, ' ');
+
+  /**
+   * A reasonably strict xml declaration.
+   */
+  const XML_DECL = '<?xml version="1.0" standalone="no"?>';
+
+  /**
+   * The beginning of the XML doctype declaration.
+   */
+  const DOCTYPE_START = `<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd" [`;
+
+  /**
+   * The end of the XML docype declaration.
+   */
+  const DOCTYPE_END = ']>';
+
+  /**
+   * A full header for an SVG XML document.
+   */
+  const SVG_XML_HEADER = `${XML_DECL}
+    ${DOCTYPE_START}${HTML_ENTITIES}${DOCTYPE_END}`;
 
     void Promise.all([...diagrams].map(renderOneMarmaid));
   });
@@ -2510,7 +2795,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <span class="kn">from</span><span class="w"> </span><span class="nn">glob</span><span class="w"> </span><span class="kn">import</span> <span class="n">glob</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 
-<span class="c1"># Set LOGLEVEL to info for more verbose logging</span>
+<span class="c1"># Set LOGLEVEL to info for less verbose logging</span>
 <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">"LOGLEVEL"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"WARNING"</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">terrakit</span>
@@ -2536,7 +2821,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 from glob import glob
 from pathlib import Path
 
-# Set LOGLEVEL to info for more verbose logging
+# Set LOGLEVEL to info for less verbose logging
 os.environ["LOGLEVEL"] = "WARNING"
 
 import terrakit
@@ -4433,8 +4718,8 @@ label_1: sentinel_aws_sentinel-2-l2a_2025-04-23_imputed_1.label.tif
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=91facbb6">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=91facbb6">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -4452,19 +4737,88 @@ label_1: sentinel_aws_sentinel-2-l2a_2025-04-23_imputed_1.label.tif
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">terrakit</span><span class="o">.</span><span class="n">taco_store_data</span><span class="p">(</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="c1"># Use taco_start_data() to package the data into a taco format. This will create a taco dataset in the working directory as {DATASET_NAME}.tacozip.</span>
+<span class="n">terrakit</span><span class="o">.</span><span class="n">taco_store_data</span><span class="p">(</span>
     <span class="n">dataset_name</span><span class="o">=</span><span class="n">DATASET_NAME</span><span class="p">,</span>
+    <span class="n">license</span><span class="o">=</span><span class="s2">"CC-BY-4.0"</span><span class="p">,</span>
     <span class="n">working_dir</span><span class="o">=</span><span class="n">WORKING_DIR</span><span class="p">,</span>
     <span class="n">save_dir</span><span class="o">=</span><span class="n">WORKING_DIR</span><span class="p">,</span>
-    <span class="n">tortilla_name</span><span class="o">=</span><span class="s2">"terrakit_curated_dataset.tortilla"</span><span class="p">,</span>
 <span class="p">)</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-20">terrakit.taco_store_data(
+<div class="clipboard-copy-txt" id="cell-20"># Use taco_start_data() to package the data into a taco format. This will create a taco dataset in the working directory as {DATASET_NAME}.tacozip.
+terrakit.taco_store_data(
     dataset_name=DATASET_NAME,
+    license="CC-BY-4.0",
     working_dir=WORKING_DIR,
     save_dir=WORKING_DIR,
-    tortilla_name="terrakit_curated_dataset.tortilla",
 )</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
+<pre>2026-06-23 13:52:08 [INFO    ] Processing with parent arguments: dataset_name='test_dataset' working_dir=PosixPath('tmp/test_dataset') (pipeline_model.py:104)
+2026-06-23 13:52:08 [INFO    ] Storing data with arguments: active=True format='taco' dataset_save_dir='.' save_dir='./tmp/test_dataset' tortilla_name='' statistics=True include_config=True check_dataset=True (taco.py:488)
+2026-06-23 13:52:08 [INFO    ] Creating tortilla dataset test_dataset in tmp/test_dataset/test_dataset.tacozip (taco.py:166)
+2026-06-23 13:52:08 [INFO    ] Found 25 .data.tif/.label.tif file pairs (taco.py:174)
+2026-06-23 13:52:08 [INFO    ] Creating split containers (max_size=4GB) (create.py:160)
+2026-06-23 13:52:08 [INFO    ] Only one chunk needed, creating single container (create.py:582)
+2026-06-23 13:52:08 [INFO    ] Starting bottom-up __meta__ generation (zip_writer.py:111)
+2026-06-23 13:52:08 [INFO    ] Writing ZIP with 52 total files (zip_writer.py:289)
+</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
+<pre>tmp/test_dataset/sentinel_aws_sentinel-2-l2a_tile_0_1_2025-04-23_imputed_0.data.tif
+tmp/test_dataset/sentinel_aws_sentinel-2-l2a_tile_1_1_2024-08-30_imputed_0.data.tif
+tmp/test_dataset/sentinel_aws_sentinel-2-l2a_tile_1_1_2024-08-30_imputed_1.data.tif
+tmp/test_dataset/sentinel_aws_sentinel-2-l2a_tile_1_1_2024-08-30_imputed_10.data.tif
+tmp/test_dataset/sentinel_aws_sentinel-2-l2a_tile_1_1_2024-08-30_imputed_11.data.tif
+tmp/test_dataset/sentinel_aws_sentinel-2-l2a_tile_1_1_2024-08-30_imputed_12.data.tif
+tmp/test_dataset/sentinel_aws_sentinel-2-l2a_tile_1_1_2024-08-30_imputed_13.data.tif
+tmp/test_dataset/sentinel_aws_sentinel-2-l2a_tile_1_1_2024-08-30_imputed_14.data.tif
+tmp/test_dataset/sentinel_aws_sentinel-2-l2a_tile_1_1_2024-08-30_imputed_15.data.tif
+tmp/test_dataset/sentinel_aws_sentinel-2-l2a_tile_1_1_2024-08-30_imputed_16.data.tif
+tmp/test_dataset/sentinel_aws_sentinel-2-l2a_tile_1_1_2024-08-30_imputed_17.data.tif
+tmp/test_dataset/sentinel_aws_sentinel-2-l2a_tile_1_1_2024-08-30_imputed_18.data.tif
+tmp/test_dataset/sentinel_aws_sentinel-2-l2a_tile_1_1_2024-08-30_imputed_19.data.tif
+tmp/test_dataset/sentinel_aws_sentinel-2-l2a_tile_1_1_2024-08-30_imputed_2.data.tif
+tmp/test_dataset/sentinel_aws_sentinel-2-l2a_tile_1_1_2024-08-30_imputed_20.data.tif
+tmp/test_dataset/sentinel_aws_sentinel-2-l2a_tile_1_1_2024-08-30_imputed_21.data.tif
+tmp/test_dataset/sentinel_aws_sentinel-2-l2a_tile_1_1_2024-08-30_imputed_22.data.tif
+tmp/test_dataset/sentinel_aws_sentinel-2-l2a_tile_1_1_2024-08-30_imputed_23.data.tif
+tmp/test_dataset/sentinel_aws_sentinel-2-l2a_tile_1_1_2024-08-30_imputed_3.data.tif
+tmp/test_dataset/sentinel_aws_sentinel-2-l2a_tile_1_1_2024-08-30_imputed_4.data.tif
+tmp/test_dataset/sentinel_aws_sentinel-2-l2a_tile_1_1_2024-08-30_imputed_5.data.tif
+tmp/test_dataset/sentinel_aws_sentinel-2-l2a_tile_1_1_2024-08-30_imputed_6.data.tif
+tmp/test_dataset/sentinel_aws_sentinel-2-l2a_tile_1_1_2024-08-30_imputed_7.data.tif
+tmp/test_dataset/sentinel_aws_sentinel-2-l2a_tile_1_1_2024-08-30_imputed_8.data.tif
+tmp/test_dataset/sentinel_aws_sentinel-2-l2a_tile_1_1_2024-08-30_imputed_9.data.tif
+id='sentinel_aws_sentinel-2-l2a_tile_0_1_2025-04-23_imputed_0.data.tif' path=PosixPath('/Users/rosielickorish/Documents/IBMResearch/2026/terrakit/docs/examples/tmp/test_dataset/sentinel_aws_sentinel-2-l2a_tile_0_1_2025-04-23_imputed_0.data.tif') type='FILE' stac:crs='EPSG:4326' stac:tensor_shape=[3, 256, 256] stac:geotransform=[22.850461514617532, 0.00015608825136612198, 0.0, 53.63003029699479, 0.0, -9.275719489982219e-05] stac:time_start=datetime.datetime(2025, 4, 23, 0, 0) stac:centroid=b'\x01\x01\x00\x00\x00\x02u\x7f5\xd5\xde6@\xed\xf3\xe8\xc7\x1f\xcfJ@' stac:time_end=datetime.datetime(2025, 4, 23, 23, 59, 59) stac:time_middle=datetime.datetime(2025, 4, 23, 11, 59, 59, 500000)
+</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
+<pre>2026-06-23 13:52:08 [INFO    ] ZIP created successfully: tmp/test_dataset/test_dataset.tacozip (zip_writer.py:312)
+2026-06-23 13:52:08 [INFO    ] Successfully created 1 container(s) (create.py:193)
+2026-06-23 13:52:08 [INFO    ] Created taco dataset at tmp/test_dataset/test_dataset.tacozip (taco.py:231)
+</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[ ]:</div>
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
+<pre>'tmp/test_dataset/test_dataset.tacozip'</pre>
 </div>
 </div>
 </div>
@@ -4480,8 +4834,8 @@ label_1: sentinel_aws_sentinel-2-l2a_2025-04-23_imputed_1.label.tif
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=a579abff">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=a579abff">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -4499,60 +4853,27 @@ label_1: sentinel_aws_sentinel-2-l2a_2025-04-23_imputed_1.label.tif
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="c1"># Load the created TACO dataset</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">tacoreader</span>
 
-<span class="n">df</span> <span class="o">=</span> <span class="n">tacoreader</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">"./tmp/test_dataset/terrakit_curated_dataset.tortilla"</span><span class="p">)</span>
-<span class="n">splits</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"train"</span><span class="p">,</span> <span class="s2">"validation"</span><span class="p">,</span> <span class="s2">"test"</span><span class="p">]</span>
-<span class="n">sample_rows</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">dataset</span> <span class="o">=</span> <span class="n">tacoreader</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">WORKING_DIR</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">DATASET_NAME</span><span class="si">}</span><span class="s2">.tacozip"</span><span class="p">)</span>
 
-<span class="k">for</span> <span class="n">split</span> <span class="ow">in</span> <span class="n">splits</span><span class="p">:</span>
-    <span class="n">subset</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s2">"tortilla:data_split"</span><span class="p">]</span> <span class="o">==</span> <span class="n">split</span><span class="p">]</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">subset</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
-        <span class="n">sample_rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">subset</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>  <span class="c1"># Take first row</span>
-
-<span class="c1"># Create a new DataFrame</span>
-<span class="n">sample_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">sample_rows</span><span class="p">)</span>
-
-<span class="c1"># Save back to a new file</span>
-<span class="n">tacoreader</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">sample_df</span><span class="p">,</span> <span class="s2">"./tmp/test_dataset/sampled_dataset.tortilla"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Dataset ID: </span><span class="si">{</span><span class="n">dataset</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Dataset version: </span><span class="si">{</span><span class="n">dataset</span><span class="o">.</span><span class="n">version</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Description: </span><span class="si">{</span><span class="n">dataset</span><span class="o">.</span><span class="n">description</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Tasks: </span><span class="si">{</span><span class="n">dataset</span><span class="o">.</span><span class="n">tasks</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Spatial extent: </span><span class="si">{</span><span class="n">dataset</span><span class="o">.</span><span class="n">extent</span><span class="p">[</span><span class="s1">'spatial'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-21">import pandas as pd
+<div class="clipboard-copy-txt" id="cell-21"># Load the created TACO dataset
 import tacoreader
 
-df = tacoreader.load("./tmp/test_dataset/terrakit_curated_dataset.tortilla")
-splits = ["train", "validation", "test"]
-sample_rows = []
+dataset = tacoreader.load(f"{WORKING_DIR}/{DATASET_NAME}.tacozip")
 
-for split in splits:
-    subset = df[df["tortilla:data_split"] == split]
-    if not subset.empty:
-        sample_rows.append(subset.iloc[0])  # Take first row
-
-# Create a new DataFrame
-sample_df = pd.DataFrame(sample_rows)
-
-# Save back to a new file
-tacoreader.compile(sample_df, "./tmp/test_dataset/sampled_dataset.tortilla")</div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
-<pre>Making a tortilla 🫓: 100%|████████████████████████████████████████████████████████████████████████████████████████████████| 3/3 [00:00&lt;00:00, 54471.48file/s]
-</pre>
-</div>
-</div>
-<div class="jp-OutputArea-child jp-OutputArea-executeResult">
-<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[21]:</div>
-<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
-<pre>PosixPath('tmp/test_dataset/sampled_dataset.tortilla')</pre>
+print(f"Dataset ID: {dataset.id}")
+print(f"Dataset version: {dataset.version}")
+print(f"Description: {dataset.description}")
+print(f"Tasks: {dataset.tasks}")
+print(f"Spatial extent: {dataset.extent['spatial']}")</div>
 </div>
 </div>
 </div>
@@ -4580,8 +4901,8 @@ tacoreader.compile(sample_df, "./tmp/test_dataset/sampled_dataset.tortilla")</di
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=237dbadc-b5af-4be5-a72f-a74b19d2d17c">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=237dbadc-b5af-4be5-a72f-a74b19d2d17c">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -4602,31 +4923,6 @@ tacoreader.compile(sample_df, "./tmp/test_dataset/sampled_dataset.tortilla")</di
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="n">check_and_crop_bbox</span><span class="p">(</span><span class="n">bbox</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mf">73.645550</span><span class="p">,</span> <span class="mf">44.233885</span><span class="p">,</span> <span class="o">-</span><span class="mf">72.539635</span><span class="p">,</span> <span class="mf">44.278023</span><span class="p">],</span> <span class="n">resolution</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-22">check_and_crop_bbox(bbox=[-73.645550, 44.233885, -72.539635, 44.278023], resolution=10)</div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
-<pre>2026-02-09 10:34:00,444 - INFO - Dimension less than 244, will pad - (2, 491)
-2026-02-09 10:34:00,445 - INFO - New dimensions are (310, 500)
-</pre>
-</div>
-</div>
-<div class="jp-OutputArea-child jp-OutputArea-executeResult">
-<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[22]:</div>
-<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
-<pre>([BBox(((-73.64555, 44.233885), (-73.36960432686855, 44.278023)), crs=CRS('4326')),
-  BBox(((-73.36960432686855, 44.233885), (-73.0936586537371, 44.278023)), crs=CRS('4326')),
-  BBox(((-73.0936586537371, 44.233885), (-72.81771298060565, 44.278023)), crs=CRS('4326')),
-  BBox(((-72.81771298060565, 44.233885), (-72.5417673074742, 44.278023)), crs=CRS('4326')),
-  BBox(((-72.56101965371401, 44.233885), (-72.5203826537602, 44.278023)), crs=CRS('4326'))],
- [(2194, 530), (2192, 538), (2191, 545), (2189, 553), (310, 500)])</pre>
 </div>
 </div>
 </div>
@@ -5160,15 +5456,84 @@ label_9: sentinel_aws_sentinel-2-l2a_2021-11-02_imputed_11.label.tif
     <span class="n">dataset_name</span><span class="o">=</span><span class="n">DATASET_NAME_RASTER</span><span class="p">,</span>
     <span class="n">working_dir</span><span class="o">=</span><span class="n">WORKING_DIR_RASTER</span><span class="p">,</span>
     <span class="n">save_dir</span><span class="o">=</span><span class="n">WORKING_DIR_RASTER</span><span class="p">,</span>
-    <span class="n">tortilla_name</span><span class="o">=</span><span class="s2">"terrakit_curated_dataset.tortilla"</span><span class="p">,</span>
+    <span class="n">license</span><span class="o">=</span><span class="s2">"CC-BY-4.0"</span><span class="p">,</span>
 <span class="p">)</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-31">terrakit.taco_store_data(
     dataset_name=DATASET_NAME_RASTER,
     working_dir=WORKING_DIR_RASTER,
     save_dir=WORKING_DIR_RASTER,
-    tortilla_name="terrakit_curated_dataset.tortilla",
+    license="CC-BY-4.0",
 )</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=4042cdee">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<p>Let's validate the taco has been created as expected.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=f773b205">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="CodeMirror cm-s-jupyter">
+<div class="zeroclipboard-container">
+<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-32">
+<div>
+<span class="notice" hidden="">Copied!</span>
+<svg aria-hidden="true" class="clipboard-copy-icon" data-view-component="true" height="20" version="1.1" viewbox="0 0 16 16" width="20">
+<path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z" fill="currentColor" fill-rule="evenodd"></path>
+<path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+</div>
+</clipboard-copy>
+</div>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">ds</span> <span class="o">=</span> <span class="n">terrakit</span><span class="o">.</span><span class="n">load_taco</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">WORKING_DIR</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">DATASET_NAME</span><span class="si">}</span><span class="s2">.tacozip"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+</pre></div>
+<div class="clipboard-copy-txt" id="cell-32">ds = terrakit.load_taco(f"{WORKING_DIR}/{DATASET_NAME}.tacozip")
+print(ds.data)</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=fa3d3c30">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [3]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="CodeMirror cm-s-jupyter">
+<div class="zeroclipboard-container">
+<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-33">
+<div>
+<span class="notice" hidden="">Copied!</span>
+<svg aria-hidden="true" class="clipboard-copy-icon" data-view-component="true" height="20" version="1.1" viewbox="0 0 16 16" width="20">
+<path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z" fill="currentColor" fill-rule="evenodd"></path>
+<path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+</div>
+</clipboard-copy>
+</div>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="c1"># Check what is inside our tacozip!</span>
+<span class="err">!</span><span class="n">unzip</span> <span class="o">-</span><span class="n">l</span> <span class="p">{</span><span class="n">WORKING_DIR_RASTER</span><span class="p">}</span><span class="o">/</span><span class="p">{</span><span class="n">DATASET_NAME_RASTER</span><span class="p">}</span><span class="o">.</span><span class="n">tacozip</span>
+</pre></div>
+<div class="clipboard-copy-txt" id="cell-33"># Check what is inside our tacozip!
+!unzip -l {WORKING_DIR_RASTER}/{DATASET_NAME_RASTER}.tacozip</div>
 </div>
 </div>
 </div>
@@ -5204,7 +5569,7 @@ label_9: sentinel_aws_sentinel-2-l2a_2021-11-02_imputed_11.label.tif
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="May 5, 2026 08:37:46 UTC">May 5, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="July 8, 2026 10:41:18 UTC">July 8, 2026</span>
   </span>
 
     
