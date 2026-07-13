@@ -106,7 +106,7 @@ class TacoCls:
     ) -> List[Tuple[Path, Path]]:
         """Find all matching .data.tif and .label.tif file pairs in a directory."""
         data_files: list[Path] = sorted(directory.glob("*" + data_suffix))
-        pairs: list[Any] = []
+        pairs: list[Tuple[Path, Path]] = []
 
         for data_file in data_files:
             # Extract the base name by removing .data.tif suffix
@@ -116,7 +116,12 @@ class TacoCls:
             if label_file.exists():
                 pairs.append((data_file, label_file))
             else:
-                print(f"Warning: No matching label file found for {data_file.name}")
+                logger.warning(
+                    f"Warning: No matching label file found for {data_file.name}"
+                )
+                raise TerrakitValidationError(
+                    f"No matching label files found for {data_file.name}"
+                )
 
         return pairs
 
@@ -153,9 +158,17 @@ class TacoCls:
         """Create a taco dataset from all matching data and label files in a directory."""
         data_label_dir: Path = Path(working_dir)
 
-        resolved_save_dir = save_dir if save_dir is not None else self.save_dir
-        output_path = Path(resolved_save_dir) / f"{dataset_name}.tacozip"
-        logger.info(f"Creating tortilla dataset {dataset_name} in {str(output_path)}")
+        resolved_save_dir = (
+            Path(save_dir) if save_dir is not None else Path(self.save_dir)
+        )
+        output_path = (
+            Path(self.tortilla_name)
+            if self.tortilla_name
+            else Path(f"{dataset_name}.tacozip")
+        )
+        if not output_path.is_absolute():
+            output_path = resolved_save_dir / output_path
+        output_path = output_path.with_suffix(".tacozip")
 
         file_pairs: List[Tuple[Path, Path]] = self._find_file_pairs(
             directory=data_label_dir, data_suffix=chip_suffix, label_suffix=label_suffix
@@ -171,7 +184,7 @@ class TacoCls:
         extents: list[Any] = []
 
         for data_path, label_path in file_pairs:
-            print(data_path)
+            logger.debug("Processing data file: %s", data_path)
             # Create unique sample IDs based on filenames
             data_id = data_path.name  # Removes .data.tif
             label_id = label_path.name  # Removes .label.tif
@@ -204,9 +217,6 @@ class TacoCls:
             # Collect extent for this pair
             extents.append(self._build_extent(data_path))
 
-        # logger.info(f"Creating taco from samples: {', '.join(s.path for s in samples)}")
-        print(samples[0])
-        Tortilla(samples=samples)
         # Combine extents from all samples
         combined_extent = self._combine_extents(extents)
 
@@ -300,7 +310,7 @@ def taco_store_data(
 
 
 def load_taco(tortilla_name):
-    """Load a taco dataset and return it as a dataframe.
+    """Load a taco dataset and return the loaded dataset object.
 
     Args:
         tortilla_name: Path to the taco dataset file
